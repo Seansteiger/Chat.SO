@@ -11,6 +11,7 @@ import { VideoCallOverlay } from './components/VideoCallOverlay.js';
 import { IncomingCallDialog } from './components/IncomingCallDialog.js';
 import { ProfileModal } from './components/ProfileModal.js';
 import { MessageSquare } from 'lucide-react';
+import { convex, api as convexApi } from './convex.js';
 
 export const AppContent: React.FC = () => {
   const { user: currentUser, isAuthenticated, isLoading } = useAuth();
@@ -43,23 +44,53 @@ export const AppContent: React.FC = () => {
     }
   }, [isAuthenticated, loadUsers]);
 
-  // Load message history when selectedUser changes
+  // Load message history and watch messages reactively when selectedUser changes
   useEffect(() => {
     if (!selectedUser) {
       setMessages([]);
       return;
     }
 
+    let unsubWatch: (() => void) | null = null;
+
     const loadHistory = async () => {
       try {
         const res = await api.getMessages(selectedUser.id);
         setMessages(res.messages);
+
+        // Subscribe reactively to conversation messages in real time
+        if (res.conversationId) {
+          const watch = (convex as any).watchQuery(convexApi.messages.listMessages, {
+            conversationId: res.conversationId,
+          });
+          unsubWatch = watch.onUpdate(() => {
+            const currentMsgs = watch.localQueryResult();
+            if (Array.isArray(currentMsgs)) {
+              setMessages(
+                currentMsgs.map((m: any): MessageDto => ({
+                  id: m._id,
+                  conversationId: m.conversationId,
+                  senderId: m.senderId,
+                  clientMessageId: m.clientMessageId,
+                  content: m.content,
+                  attachmentUrl: m.attachmentUrl,
+                  attachmentName: m.attachmentName,
+                  attachmentSize: m.attachmentSize,
+                  attachmentMime: m.attachmentMime,
+                  status: m.status,
+                  createdAt: new Date(m.createdAt).toISOString(),
+                }))
+              );
+            }
+          });
+        }
 
         // Emit read receipt
         if (socket && res.messages.length > 0) {
           const lastMsg = res.messages[res.messages.length - 1];
           socket.emit(SOCKET_EVENTS.CHAT_READ, {
             peerId: selectedUser.id,
+            conversationId: res.conversationId,
             lastReadMessageId: lastMsg.id,
           });
         }
@@ -69,6 +100,10 @@ export const AppContent: React.FC = () => {
     };
 
     loadHistory();
+
+    return () => {
+      if (unsubWatch) unsubWatch();
+    };
   }, [selectedUser, socket]);
 
   // Socket event listeners

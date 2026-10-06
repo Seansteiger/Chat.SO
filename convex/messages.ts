@@ -51,6 +51,42 @@ export const listMessages = query({
   },
 });
 
+export const getMessagesForUserConversations = query({
+  args: {
+    userId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    if (!args.userId) return [];
+
+    const p1 = await ctx.db
+      .query("conversations")
+      .withIndex("by_p1", (q) => q.eq("participant1", args.userId!))
+      .collect();
+
+    const p2 = await ctx.db
+      .query("conversations")
+      .withIndex("by_p2", (q) => q.eq("participant2", args.userId!))
+      .collect();
+
+    const allConvs = [...p1, ...p2];
+    if (allConvs.length === 0) return [];
+
+    allConvs.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+
+    const msgsList = [];
+    for (const c of allConvs.slice(0, 15)) {
+      const msgs = await ctx.db
+        .query("messages")
+        .withIndex("by_conversation", (q) => q.eq("conversationId", c._id))
+        .order("desc")
+        .take(30);
+      msgsList.push(...msgs);
+    }
+
+    return msgsList;
+  },
+});
+
 export const sendMessage = mutation({
   args: {
     conversationId: v.id("conversations"),

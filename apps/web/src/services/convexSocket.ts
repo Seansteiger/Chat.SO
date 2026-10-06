@@ -60,10 +60,18 @@ export class ConvexSocketBridge {
 
     switch (event) {
       case SOCKET_EVENTS.CHAT_SEND: {
-        const { peerId, content, clientMessageId, attachmentUrl, attachmentName, attachmentSize, attachmentMime } = payload;
-        const conv = await convex.mutation(convexApi.messages.getOrCreateConversation, {
+        const targetUserId = payload.recipientId || payload.peerId;
+        const { content, clientMessageId, attachmentUrl, attachmentName, attachmentSize, attachmentMime } = payload;
+
+        if (!targetUserId) {
+          console.error('[ConvexSocket] CHAT_SEND missing target user id in payload:', payload);
+          if (ack) ack({ success: false, error: 'Recipient ID is required' });
+          return;
+        }
+
+        const conv: any = await convex.mutation(convexApi.messages.getOrCreateConversation, {
           userId1: this.currentUserId as any,
-          userId2: peerId as any,
+          userId2: targetUserId as any,
         });
 
         if (!conv) {
@@ -101,9 +109,18 @@ export class ConvexSocketBridge {
       }
 
       case SOCKET_EVENTS.CHAT_TYPING: {
-        if (payload.conversationId) {
+        const targetId = payload.recipientId || payload.peerId;
+        let convId = payload.conversationId;
+        if (!convId && targetId) {
+          const conv: any = await convex.mutation(convexApi.messages.getOrCreateConversation, {
+            userId1: this.currentUserId as any,
+            userId2: targetId as any,
+          });
+          if (conv) convId = conv._id;
+        }
+        if (convId) {
           await convex.mutation(convexApi.messages.setTyping, {
-            conversationId: payload.conversationId as any,
+            conversationId: convId as any,
             userId: this.currentUserId as any,
             isTyping: !!payload.isTyping,
           });
@@ -112,9 +129,18 @@ export class ConvexSocketBridge {
       }
 
       case SOCKET_EVENTS.CHAT_READ: {
-        if (payload.conversationId) {
+        const targetId = payload.recipientId || payload.peerId;
+        let convId = payload.conversationId;
+        if (!convId && targetId) {
+          const conv: any = await convex.mutation(convexApi.messages.getOrCreateConversation, {
+            userId1: this.currentUserId as any,
+            userId2: targetId as any,
+          });
+          if (conv) convId = conv._id;
+        }
+        if (convId) {
           await convex.mutation(convexApi.messages.markAsRead, {
-            conversationId: payload.conversationId as any,
+            conversationId: convId as any,
             currentUserId: this.currentUserId as any,
           });
         }
@@ -304,6 +330,47 @@ export class ConvexSocketBridge {
       }
     });
     this.unsubs.push(unsubUsers);
+
+    // 4. Real-time message subscription for incoming messages
+    const msgsWatch = (convex as any).watchQuery(convexApi.messages.getMessagesForUserConversations, {
+      userId: this.currentUserId as any,
+    });
+    const seenMsgIds = new Set<string>();
+    let isInitialLoad = true;
+
+    const unsubMsgs = msgsWatch.onUpdate(() => {
+      const msgs = msgsWatch.localQueryResult();
+      if (!Array.isArray(msgs)) return;
+
+      if (isInitialLoad) {
+        msgs.forEach((m: any) => seenMsgIds.add(m._id));
+        isInitialLoad = false;
+        return;
+      }
+
+      for (const m of msgs) {
+        if (!seenMsgIds.has(m._id)) {
+          seenMsgIds.add(m._id);
+          if (m.senderId !== this.currentUserId) {
+            const dto: MessageDto = {
+              id: m._id,
+              conversationId: m.conversationId,
+              senderId: m.senderId,
+              clientMessageId: m.clientMessageId,
+              content: m.content,
+              attachmentUrl: m.attachmentUrl,
+              attachmentName: m.attachmentName,
+              attachmentSize: m.attachmentSize,
+              attachmentMime: m.attachmentMime,
+              status: m.status,
+              createdAt: new Date(m.createdAt).toISOString(),
+            };
+            this.trigger(SOCKET_EVENTS.CHAT_RECEIVE, dto);
+          }
+        }
+      }
+    });
+    this.unsubs.push(unsubMsgs);
   }
 
   public destroy() {
