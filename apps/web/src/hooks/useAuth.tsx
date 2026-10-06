@@ -9,8 +9,14 @@ interface AuthContextType {
   isLoading: boolean;
   login: (data: LoginInput) => Promise<void>;
   register: (data: RegisterInput) => Promise<void>;
-  requestSignupVerification: (data: { username: string; email: string }) => Promise<void>;
+  requestSignupVerification: (data: {
+    username: string;
+    email: string;
+    displayName?: string;
+    password?: string;
+  }) => Promise<void>;
   verifyAndRegister: (data: RegisterInput & { code: string }) => Promise<void>;
+  verifySignupByLink: (data: { email: string; code: string }) => Promise<void>;
   requestPasswordReset: (data: { email: string }) => Promise<void>;
   resetPasswordWithCode: (data: { email: string; code: string; newPassword: string }) => Promise<void>;
   logout: () => void;
@@ -67,8 +73,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const requestSignupVerification = async (data: { username: string; email: string }) => {
+  const requestSignupVerification = async (data: {
+    username: string;
+    email: string;
+    displayName?: string;
+    password?: string;
+  }) => {
     await api.requestSignupVerification(data);
+  };
+
+  const verifySignupByLink = async (data: { email: string; code: string }) => {
+    setIsLoading(true);
+    try {
+      const res = await api.verifySignupByLink(data);
+      setAuthToken(res.token);
+      setTokenState(res.token);
+      setUser(res.user);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const verifyAndRegister = async (data: RegisterInput & { code: string }) => {
@@ -121,6 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         requestSignupVerification,
         verifyAndRegister,
+        verifySignupByLink,
         requestPasswordReset,
         resetPasswordWithCode,
         logout,

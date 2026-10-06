@@ -14,6 +14,7 @@ import {
   X,
   AlertCircle,
   ExternalLink,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface MainChatProps {
@@ -29,6 +30,7 @@ interface MainChatProps {
   }) => void;
   onSendTyping: (isTyping: boolean) => void;
   onStartCall: (isVideo: boolean) => void;
+  onBack?: () => void;
 }
 
 export const MainChat: React.FC<MainChatProps> = ({
@@ -38,6 +40,7 @@ export const MainChat: React.FC<MainChatProps> = ({
   onSendMessage,
   onSendTyping,
   onStartCall,
+  onBack,
 }) => {
   const { user: currentUser } = useAuth();
   const [inputText, setInputText] = useState('');
@@ -159,8 +162,18 @@ export const MainChat: React.FC<MainChatProps> = ({
   return (
     <div className="flex-1 h-full flex flex-col bg-[#090d16] relative overflow-hidden">
       {/* Chat Top Bar */}
-      <div className="h-16 px-6 border-b border-white/10 flex items-center justify-between bg-slate-950/60 backdrop-blur-md shrink-0 z-10">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="h-16 px-3.5 md:px-6 border-b border-white/10 flex items-center justify-between bg-slate-950/60 backdrop-blur-md shrink-0 z-10">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Back to chats"
+              className="md:hidden p-2 -ml-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
           <div className="relative shrink-0">
             {peer.avatarUrl ? (
               <img
@@ -376,7 +389,7 @@ export const MainChat: React.FC<MainChatProps> = ({
       )}
 
       {/* Input Form */}
-      <div className="p-4 border-t border-white/10 bg-slate-950/80 backdrop-blur-md">
+      <div className="p-3 md:p-4 border-t border-white/10 bg-slate-950/80 backdrop-blur-md pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
         <form onSubmit={handleSend} className="flex items-center gap-2">
           {/* File input trigger */}
           <input

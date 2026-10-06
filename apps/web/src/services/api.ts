@@ -57,11 +57,27 @@ export const api = {
     return { token: res.sessionToken, user: formatConvexUser(res.user) };
   },
 
-  requestSignupVerification: async (data: { username: string; email: string }) => {
+  requestSignupVerification: async (data: {
+    username: string;
+    email: string;
+    displayName?: string;
+    password?: string;
+  }) => {
     return await convex.action(convexApi.auth_email.requestSignupVerification, {
       username: data.username,
       email: data.email,
+      displayName: data.displayName,
+      password: data.password,
     });
+  },
+
+  verifySignupByLink: async (data: { email: string; code: string }) => {
+    const res = await convex.mutation(convexApi.auth_email.verifySignupByLink, {
+      email: data.email,
+      code: data.code,
+    });
+    setAuthToken(res.sessionToken);
+    return { token: res.sessionToken, user: formatConvexUser(res.user) };
   },
 
   verifyAndRegister: async (data: RegisterInput & { code: string }) => {

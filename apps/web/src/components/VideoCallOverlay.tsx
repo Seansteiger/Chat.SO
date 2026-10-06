@@ -133,7 +133,7 @@ export const VideoCallOverlay: React.FC<VideoCallOverlayProps> = ({
 
         {/* Local Self-View PiP */}
         {!isMinimized && (
-          <div className="absolute bottom-24 right-6 w-44 sm:w-56 aspect-video rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 bg-slate-900 z-20">
+          <div className="absolute bottom-24 right-4 sm:right-6 w-28 sm:w-44 md:w-56 aspect-video rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 bg-slate-900 z-20">
             {localStream && !isVideoOff ? (
               <video
                 ref={localVideoRef}
@@ -152,7 +152,7 @@ export const VideoCallOverlay: React.FC<VideoCallOverlayProps> = ({
       </div>
 
       {/* Floating Call Controls Dock */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl z-20">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2.5 sm:gap-3 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl z-20 mb-[env(safe-area-inset-bottom,0px)]">
         {/* Toggle Audio */}
         <button
           type="button"

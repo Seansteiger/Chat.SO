@@ -28,8 +28,8 @@ export const AppContent: React.FC = () => {
     try {
       const res = await api.getUsers();
       setUsers(res.users);
-      // Auto-select first user if none selected
-      if (!selectedUser && res.users.length > 0) {
+      // Auto-select first user on desktop if none selected
+      if (!selectedUser && res.users.length > 0 && typeof window !== 'undefined' && window.innerWidth >= 768) {
         setSelectedUser(res.users[0]);
       }
     } catch (err) {
@@ -216,30 +216,35 @@ export const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="h-screen w-screen flex bg-[#090d16] text-slate-100 overflow-hidden font-sans">
-      {/* Left Sidebar */}
-      <Sidebar
-        users={users}
-        selectedUser={selectedUser}
-        onSelectUser={setSelectedUser}
-        onOpenProfile={() => setIsProfileModalOpen(true)}
-      />
+    <div className="h-[100dvh] w-screen flex bg-[#090d16] text-slate-100 overflow-hidden font-sans">
+      {/* Left Sidebar (Contacts / Chats) */}
+      <div className={`h-full ${selectedUser ? 'hidden md:flex' : 'flex w-full'} md:w-80 shrink-0`}>
+        <Sidebar
+          users={users}
+          selectedUser={selectedUser}
+          onSelectUser={setSelectedUser}
+          onOpenProfile={() => setIsProfileModalOpen(true)}
+        />
+      </div>
 
       {/* Main Conversation Feed */}
       {selectedUser ? (
-        <MainChat
-          peer={selectedUser}
-          messages={messages}
-          isPeerTyping={!!peerTypingMap[selectedUser.id]}
-          onSendMessage={handleSendMessage}
-          onSendTyping={handleSendTyping}
-          onStartCall={handleStartCall}
-        />
+        <div className={`h-full flex-1 flex flex-col ${selectedUser ? 'flex w-full' : 'hidden md:flex'}`}>
+          <MainChat
+            peer={selectedUser}
+            messages={messages}
+            isPeerTyping={!!peerTypingMap[selectedUser.id]}
+            onSendMessage={handleSendMessage}
+            onSendTyping={handleSendTyping}
+            onStartCall={handleStartCall}
+            onBack={() => setSelectedUser(null)}
+          />
+        </div>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
+        <div className="hidden md:flex flex-1 flex-col items-center justify-center text-slate-500 bg-[#090d16]">
           <MessageSquare className="w-12 h-12 mb-3 opacity-30" />
           <p className="text-sm font-semibold text-slate-300">No conversation selected</p>
-          <p className="text-xs text-slate-500 mt-1">Select a contact from the sidebar to chat</p>
+          <p className="text-xs text-slate-500 mt-1">Select a contact from the sidebar to start chatting</p>
         </div>
       )}
 

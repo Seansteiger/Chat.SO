@@ -60,7 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <aside className="w-80 h-full flex flex-col bg-slate-950/80 border-r border-white/10 shrink-0 select-none">
+    <aside className="w-full md:w-80 h-full flex flex-col bg-slate-950/80 border-r border-white/10 shrink-0 select-none">
       {/* Current User Card */}
       <div className="p-4 border-b border-white/10 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">

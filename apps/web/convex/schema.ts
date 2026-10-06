@@ -23,6 +23,13 @@ export default defineSchema({
     type: v.union(v.literal("SIGNUP_VERIFICATION"), v.literal("PASSWORD_RESET")),
     expiresAt: v.number(),
     used: v.boolean(),
+    pendingData: v.optional(
+      v.object({
+        username: v.string(),
+        displayName: v.string(),
+        passwordHash: v.string(),
+      })
+    ),
   })
     .index("by_email_type", ["email", "type"])
     .index("by_email_code", ["email", "code"]),

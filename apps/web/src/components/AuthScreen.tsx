@@ -21,6 +21,7 @@ export const AuthScreen: React.FC = () => {
     register,
     requestSignupVerification,
     verifyAndRegister,
+    verifySignupByLink,
     requestPasswordReset,
     resetPasswordWithCode,
   } = useAuth();
@@ -38,6 +39,35 @@ export const AuthScreen: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+
+  // Auto-verify if user clicks the one-click link in their email
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const emailParam = params.get('email');
+    const codeParam = params.get('code') || params.get('verifyCode');
+
+    if (action === 'verify' && emailParam && codeParam) {
+      setLoading(true);
+      setError(null);
+      setSuccess('Verifying your email link and signing you in...');
+      verifySignupByLink({ email: emailParam, code: codeParam })
+        .then(() => {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        })
+        .catch((err: any) => {
+          setError(err.message || 'Verification link expired or invalid.');
+          setLoading(false);
+          setSuccess(null);
+        });
+    } else if (action === 'reset' && emailParam && codeParam) {
+      setEmail(emailParam);
+      setOtpCode(codeParam);
+      setMode('forgot-verify');
+      setSuccess('Reset code detected from link! Please enter your new password.');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [verifySignupByLink]);
 
   // 1. Sign In
   const handleSignIn = async (e: React.FormEvent) => {
@@ -78,10 +108,12 @@ export const AuthScreen: React.FC = () => {
       await requestSignupVerification({
         username: cleanUsername,
         email: cleanEmail,
+        displayName: displayName.trim() || cleanUsername,
+        password,
       });
       setMode('verify-signup');
       setOtpCode('');
-      setSuccess(`A 6-digit verification code was sent to ${cleanEmail}. Please check your inbox or spam folder.`);
+      setSuccess(`A verification link and 6-digit code were sent to ${cleanEmail}. Click the link in your email to verify instantly, or enter the code below.`);
     } catch (err: any) {
       setError(err.message || 'Failed to send verification email. Please try again.');
     } finally {
@@ -126,8 +158,10 @@ export const AuthScreen: React.FC = () => {
       await requestSignupVerification({
         username: username.trim().toLowerCase(),
         email: email.trim().toLowerCase(),
+        displayName: displayName.trim() || username.trim(),
+        password,
       });
-      setSuccess(`A new verification code was sent to ${email.trim().toLowerCase()}.`);
+      setSuccess(`A new verification link and code were sent to ${email.trim().toLowerCase()}.`);
     } catch (err: any) {
       setError(err.message || 'Failed to resend code.');
     } finally {
