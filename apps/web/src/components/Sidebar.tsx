@@ -10,7 +10,10 @@ import {
   Clock,
   CircleOff,
   User as UserIcon,
+  Bell,
+  BellOff,
 } from 'lucide-react';
+import { NotificationService } from '../services/notifications.js';
 
 interface SidebarProps {
   users: UserProfile[];
@@ -29,6 +32,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { isInstallable, promptInstall } = usePWAInstall();
   const [searchQuery, setSearchQuery] = useState('');
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
+  const [notificationPerm, setNotificationPerm] = useState<NotificationPermission>(() =>
+    NotificationService.getPermission()
+  );
+
+  const handleToggleNotifications = async () => {
+    const perm = await NotificationService.requestPermission();
+    setNotificationPerm(perm);
+  };
 
   const filteredUsers = users.filter((u) => {
     const q = searchQuery.toLowerCase();
@@ -130,8 +141,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Actions: PWA Install & Profile Settings */}
+        {/* Actions: Notifications, PWA Install & Profile Settings */}
         <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={handleToggleNotifications}
+            title={
+              notificationPerm === 'granted'
+                ? 'Notifications Enabled'
+                : 'Enable Notifications for messages and calls'
+            }
+            className={`p-2 rounded-xl border transition-all ${
+              notificationPerm === 'granted'
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+                : 'hover:bg-white/5 border-white/10 text-slate-400 hover:text-white'
+            }`}
+          >
+            {notificationPerm === 'granted' ? (
+              <Bell className="w-4 h-4" />
+            ) : (
+              <BellOff className="w-4 h-4" />
+            )}
+          </button>
+
           {isInstallable && (
             <button
               type="button"
@@ -168,6 +200,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           />
         </div>
       </div>
+
+      {/* Enable Notifications Banner (Prompt if not granted) */}
+      {notificationPerm !== 'granted' && (
+        <div className="mx-3 my-2 p-2.5 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Bell className="w-4 h-4 text-blue-400 shrink-0" />
+            <p className="text-xs text-slate-300 truncate">Enable notifications</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleNotifications}
+            className="px-2.5 py-1 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg shrink-0 transition-colors shadow-sm shadow-blue-500/20"
+          >
+            Enable
+          </button>
+        </div>
+      )}
 
       {/* Contacts List */}
       <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">

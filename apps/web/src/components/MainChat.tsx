@@ -246,20 +246,21 @@ export const MainChat: React.FC<MainChatProps> = ({
                 key={msg.id || msg.clientMessageId}
                 className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
               >
+                {/* Modern Telegram-style Message Bubble */}
                 <div
-                  className={`max-w-[75%] sm:max-w-[65%] rounded-2xl p-3.5 shadow-sm text-sm ${
+                  className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-2.5 sm:px-4 sm:py-3 shadow-md text-sm transition-all ${
                     isMe
-                      ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-xs'
-                      : 'bg-slate-800/80 border border-white/5 text-slate-100 rounded-bl-xs'
+                      ? 'bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-600 text-white rounded-br-xs border border-blue-400/20 shadow-blue-950/20'
+                      : 'bg-slate-800/90 border border-white/10 text-slate-100 rounded-bl-xs shadow-black/20'
                   }`}
                 >
                   {/* File / Image Attachment */}
                   {msg.attachmentUrl && (
-                    <div className="mb-2.5">
+                    <div className="mb-2">
                       {isImage ? (
                         <div
                           onClick={() => setPreviewImageModal(msg.attachmentUrl || null)}
-                          className="cursor-pointer group relative rounded-xl overflow-hidden border border-white/10 max-h-60"
+                          className="cursor-pointer group relative rounded-xl overflow-hidden border border-white/10 max-h-72"
                         >
                           <img
                             src={msg.attachmentUrl}
@@ -293,32 +294,36 @@ export const MainChat: React.FC<MainChatProps> = ({
                   )}
 
                   {/* Message Text */}
-                  {msg.content && <p className="leading-relaxed break-words">{msg.content}</p>}
+                  {msg.content && (
+                    <p className="leading-relaxed break-words whitespace-pre-wrap select-text">
+                      {msg.content}
+                    </p>
+                  )}
+                </div>
 
-                  {/* Timestamp & Delivery Checkmarks */}
-                  <div
-                    className={`flex items-center justify-end gap-1 text-[10px] mt-1.5 ${
-                      isMe ? 'text-blue-200/80' : 'text-slate-400'
-                    }`}
-                  >
-                    <span>
-                      {new Date(msg.createdAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                {/* External Metadata: Timestamp & Delivery Status underneath the bubble */}
+                <div
+                  className={`flex items-center gap-1.5 text-[11px] mt-1 text-slate-400 select-none ${
+                    isMe ? 'mr-1 justify-end' : 'ml-1 justify-start'
+                  }`}
+                >
+                  <span>
+                    {new Date(msg.createdAt).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                  {isMe && (
+                    <span className="flex items-center">
+                      {msg.status === 'READ' ? (
+                        <CheckCheck className="w-3.5 h-3.5 text-sky-400" />
+                      ) : msg.status === 'DELIVERED' ? (
+                        <CheckCheck className="w-3.5 h-3.5 text-slate-400" />
+                      ) : (
+                        <Check className="w-3.5 h-3.5 text-slate-500" />
+                      )}
                     </span>
-                    {isMe && (
-                      <span className="ml-0.5">
-                        {msg.status === 'READ' ? (
-                          <CheckCheck className="w-3.5 h-3.5 text-emerald-300" />
-                        ) : msg.status === 'DELIVERED' ? (
-                          <CheckCheck className="w-3.5 h-3.5 text-white/80" />
-                        ) : (
-                          <Check className="w-3.5 h-3.5 text-white/60" />
-                        )}
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             );

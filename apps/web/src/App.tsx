@@ -12,6 +12,7 @@ import { IncomingCallDialog } from './components/IncomingCallDialog.js';
 import { ProfileModal } from './components/ProfileModal.js';
 import { MessageSquare } from 'lucide-react';
 import { convex, api as convexApi } from './convex.js';
+import { NotificationService, sound } from './services/notifications.js';
 
 export const AppContent: React.FC = () => {
   const { user: currentUser, isAuthenticated, isLoading } = useAuth();
@@ -126,8 +127,26 @@ export const AppContent: React.FC = () => {
 
     // Chat receive
     const handleChatReceive = (msg: MessageDto) => {
+      // Find sender name for notification
+      const sender = users.find((u) => u.id === msg.senderId);
+      const senderName = sender?.displayName || 'Chat.SO Message';
+
+      // Trigger audio chime and desktop notification
+      NotificationService.notify(senderName, {
+        body: msg.content || (msg.attachmentName ? `Attachment: ${msg.attachmentName}` : 'Sent an attachment'),
+        tag: `chat-${msg.senderId}`,
+        onClick: () => {
+          if (sender) setSelectedUser(sender);
+        },
+      });
+
       if (selectedUser?.id === msg.senderId) {
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id || (m.clientMessageId && m.clientMessageId === msg.clientMessageId))) {
+            return prev;
+          }
+          return [...prev, msg];
+        });
 
         // Mark as read immediately if current chat is active
         socket.emit(SOCKET_EVENTS.CHAT_READ, {
@@ -175,7 +194,19 @@ export const AppContent: React.FC = () => {
       socket.off(SOCKET_EVENTS.CHAT_READ, handleChatRead);
       socket.off(SOCKET_EVENTS.CHAT_TYPING, handleChatTyping);
     };
-  }, [socket, selectedUser, currentUser]);
+  }, [socket, selectedUser, currentUser, users]);
+
+  // Handle incoming call ringtone
+  useEffect(() => {
+    if (webrtc.incomingCall) {
+      sound.startRingtone();
+    } else {
+      sound.stopRingtone();
+    }
+    return () => {
+      sound.stopRingtone();
+    };
+  }, [webrtc.incomingCall]);
 
   // Send message with optimistic update
   const handleSendMessage = (params: {
