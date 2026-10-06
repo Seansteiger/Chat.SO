@@ -9,6 +9,10 @@ interface AuthContextType {
   isLoading: boolean;
   login: (data: LoginInput) => Promise<void>;
   register: (data: RegisterInput) => Promise<void>;
+  requestSignupVerification: (data: { username: string; email: string }) => Promise<void>;
+  verifyAndRegister: (data: RegisterInput & { code: string }) => Promise<void>;
+  requestPasswordReset: (data: { email: string }) => Promise<void>;
+  resetPasswordWithCode: (data: { email: string; code: string; newPassword: string }) => Promise<void>;
   logout: () => void;
   updateProfile: (data: UpdateProfileInput) => Promise<void>;
 }
@@ -63,6 +67,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const requestSignupVerification = async (data: { username: string; email: string }) => {
+    await api.requestSignupVerification(data);
+  };
+
+  const verifyAndRegister = async (data: RegisterInput & { code: string }) => {
+    setIsLoading(true);
+    try {
+      const res = await api.verifyAndRegister(data);
+      setAuthToken(res.token);
+      setTokenState(res.token);
+      setUser(res.user);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const requestPasswordReset = async (data: { email: string }) => {
+    await api.requestPasswordReset(data);
+  };
+
+  const resetPasswordWithCode = async (data: { email: string; code: string; newPassword: string }) => {
+    setIsLoading(true);
+    try {
+      const res = await api.resetPasswordWithCode(data);
+      setAuthToken(res.token);
+      setTokenState(res.token);
+      setUser(res.user);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     setAuthToken(null);
     setTokenState(null);
@@ -83,6 +119,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         register,
+        requestSignupVerification,
+        verifyAndRegister,
+        requestPasswordReset,
+        resetPasswordWithCode,
         logout,
         updateProfile,
       }}

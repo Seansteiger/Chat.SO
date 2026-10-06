@@ -11,10 +11,21 @@ export default defineSchema({
     status: v.union(v.literal("ONLINE"), v.literal("BUSY"), v.literal("OFFLINE")),
     lastSeenAt: v.number(),
     sessionToken: v.optional(v.string()),
+    isEmailVerified: v.optional(v.boolean()),
   })
     .index("by_username", ["username"])
     .index("by_email", ["email"])
     .index("by_sessionToken", ["sessionToken"]),
+
+  verificationCodes: defineTable({
+    email: v.string(),
+    code: v.string(),
+    type: v.union(v.literal("SIGNUP_VERIFICATION"), v.literal("PASSWORD_RESET")),
+    expiresAt: v.number(),
+    used: v.boolean(),
+  })
+    .index("by_email_type", ["email", "type"])
+    .index("by_email_code", ["email", "code"]),
 
   conversations: defineTable({
     participant1: v.id("users"),

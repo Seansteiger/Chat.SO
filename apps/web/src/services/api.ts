@@ -57,6 +57,41 @@ export const api = {
     return { token: res.sessionToken, user: formatConvexUser(res.user) };
   },
 
+  requestSignupVerification: async (data: { username: string; email: string }) => {
+    return await convex.action(convexApi.auth_email.requestSignupVerification, {
+      username: data.username,
+      email: data.email,
+    });
+  },
+
+  verifyAndRegister: async (data: RegisterInput & { code: string }) => {
+    const res = await convex.mutation(convexApi.auth_email.verifyAndRegister, {
+      username: data.username,
+      email: data.email,
+      password: data.password,
+      displayName: data.displayName || data.username,
+      code: data.code,
+    });
+    setAuthToken(res.sessionToken);
+    return { token: res.sessionToken, user: formatConvexUser(res.user) };
+  },
+
+  requestPasswordReset: async (data: { email: string }) => {
+    return await convex.action(convexApi.auth_email.requestPasswordReset, {
+      email: data.email,
+    });
+  },
+
+  resetPasswordWithCode: async (data: { email: string; code: string; newPassword: string }) => {
+    const res = await convex.mutation(convexApi.auth_email.resetPasswordWithCode, {
+      email: data.email,
+      code: data.code,
+      newPassword: data.newPassword,
+    });
+    setAuthToken(res.sessionToken);
+    return { token: res.sessionToken, user: formatConvexUser(res.user) };
+  },
+
   getMe: async () => {
     if (!currentToken) throw new Error('Not logged in');
     const user = await convex.query(convexApi.users.getMe, { sessionToken: currentToken });
