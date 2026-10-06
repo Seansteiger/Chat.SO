@@ -13,6 +13,7 @@ import { ProfileModal } from './components/ProfileModal.js';
 import { MessageSquare } from 'lucide-react';
 import { convex, api as convexApi } from './convex.js';
 import { NotificationService, sound } from './services/notifications.js';
+import { NotificationsPanel } from './components/NotificationsPanel.js';
 
 export const AppContent: React.FC = () => {
   const { user: currentUser, isAuthenticated, isLoading } = useAuth();
@@ -24,6 +25,79 @@ export const AppContent: React.FC = () => {
   const [messages, setMessages] = useState<MessageDto[]>([]);
   const [peerTypingMap, setPeerTypingMap] = useState<Record<string, boolean>>({});
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
+  const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
+  const [lastMessageMap, setLastMessageMap] = useState<
+    Record<string, { content?: string; attachmentName?: string; createdAt: number }>
+  >({});
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+
+  // Sync in-app notification center unread count
+  useEffect(() => {
+    const unsub = NotificationService.subscribe((list) => {
+      setUnreadNotificationsCount(list.filter((n) => !n.read).length);
+    });
+    return () => unsub();
+  }, []);
+
+  // Listen for clicks on notifications in OS Notifications Panel / Action Center
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      const handleSwMsg = (event: MessageEvent) => {
+        if (event.data?.type === 'NOTIFICATION_CLICK' && event.data?.senderId) {
+          const u = users.find((user) => user.id === event.data.senderId);
+          if (u) setSelectedUser(u);
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handleSwMsg);
+      return () => {
+        navigator.serviceWorker.removeEventListener('message', handleSwMsg);
+      };
+    }
+  }, [users]);
+
+  // Reactively watch conversation summaries for real-time WhatsApp-style unread counts & previews
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    let unsub: (() => void) | null = null;
+    try {
+      const watch = (convex as any).watchQuery(
+        convexApi.messages.getUserChatSummaries,
+        { userId: currentUser.id }
+      );
+
+      unsub = watch.onUpdate(() => {
+        const summaries = watch.localQueryResult();
+        if (Array.isArray(summaries)) {
+          const newUnreadMap: Record<string, number> = {};
+          const newLastMsgMap: Record<string, any> = {};
+          let totalUnread = 0;
+
+          summaries.forEach((s: any) => {
+            if (s.otherUserId) {
+              const count = s.otherUserId === selectedUser?.id ? 0 : (s.unreadCount || 0);
+              newUnreadMap[s.otherUserId] = count;
+              totalUnread += count;
+              if (s.lastMessage) {
+                newLastMsgMap[s.otherUserId] = s.lastMessage;
+              }
+            }
+          });
+
+          setUnreadMap(newUnreadMap);
+          setLastMessageMap(newLastMsgMap);
+          NotificationService.updateBadge(totalUnread);
+        }
+      });
+    } catch (err) {
+      console.warn('Convex summaries subscription error:', err);
+    }
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [currentUser?.id, selectedUser?.id]);
 
   // Fetch users on login
   const loadUsers = useCallback(async () => {
@@ -51,6 +125,17 @@ export const AppContent: React.FC = () => {
       setMessages([]);
       return;
     }
+
+    // Mark as read in Convex immediately
+    if (currentUser?.id && selectedUser?.id) {
+      (convex as any).mutation(convexApi.messages.markConversationAsRead, {
+        currentUserId: currentUser.id,
+        peerId: selectedUser.id,
+      }).catch(() => {});
+    }
+
+    // Clear local unread badge for active chat immediately
+    setUnreadMap((prev) => ({ ...prev, [selectedUser.id]: 0 }));
 
     let unsubWatch: (() => void) | null = null;
 
@@ -105,7 +190,7 @@ export const AppContent: React.FC = () => {
     return () => {
       if (unsubWatch) unsubWatch();
     };
-  }, [selectedUser, socket]);
+  }, [selectedUser, socket, currentUser?.id]);
 
   // Socket event listeners
   useEffect(() => {
@@ -135,6 +220,7 @@ export const AppContent: React.FC = () => {
       NotificationService.notify(senderName, {
         body: msg.content || (msg.attachmentName ? `Attachment: ${msg.attachmentName}` : 'Sent an attachment'),
         tag: `chat-${msg.senderId}`,
+        senderId: msg.senderId,
         onClick: () => {
           if (sender) setSelectedUser(sender);
         },
@@ -290,6 +376,10 @@ export const AppContent: React.FC = () => {
           selectedUser={selectedUser}
           onSelectUser={setSelectedUser}
           onOpenProfile={() => setIsProfileModalOpen(true)}
+          unreadMap={unreadMap}
+          lastMessageMap={lastMessageMap}
+          onOpenNotificationsPanel={() => setIsNotificationsPanelOpen(true)}
+          unreadNotificationsCount={unreadNotificationsCount}
         />
       </div>
 
@@ -313,6 +403,20 @@ export const AppContent: React.FC = () => {
           <p className="text-xs text-slate-500 mt-1">Select a contact from the sidebar to start chatting</p>
         </div>
       )}
+
+      {/* In-App Notifications Panel */}
+      <NotificationsPanel
+        isOpen={isNotificationsPanelOpen}
+        onClose={() => setIsNotificationsPanelOpen(false)}
+        onSelectUser={(userId) => {
+          const target = users.find((u) => u.id === userId);
+          if (target) setSelectedUser(target);
+        }}
+        permission={NotificationService.getPermission()}
+        onRequestPermission={async () => {
+          await NotificationService.requestPermission();
+        }}
+      />
 
       {/* WebRTC Video Call Overlay */}
       <VideoCallOverlay

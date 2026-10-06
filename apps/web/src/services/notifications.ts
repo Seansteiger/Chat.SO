@@ -94,8 +94,23 @@ class SoundService {
 
 export const sound = new SoundService();
 
-// Browser Web Notifications
+export interface InAppNotification {
+  id: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  createdAt: number;
+  read: boolean;
+}
+
+// In-app notifications listener type
+type NotificationListener = (notifications: InAppNotification[]) => void;
+
+// Browser Web Notifications & In-App Notification Center
 export class NotificationService {
+  private static notificationsList: InAppNotification[] = [];
+  private static listeners: Set<NotificationListener> = new Set();
+
   public static isSupported(): boolean {
     return typeof window !== 'undefined' && 'Notification' in window;
   }
@@ -108,7 +123,6 @@ export class NotificationService {
   public static async requestPermission(): Promise<NotificationPermission> {
     if (!this.isSupported()) return 'denied';
     try {
-      // Must resume audio on user gesture
       sound.playMessageChime();
       const perm = await Notification.requestPermission();
       return perm;
@@ -117,18 +131,113 @@ export class NotificationService {
     }
   }
 
-  public static notify(title: string, options?: { body?: string; tag?: string; onClick?: () => void }) {
-    // 1. Always play chime sound
+  // Updates tab title and OS app icon badges (Windows taskbar, macOS dock, mobile PWA)
+  public static updateBadge(unreadCount: number) {
+    try {
+      if (typeof document !== 'undefined') {
+        if (unreadCount > 0) {
+          document.title = `(${unreadCount}) Chat.SO`;
+        } else {
+          document.title = 'Chat.SO';
+        }
+      }
+
+      if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator) {
+        if (unreadCount > 0) {
+          (navigator as any).setAppBadge(unreadCount).catch(() => {});
+        } else {
+          (navigator as any).clearAppBadge().catch(() => {});
+        }
+      }
+    } catch {
+      // Ignored
+    }
+  }
+
+  // Subscribe to in-app notification center updates
+  public static subscribe(listener: NotificationListener): () => void {
+    this.listeners.add(listener);
+    listener([...this.notificationsList]);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  public static getNotifications(): InAppNotification[] {
+    return [...this.notificationsList];
+  }
+
+  public static markAllAsRead() {
+    this.notificationsList = this.notificationsList.map((n) => ({ ...n, read: true }));
+    this.notifyListeners();
+  }
+
+  public static clearAll() {
+    this.notificationsList = [];
+    this.notifyListeners();
+  }
+
+  private static notifyListeners() {
+    for (const listener of this.listeners) {
+      listener([...this.notificationsList]);
+    }
+  }
+
+  public static async notify(
+    title: string,
+    options?: {
+      body?: string;
+      tag?: string;
+      senderId?: string;
+      onClick?: () => void;
+    }
+  ) {
+    // 1. Play pleasant two-tone chime sound
     sound.playMessageChime();
 
-    // 2. If desktop notifications permitted and tab not focused, show native OS notification
+    // 2. Add to in-app notifications store
+    const newNotif: InAppNotification = {
+      id: crypto.randomUUID(),
+      senderId: options?.senderId || '',
+      senderName: title,
+      content: options?.body || 'New message on Chat.SO',
+      createdAt: Date.now(),
+      read: false,
+    };
+    this.notificationsList = [newNotif, ...this.notificationsList.slice(0, 49)];
+    this.notifyListeners();
+
+    // 3. Dispatch to OS Notifications Panel / Action Center
     if (this.isSupported() && Notification.permission === 'granted') {
       try {
+        // Try Service Worker showNotification first (persists to OS Notification Center / Action Center)
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.ready;
+          if (reg) {
+            await (reg as any).showNotification(title, {
+              body: options?.body || 'New message on Chat.SO',
+              icon: '/icons/icon-192.svg',
+              badge: '/icons/icon-192.svg',
+              tag: options?.tag || `chat-${options?.senderId || 'general'}`,
+              renotify: true,
+              requireInteraction: true, // Key: Keeps notification in Windows / OS Notifications Panel
+              data: {
+                url: window.location.href,
+                senderId: options?.senderId,
+              },
+            });
+            return;
+          }
+        }
+
+        // Standard desktop notification fallback
         const n = new Notification(title, {
           body: options?.body || 'New message on Chat.SO',
           icon: '/icons/icon-192.svg',
+          badge: '/icons/icon-192.svg',
           tag: options?.tag || 'chatso-message',
-        });
+          requireInteraction: true,
+        } as any);
 
         n.onclick = () => {
           window.focus();
@@ -136,7 +245,7 @@ export class NotificationService {
           n.close();
         };
       } catch {
-        // Notification creation error ignored
+        // Suppressed or closed
       }
     }
   }

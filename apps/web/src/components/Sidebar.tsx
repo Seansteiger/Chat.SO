@@ -20,6 +20,13 @@ interface SidebarProps {
   selectedUser: UserProfile | null;
   onSelectUser: (user: UserProfile) => void;
   onOpenProfile: () => void;
+  unreadMap?: Record<string, number>;
+  lastMessageMap?: Record<
+    string,
+    { content?: string; attachmentName?: string; createdAt: number }
+  >;
+  onOpenNotificationsPanel?: () => void;
+  unreadNotificationsCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -27,6 +34,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectedUser,
   onSelectUser,
   onOpenProfile,
+  unreadMap = {},
+  lastMessageMap = {},
+  onOpenNotificationsPanel,
+  unreadNotificationsCount = 0,
 }) => {
   const { user: currentUser, updateProfile } = useAuth();
   const { isInstallable, promptInstall } = usePWAInstall();
@@ -145,14 +156,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
-            onClick={handleToggleNotifications}
-            title={
-              notificationPerm === 'granted'
-                ? 'Notifications Enabled'
-                : 'Enable Notifications for messages and calls'
-            }
-            className={`p-2 rounded-xl border transition-all ${
-              notificationPerm === 'granted'
+            onClick={() => {
+              if (onOpenNotificationsPanel) {
+                onOpenNotificationsPanel();
+              } else {
+                handleToggleNotifications();
+              }
+            }}
+            title="Notifications Panel"
+            className={`p-2 rounded-xl border transition-all relative ${
+              unreadNotificationsCount > 0
+                ? 'bg-blue-600/20 border-blue-500/40 text-blue-400 hover:bg-blue-600/30'
+                : notificationPerm === 'granted'
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
                 : 'hover:bg-white/5 border-white/10 text-slate-400 hover:text-white'
             }`}
@@ -161,6 +176,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Bell className="w-4 h-4" />
             ) : (
               <BellOff className="w-4 h-4" />
+            )}
+            {unreadNotificationsCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-emerald-500 text-slate-950 font-bold text-[9px] flex items-center justify-center shadow-md animate-pulse">
+                {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+              </span>
             )}
           </button>
 
@@ -228,6 +248,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ) : (
           filteredUsers.map((u) => {
             const isSelected = selectedUser?.id === u.id;
+            const unreadCount = unreadMap[u.id] || 0;
+            const lastMsg = lastMessageMap[u.id];
+            const hasUnread = unreadCount > 0;
+
+            const formatTime = (ts?: number) => {
+              if (!ts) return null;
+              const d = new Date(ts);
+              const now = new Date();
+              if (d.toDateString() === now.toDateString()) {
+                return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              }
+              return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            };
+
+            const formattedTime = formatTime(lastMsg?.createdAt);
+
             return (
               <button
                 key={u.id}
@@ -236,6 +272,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={`w-full p-2.5 rounded-xl flex items-center gap-3 text-left transition-all ${
                   isSelected
                     ? 'bg-blue-600/20 border border-blue-500/30 text-white'
+                    : hasUnread
+                    ? 'bg-slate-900/60 border border-emerald-500/20 hover:bg-slate-900/90 text-slate-100'
                     : 'hover:bg-white/5 text-slate-300'
                 }`}
               >
@@ -256,18 +294,48 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       u.status as UserStatus
                     )}`}
                   />
+                  {hasUnread && (
+                    <span className="absolute -inset-0.5 rounded-xl border border-emerald-500/60 pointer-events-none animate-pulse" />
+                  )}
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-xs text-slate-200 truncate">
+                  <div className="flex items-center justify-between gap-1">
+                    <span
+                      className={`text-xs truncate ${
+                        hasUnread ? 'font-bold text-white' : 'font-medium text-slate-200'
+                      }`}
+                    >
                       {u.displayName}
                     </span>
-                    <span className="text-[10px] text-slate-500 capitalize">
-                      {u.status.toLowerCase()}
+                    <span
+                      className={`text-[10px] tabular-numbers shrink-0 ${
+                        hasUnread
+                          ? 'text-emerald-400 font-semibold'
+                          : 'text-slate-500 capitalize'
+                      }`}
+                    >
+                      {formattedTime || u.status.toLowerCase()}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-400 truncate">@{u.username}</p>
+
+                  <div className="flex items-center justify-between gap-1.5 mt-0.5">
+                    <p
+                      className={`text-[11px] truncate flex-1 ${
+                        hasUnread ? 'text-slate-100 font-medium' : 'text-slate-400'
+                      }`}
+                    >
+                      {lastMsg?.content ||
+                        (lastMsg?.attachmentName ? `📎 ${lastMsg.attachmentName}` : `@${u.username}`)}
+                    </p>
+
+                    {/* WhatsApp-style unread counter badge */}
+                    {hasUnread && (
+                      <span className="min-w-[18px] h-[18px] px-1.5 rounded-full bg-emerald-500 text-slate-950 font-bold text-[10px] flex items-center justify-center shrink-0 shadow-sm shadow-emerald-500/40 animate-in zoom-in-75">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </button>
             );

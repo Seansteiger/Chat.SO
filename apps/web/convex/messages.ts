@@ -87,6 +87,116 @@ export const getMessagesForUserConversations = query({
   },
 });
 
+export const getUserChatSummaries = query({
+  args: {
+    userId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    if (!args.userId) return [];
+
+    const p1 = await ctx.db
+      .query("conversations")
+      .withIndex("by_p1", (q) => q.eq("participant1", args.userId!))
+      .collect();
+
+    const p2 = await ctx.db
+      .query("conversations")
+      .withIndex("by_p2", (q) => q.eq("participant2", args.userId!))
+      .collect();
+
+    const allConvs = [...p1, ...p2];
+    if (allConvs.length === 0) return [];
+
+    allConvs.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+
+    const summaries = [];
+    for (const c of allConvs) {
+      const otherUserId = c.participant1 === args.userId ? c.participant2 : c.participant1;
+
+      // Last message
+      const lastMsg = await ctx.db
+        .query("messages")
+        .withIndex("by_conversation", (q) => q.eq("conversationId", c._id))
+        .order("desc")
+        .first();
+
+      // Count unread messages where sender is not current user and status != 'READ'
+      const unreadCount = (
+        await ctx.db
+          .query("messages")
+          .withIndex("by_conversation", (q) => q.eq("conversationId", c._id))
+          .filter((q) =>
+            q.and(
+              q.neq(q.field("senderId"), args.userId!),
+              q.neq(q.field("status"), "READ")
+            )
+          )
+          .collect()
+      ).length;
+
+      summaries.push({
+        conversationId: c._id,
+        otherUserId,
+        lastMessage: lastMsg
+          ? {
+              id: lastMsg._id,
+              content: lastMsg.content,
+              attachmentName: lastMsg.attachmentName,
+              createdAt: lastMsg.createdAt,
+              senderId: lastMsg.senderId,
+              status: lastMsg.status,
+            }
+          : null,
+        unreadCount,
+      });
+    }
+
+    return summaries;
+  },
+});
+
+export const markConversationAsRead = mutation({
+  args: {
+    currentUserId: v.id("users"),
+    peerId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const conv1 = await ctx.db
+      .query("conversations")
+      .withIndex("by_participants", (q) =>
+        q.eq("participant1", args.currentUserId).eq("participant2", args.peerId)
+      )
+      .first();
+
+    const conv2 = !conv1
+      ? await ctx.db
+          .query("conversations")
+          .withIndex("by_participants", (q) =>
+            q.eq("participant1", args.peerId).eq("participant2", args.currentUserId)
+          )
+          .first()
+      : null;
+
+    const conv = conv1 || conv2;
+    if (!conv) return;
+
+    const unreadMessages = await ctx.db
+      .query("messages")
+      .withIndex("by_conversation", (q) => q.eq("conversationId", conv._id))
+      .filter((q) =>
+        q.and(
+          q.neq(q.field("senderId"), args.currentUserId),
+          q.neq(q.field("status"), "READ")
+        )
+      )
+      .collect();
+
+    for (const msg of unreadMessages) {
+      await ctx.db.patch(msg._id, { status: "READ" });
+    }
+  },
+});
+
 export const sendMessage = mutation({
   args: {
     conversationId: v.id("conversations"),

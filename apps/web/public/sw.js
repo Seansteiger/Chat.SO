@@ -96,3 +96,34 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// 4. Notification click handler: opens or focuses the Chat.SO window when clicked from the Notification Panel / Action Center
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // If a Chat.SO window is already open, focus it and post a message
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          if (event.notification.data?.senderId && 'postMessage' in client) {
+            client.postMessage({
+              type: 'NOTIFICATION_CLICK',
+              senderId: event.notification.data.senderId,
+            });
+          }
+          return client.focus();
+        }
+      }
+      // Otherwise, open a new window
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
+self.addEventListener('notificationclose', (event) => {
+  // Notification dismissed by user or OS
+});
