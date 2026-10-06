@@ -1,0 +1,19 @@
+{
+  "name": "chatso-root",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n \"server,web\" -c \"cyan,magenta\" \"npm run dev -w apps/server\" \"npm run dev -w apps/web\"",
+    "build": "npm run build -w packages/shared && npm run build -w apps/server && npm run build -w apps/web",
+    "test": "npm run test -w apps/server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3"
+  }
+}
