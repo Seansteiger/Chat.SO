@@ -3,7 +3,7 @@
   "framework": "vite",
   "buildCommand": "npm run build:client",
   "outputDirectory": "apps/web/dist",
-  "installCommand": "npm install",
+  "installCommand": "npm install --ignore-scripts",
   "rewrites": [
     {
       "source": "/(.*)",
