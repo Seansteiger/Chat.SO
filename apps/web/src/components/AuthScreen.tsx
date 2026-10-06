@@ -53,8 +53,9 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen h-screen w-full overflow-y-auto flex flex-col items-center justify-start sm:justify-center p-4 py-8 bg-radial from-slate-900 via-[#0a0f1d] to-[#05070e]">
-      <div className="w-full max-w-md my-auto py-4">
+    <div className="fixed inset-0 overflow-y-auto overflow-x-hidden bg-radial from-slate-900 via-[#0a0f1d] to-[#05070e]">
+      <div className="min-h-full w-full flex flex-col items-center justify-start p-4 py-8 sm:py-12">
+        <div className="w-full max-w-md my-auto py-2">
         {/* Brand Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 shadow-xl shadow-indigo-500/20 mb-4 border border-white/10">
@@ -224,5 +225,6 @@ export const AuthScreen: React.FC = () => {
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 };

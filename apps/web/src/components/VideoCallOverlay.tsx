@@ -104,15 +104,18 @@ export const VideoCallOverlay: React.FC<VideoCallOverlayProps> = ({
 
       {/* Video Canvas Area */}
       <div className="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden bg-black">
-        {/* Remote Video Stream (Main View) */}
-        {remoteStream && remoteStream.getVideoTracks().length > 0 ? (
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-          />
-        ) : (
+        {/* Remote Video / Audio Media Stream */}
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          className={`w-full h-full object-cover ${
+            remoteStream && remoteStream.getVideoTracks().length > 0 ? 'block' : 'hidden'
+          }`}
+        />
+
+        {/* Remote Audio Avatar View (shown when remote stream has no video) */}
+        {(!remoteStream || remoteStream.getVideoTracks().length === 0) && (
           <div className="flex flex-col items-center justify-center text-slate-400 p-6">
             <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-3xl font-bold text-white shadow-2xl mb-4">
               {activePeer.name.charAt(0).toUpperCase()}
@@ -127,9 +130,6 @@ export const VideoCallOverlay: React.FC<VideoCallOverlayProps> = ({
             </p>
           </div>
         )}
-
-        {/* Remote Audio Track Fallback (if remote video is absent but audio exists) */}
-        <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
 
         {/* Local Self-View PiP */}
         {!isMinimized && (

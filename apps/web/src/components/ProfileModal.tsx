@@ -65,8 +65,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 glass-panel border border-white/10 shadow-2xl relative my-auto">
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md overflow-y-auto overflow-x-hidden">
+      <div className="min-h-full w-full flex flex-col items-center justify-start p-4 py-8 sm:py-12">
+        <div className="w-full max-w-md my-auto rounded-2xl p-6 glass-panel border border-white/10 shadow-2xl relative">
         <button
           type="button"
           onClick={onClose}
@@ -176,5 +177,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
         </form>
       </div>
     </div>
-  );
+  </div>
+);
 };
