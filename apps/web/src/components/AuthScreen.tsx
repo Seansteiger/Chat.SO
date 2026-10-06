@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth.js';
-import { Sparkles, MessageSquare, Video, ShieldCheck, UserCheck, ArrowRight } from 'lucide-react';
+import { MessageSquare, Video, ShieldCheck, UserCheck, ArrowRight } from 'lucide-react';
 
 export const AuthScreen: React.FC = () => {
   const { login, register } = useAuth();
@@ -181,9 +181,8 @@ export const AuthScreen: React.FC = () => {
 
           {/* Quick Demo Fill Buttons */}
           <div className="mt-6 pt-5 border-t border-white/10">
-            <p className="text-xs text-slate-400 text-center mb-3 font-medium flex items-center justify-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Quick Demo Logins
+            <p className="text-xs text-slate-400 text-center mb-3 font-medium tracking-wide uppercase">
+              Quick Demo Accounts
             </p>
             <div className="grid grid-cols-2 gap-2.5">
               <button
