@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "c:\\Users\\MELVILLE\\Desktop\\Home\\Vibe\\Chat.SO"]
+    },
+    "sqlite": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-sqlite", "--db-path", "c:\\Users\\MELVILLE\\Desktop\\Home\\Vibe\\Chat.SO\\apps\\server\\prisma\\dev.db"]
+    }
+  }
+}
