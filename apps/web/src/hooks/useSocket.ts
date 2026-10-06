@@ -1,53 +1,35 @@
 import { useEffect, useState, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
 import { useAuth } from './useAuth.js';
+import { ConvexSocketBridge } from '../services/convexSocket.js';
 
 export function useSocket() {
-  const { token, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
+  const bridgeRef = useRef<ConvexSocketBridge | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated || !token) {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
+    if (!isAuthenticated || !user) {
+      if (bridgeRef.current) {
+        bridgeRef.current.destroy();
+        bridgeRef.current = null;
         setIsConnected(false);
       }
       return;
     }
 
-    const socket = io('/', {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
-    });
-
-    socketRef.current = socket;
-
-    socket.on('connect', () => {
-      setIsConnected(true);
-    });
-
-    socket.on('disconnect', () => {
-      setIsConnected(false);
-    });
-
-    socket.on('connect_error', (err) => {
-      console.warn('[Socket] Connection error:', err.message);
-      setIsConnected(false);
-    });
+    const bridge = new ConvexSocketBridge(user.id, user.displayName);
+    bridgeRef.current = bridge;
+    setIsConnected(true);
 
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
+      bridge.destroy();
+      bridgeRef.current = null;
       setIsConnected(false);
     };
-  }, [token, isAuthenticated]);
+  }, [user, isAuthenticated]);
 
   return {
-    socket: socketRef.current,
+    socket: bridgeRef.current as any,
     isConnected,
   };
 }

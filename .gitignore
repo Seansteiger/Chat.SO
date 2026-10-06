@@ -8,3 +8,6 @@ apps/server/prisma/dev.db-journal
 apps/server/uploads/
 .DS_Store
 Thumbs.db
+
+.env.local
+.env.prod

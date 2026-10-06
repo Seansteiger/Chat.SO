@@ -7,6 +7,7 @@ import {
   UserProfile,
   MessageDto,
 } from '@chatso/shared';
+import { convex, api as convexApi } from '../convex.js';
 
 let currentToken = localStorage.getItem('chatso_token') || '';
 
@@ -22,71 +23,110 @@ export const setAuthToken = (token: string | null) => {
 
 export const getAuthToken = () => currentToken;
 
-export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {}),
+function formatConvexUser(user: any): UserProfile {
+  return {
+    id: user._id,
+    username: user.username,
+    email: user.email,
+    displayName: user.displayName,
+    avatarUrl: user.avatarUrl || undefined,
+    status: user.status,
+    lastSeenAt: new Date(user.lastSeenAt || Date.now()).toISOString(),
+    createdAt: new Date(user._creationTime || user.createdAt || Date.now()).toISOString(),
   };
-
-  if (currentToken) {
-    headers['Authorization'] = `Bearer ${currentToken}`;
-  }
-
-  const response = await fetch(endpoint, {
-    ...options,
-    headers,
-  });
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(data.error || data.message || `Request failed with status ${response.status}`);
-  }
-
-  return data as T;
 }
 
 export const api = {
-  register: (data: RegisterInput) =>
-    apiRequest<{ token: string; user: UserProfile }>('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  login: (data: LoginInput) =>
-    apiRequest<{ token: string; user: UserProfile }>('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  getMe: () => apiRequest<{ user: UserProfile }>('/api/auth/me'),
-
-  getUsers: () => apiRequest<{ users: UserProfile[] }>('/api/users'),
-
-  updateProfile: (data: UpdateProfileInput) =>
-    apiRequest<{ user: UserProfile }>('/api/users/profile', {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    }),
-
-  getMessages: (peerId: string, cursor?: string, limit: number = 50) => {
-    const params = new URLSearchParams({ limit: limit.toString() });
-    if (cursor) params.append('cursor', cursor);
-    return apiRequest<{
-      conversationId: string;
-      messages: MessageDto[];
-      nextCursor: string | null;
-    }>(`/api/conversations/${peerId}/messages?${params.toString()}`);
+  register: async (data: RegisterInput) => {
+    const res = await convex.mutation(convexApi.users.register, {
+      username: data.username,
+      email: data.email,
+      password: data.password,
+      displayName: data.displayName || data.username,
+    });
+    setAuthToken(res.sessionToken);
+    return { token: res.sessionToken, user: formatConvexUser(res.user) };
   },
 
-  signUploadUrl: (data: SignUploadUrlInput) =>
-    apiRequest<SignUploadUrlResponse>('/api/files/sign', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+  login: async (data: LoginInput) => {
+    const res = await convex.mutation(convexApi.users.login, {
+      usernameOrEmail: data.usernameOrEmail,
+      password: data.password,
+    });
+    setAuthToken(res.sessionToken);
+    return { token: res.sessionToken, user: formatConvexUser(res.user) };
+  },
 
-  getIceServers: () =>
-    apiRequest<{ iceServers: Array<{ urls: string | string[]; username?: string; credential?: string }> }>(
-      '/api/webrtc/ice-servers'
-    ),
+  getMe: async () => {
+    if (!currentToken) throw new Error('Not logged in');
+    const user = await convex.query(convexApi.users.getMe, { sessionToken: currentToken });
+    if (!user) throw new Error('User not found');
+    return { user: formatConvexUser(user) };
+  },
+
+  getUsers: async () => {
+    const users = await convex.query(convexApi.users.listUsers, {});
+    return { users: users.map(formatConvexUser) };
+  },
+
+  updateProfile: async (data: UpdateProfileInput) => {
+    const me = await api.getMe();
+    const updated = await convex.mutation(convexApi.users.updateProfile, {
+      userId: me.user.id as any,
+      displayName: data.displayName,
+      avatarUrl: data.avatarUrl || undefined,
+      status: data.status,
+    });
+    return { user: formatConvexUser(updated) };
+  },
+
+  getMessages: async (peerId: string) => {
+    const me = await api.getMe();
+    const conv = await convex.mutation(convexApi.messages.getOrCreateConversation, {
+      userId1: me.user.id as any,
+      userId2: peerId as any,
+    });
+    if (!conv) throw new Error('Failed to load conversation');
+
+    const msgs = await convex.query(convexApi.messages.listMessages, {
+      conversationId: conv._id,
+    });
+    return {
+      conversationId: conv._id,
+      messages: msgs.map((m: any): MessageDto => ({
+        id: m._id,
+        conversationId: m.conversationId,
+        senderId: m.senderId,
+        clientMessageId: m.clientMessageId,
+        content: m.content,
+        attachmentUrl: m.attachmentUrl,
+        attachmentName: m.attachmentName,
+        attachmentSize: m.attachmentSize,
+        attachmentMime: m.attachmentMime,
+        status: m.status,
+        createdAt: new Date(m.createdAt).toISOString(),
+      })),
+      nextCursor: null,
+    };
+  },
+
+  signUploadUrl: async (data: SignUploadUrlInput): Promise<SignUploadUrlResponse> => {
+    const uploadUrl = await convex.mutation(convexApi.files.generateUploadUrl, {
+      fileSize: data.fileSize,
+    });
+    return {
+      uploadUrl,
+      publicUrl: uploadUrl,
+      expiresInSeconds: 900,
+      fileName: data.fileName,
+      sanitizedKey: data.fileName,
+    };
+  },
+
+  getIceServers: async () => ({
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+    ],
+  }),
 };
