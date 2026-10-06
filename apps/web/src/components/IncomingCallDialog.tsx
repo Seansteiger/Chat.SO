@@ -16,8 +16,8 @@ export const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({
   if (!incomingCall) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="w-full max-w-sm rounded-3xl p-6 glass-panel border border-white/15 shadow-2xl text-center relative overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+      <div className="w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-3xl p-6 glass-panel border border-white/15 shadow-2xl text-center relative my-auto">
         {/* Pulsing ring animation */}
         <div className="w-24 h-24 mx-auto mb-4 relative flex items-center justify-center">
           <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping" />

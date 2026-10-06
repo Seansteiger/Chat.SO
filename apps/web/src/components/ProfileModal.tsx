@@ -65,8 +65,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-2xl p-6 glass-panel border border-white/10 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-6 glass-panel border border-white/10 shadow-2xl relative my-auto">
         <button
           type="button"
           onClick={onClose}

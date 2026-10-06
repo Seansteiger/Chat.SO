@@ -170,7 +170,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Contacts List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
         {filteredUsers.length === 0 ? (
           <div className="text-center py-12 px-4 text-slate-500">
             <UserIcon className="w-8 h-8 mx-auto mb-2 opacity-30" />
