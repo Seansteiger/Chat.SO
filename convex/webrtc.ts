@@ -29,7 +29,11 @@ export const initiateCall = mutation({
 
     for (const call of existingCalls) {
       if (call.state !== "TERMINATED" && call.state !== "REJECTED") {
-        await ctx.db.patch(call._id, { state: "TERMINATED", updatedAt: Date.now() });
+        await ctx.db.patch(call._id, {
+          state: "TERMINATED",
+          endedReason: "missed",
+          updatedAt: Date.now(),
+        });
       }
     }
 
@@ -66,8 +70,12 @@ export const setConnected = mutation({
     callId: v.id("calls"),
   },
   handler: async (ctx, args) => {
+    const call = await ctx.db.get(args.callId);
+    if (!call || call.state === "TERMINATED" || call.state === "REJECTED") return;
+
     await ctx.db.patch(args.callId, {
       state: "CONNECTED",
+      connectedAt: call.connectedAt || Date.now(),
       updatedAt: Date.now(),
     });
   },
@@ -76,10 +84,16 @@ export const setConnected = mutation({
 export const rejectCall = mutation({
   args: {
     callId: v.id("calls"),
+    reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const call = await ctx.db.get(args.callId);
+    if (!call || call.state === "TERMINATED" || call.state === "REJECTED") return;
+
     await ctx.db.patch(args.callId, {
       state: "REJECTED",
+      duration: 0,
+      endedReason: args.reason || "declined",
       updatedAt: Date.now(),
     });
   },
@@ -88,11 +102,23 @@ export const rejectCall = mutation({
 export const endCall = mutation({
   args: {
     callId: v.id("calls"),
+    reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const call = await ctx.db.get(args.callId);
+    if (!call || call.state === "TERMINATED" || call.state === "REJECTED") return;
+
+    const now = Date.now();
+    let duration = 0;
+    if (call.connectedAt) {
+      duration = Math.max(1, Math.round((now - call.connectedAt) / 1000));
+    }
+
     await ctx.db.patch(args.callId, {
       state: "TERMINATED",
-      updatedAt: Date.now(),
+      duration,
+      endedReason: args.reason || (call.connectedAt ? "completed" : "missed"),
+      updatedAt: now,
     });
   },
 });
@@ -138,11 +164,20 @@ export const getActiveCall = query({
       )
       .collect();
 
-    // Find first active call
-    const active = calls.find(
-      (c) => c.state !== "TERMINATED" && c.state !== "REJECTED"
-    );
-    return active || null;
+    const now = Date.now();
+    // Filter active calls, discarding timed-out calls
+    const activeCalls = calls
+      .filter((c) => {
+        if (c.state === "TERMINATED" || c.state === "REJECTED") return false;
+        // Expire ringing calls after 45 seconds
+        if (c.state === "RINGING" && now - c.createdAt > 45 * 1000) return false;
+        // Expire stuck negotiating calls after 30 seconds
+        if (c.state === "NEGOTIATING" && now - c.updatedAt > 30 * 1000) return false;
+        return true;
+      })
+      .sort((a, b) => b.createdAt - a.createdAt);
+
+    return activeCalls[0] || null;
   },
 });
 
@@ -160,5 +195,71 @@ export const getCallSignals = query({
         q.eq("callId", args.callId!).eq("receiverId", args.receiverId!)
       )
       .collect();
+  },
+});
+
+export const getCallLogs = query({
+  args: {
+    userId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    if (!args.userId) return [];
+
+    const callerCalls = await ctx.db
+      .query("calls")
+      .withIndex("by_caller", (q) => q.eq("callerId", args.userId!))
+      .order("desc")
+      .take(40);
+
+    const receiverCalls = await ctx.db
+      .query("calls")
+      .withIndex("by_receiver", (q) => q.eq("receiverId", args.userId!))
+      .order("desc")
+      .take(40);
+
+    const merged = [...callerCalls, ...receiverCalls]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 40);
+
+    return await Promise.all(
+      merged.map(async (call) => {
+        const isCaller = call.callerId === args.userId;
+        const peerId = isCaller ? call.receiverId : call.callerId;
+        const peer = await ctx.db.get(peerId);
+
+        let status: "completed" | "missed" | "declined" | "ongoing" = "completed";
+        if (call.state === "CONNECTED" || call.state === "NEGOTIATING" || call.state === "RINGING") {
+          status = "ongoing";
+        } else if (call.state === "REJECTED") {
+          status = "declined";
+        } else if (!call.connectedAt && (!call.duration || call.duration === 0)) {
+          status = "missed";
+        }
+
+        return {
+          id: call._id,
+          direction: isCaller ? ("outgoing" as const) : ("incoming" as const),
+          isVideo: call.isVideo,
+          status,
+          duration: call.duration || 0,
+          createdAt: call.createdAt,
+          peer: peer
+            ? {
+                id: peer._id,
+                username: peer.username,
+                displayName: peer.displayName,
+                avatarUrl: peer.avatarUrl || null,
+                status: peer.status,
+              }
+            : {
+                id: peerId,
+                username: "user",
+                displayName: isCaller ? "User" : call.callerName,
+                avatarUrl: call.callerAvatar || null,
+                status: "OFFLINE" as const,
+              },
+        };
+      })
+    );
   },
 });

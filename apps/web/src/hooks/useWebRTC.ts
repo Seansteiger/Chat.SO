@@ -27,48 +27,24 @@ export function useWebRTC(socket: Socket | null) {
   const localStreamRef = useRef<MediaStream | null>(null);
   const queuedCandidates = useRef<RTCIceCandidateInit[]>([]);
 
-  // Initialize ringtone sound generator
+  // Persistent refs to eliminate socket listener rebind loops and race conditions
+  const callStateRef = useRef<CallState>('IDLE');
+  const activePeerRef = useRef<ActivePeerInfo | null>(null);
+  const incomingCallRef = useRef<CallIncomingPayload | null>(null);
+  const activeCallIdRef = useRef<string | null>(null);
+
+  // Keep refs synchronized with state
   useEffect(() => {
-    // Web Audio synthesizer for incoming ringtone
-    let ringInterval: number | null = null;
-    let audioCtx: AudioContext | null = null;
-
-    if (callState === 'RINGING') {
-      try {
-        audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const playTone = () => {
-          if (!audioCtx) return;
-          const osc1 = audioCtx.createOscillator();
-          const osc2 = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-
-          osc1.frequency.value = 440; // A4
-          osc2.frequency.value = 480; // High tone
-          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
-
-          osc1.connect(gain);
-          osc2.connect(gain);
-          gain.connect(audioCtx.destination);
-
-          osc1.start();
-          osc2.start();
-          osc1.stop(audioCtx.currentTime + 1.2);
-          osc2.stop(audioCtx.currentTime + 1.2);
-        };
-
-        playTone();
-        ringInterval = window.setInterval(playTone, 2500);
-      } catch (err) {
-        console.warn('AudioContext not allowed yet:', err);
-      }
-    }
-
-    return () => {
-      if (ringInterval) clearInterval(ringInterval);
-      if (audioCtx) audioCtx.close().catch(() => {});
-    };
+    callStateRef.current = callState;
   }, [callState]);
+
+  useEffect(() => {
+    activePeerRef.current = activePeer;
+  }, [activePeer]);
+
+  useEffect(() => {
+    incomingCallRef.current = incomingCall;
+  }, [incomingCall]);
 
   // Cleanup helper
   const teardownCall = useCallback(() => {
@@ -81,6 +57,11 @@ export function useWebRTC(socket: Socket | null) {
       pcRef.current = null;
     }
     queuedCandidates.current = [];
+    activeCallIdRef.current = null;
+    incomingCallRef.current = null;
+    activePeerRef.current = null;
+    callStateRef.current = 'IDLE';
+
     setLocalStream(null);
     setRemoteStream(null);
     setActivePeer(null);
@@ -90,7 +71,7 @@ export function useWebRTC(socket: Socket | null) {
     setCallState('IDLE');
   }, []);
 
-  // Initialize local media
+  // Initialize local media (camera and/or microphone)
   const setupLocalMedia = async (video: boolean): Promise<MediaStream> => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -164,6 +145,7 @@ export function useWebRTC(socket: Socket | null) {
           targetId: targetUserId,
           recipientId: targetUserId,
           targetUserId,
+          callId: activeCallIdRef.current,
           candidate: event.candidate.toJSON(),
         });
       }
@@ -172,6 +154,12 @@ export function useWebRTC(socket: Socket | null) {
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'connected') {
         setCallState('CONNECTED');
+        callStateRef.current = 'CONNECTED';
+        if (socket && activeCallIdRef.current) {
+          socket.emit((SOCKET_EVENTS as any).CALL_CONNECTED, {
+            callId: activeCallIdRef.current,
+          });
+        }
       } else if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
         teardownCall();
       }
@@ -182,20 +170,32 @@ export function useWebRTC(socket: Socket | null) {
 
   // Start outgoing call
   const startCall = async (peerId: string, peerName: string, isVideo: boolean = true) => {
-    if (!socket || callState !== 'IDLE') return;
+    if (!socket || callStateRef.current !== 'IDLE') return;
 
     try {
+      const peerInfo: ActivePeerInfo = { id: peerId, name: peerName, isVideo };
       setCallState('CALLING');
-      setActivePeer({ id: peerId, name: peerName, isVideo });
+      callStateRef.current = 'CALLING';
+      setActivePeer(peerInfo);
+      activePeerRef.current = peerInfo;
+
+      // Pre-acquire camera / microphone immediately on direct user click gesture!
+      try {
+        await setupLocalMedia(isVideo);
+      } catch (mediaErr) {
+        console.warn('[WebRTC] Pre-acquiring media failed:', mediaErr);
+      }
 
       socket.emit(
         SOCKET_EVENTS.CALL_INITIATE,
         { recipientId: peerId, targetUserId: peerId, peerId, isVideo },
-        (res: { success: boolean; error?: string }) => {
+        (res: { success: boolean; callId?: string; error?: string }) => {
           if (!res?.success) {
             console.warn('[WebRTC] Call initiate failed:', res?.error);
             alert(res?.error || 'User is busy or unavailable');
             teardownCall();
+          } else if (res?.callId) {
+            activeCallIdRef.current = res.callId;
           }
         }
       );
@@ -207,21 +207,28 @@ export function useWebRTC(socket: Socket | null) {
 
   // Accept incoming call
   const acceptCall = async () => {
-    if (!socket || !incomingCall) return;
+    const currentIncoming = incomingCallRef.current || incomingCall;
+    if (!socket || !currentIncoming) return;
 
     try {
       setCallState('NEGOTIATING');
-      const callerId = incomingCall.callerId;
-      setActivePeer({
+      callStateRef.current = 'NEGOTIATING';
+      activeCallIdRef.current = (currentIncoming as any).callId || null;
+
+      const callerId = currentIncoming.callerId;
+      const peerInfo: ActivePeerInfo = {
         id: callerId,
-        name: incomingCall.callerName,
-        avatar: incomingCall.callerAvatar,
-        isVideo: incomingCall.isVideo,
-      });
+        name: currentIncoming.callerName,
+        avatar: currentIncoming.callerAvatar,
+        isVideo: currentIncoming.isVideo,
+      };
+      setActivePeer(peerInfo);
+      activePeerRef.current = peerInfo;
       setIncomingCall(null);
+      incomingCallRef.current = null;
 
       // Acquire media & create RTCPeerConnection
-      const stream = await setupLocalMedia(incomingCall.isVideo);
+      const stream = await setupLocalMedia(currentIncoming.isVideo);
       const pc = await createPeerConnection(callerId);
 
       stream.getTracks().forEach((track) => {
@@ -229,7 +236,10 @@ export function useWebRTC(socket: Socket | null) {
       });
 
       // Notify caller of acceptance
-      socket.emit(SOCKET_EVENTS.CALL_ACCEPT, { callerId });
+      socket.emit(SOCKET_EVENTS.CALL_ACCEPT, {
+        callerId,
+        callId: activeCallIdRef.current,
+      });
     } catch (err) {
       console.error('[WebRTC.acceptCall] Error:', err);
       teardownCall();
@@ -238,16 +248,27 @@ export function useWebRTC(socket: Socket | null) {
 
   // Reject incoming call
   const rejectCall = (reason: string = 'declined') => {
-    if (!socket || !incomingCall) return;
-    socket.emit(SOCKET_EVENTS.CALL_REJECT, { callerId: incomingCall.callerId, reason });
+    const currentIncoming = incomingCallRef.current || incomingCall;
+    if (!socket || !currentIncoming) return;
+
+    socket.emit(SOCKET_EVENTS.CALL_REJECT, {
+      callerId: currentIncoming.callerId,
+      callId: (currentIncoming as any).callId || activeCallIdRef.current,
+      reason,
+    });
     setIncomingCall(null);
-    setCallState('IDLE');
+    incomingCallRef.current = null;
+    teardownCall();
   };
 
   // End active call
   const endCall = () => {
-    if (activePeer && socket) {
-      socket.emit(SOCKET_EVENTS.CALL_END, { peerId: activePeer.id });
+    const peer = activePeerRef.current || activePeer;
+    if (peer && socket) {
+      socket.emit(SOCKET_EVENTS.CALL_END, {
+        peerId: peer.id,
+        callId: activeCallIdRef.current,
+      });
     }
     teardownCall();
   };
@@ -274,26 +295,48 @@ export function useWebRTC(socket: Socket | null) {
     }
   };
 
-  // Socket signaling listener bindings
+  // Socket signaling listener bindings - mounted once per socket instance
   useEffect(() => {
     if (!socket) return;
 
     // Incoming Call Invitation
-    socket.on(SOCKET_EVENTS.CALL_INCOMING, (payload: CallIncomingPayload) => {
-      if (callState !== 'IDLE') {
-        // Automatically report busy if already in call
-        socket.emit(SOCKET_EVENTS.CALL_REJECT, { callerId: payload.callerId, reason: 'busy' });
+    const handleCallIncoming = (payload: CallIncomingPayload) => {
+      // If we are already ringing for this call, ignore duplicate event
+      if (
+        incomingCallRef.current &&
+        (incomingCallRef.current as any).callId === (payload as any).callId
+      ) {
         return;
       }
+
+      // If user is currently in another active call, report busy
+      if (callStateRef.current !== 'IDLE' && callStateRef.current !== 'RINGING') {
+        socket.emit(SOCKET_EVENTS.CALL_REJECT, {
+          callerId: payload.callerId,
+          callId: (payload as any).callId,
+          reason: 'busy',
+        });
+        return;
+      }
+
+      activeCallIdRef.current = (payload as any).callId || null;
+      incomingCallRef.current = payload;
       setIncomingCall(payload);
       setCallState('RINGING');
-    });
+      callStateRef.current = 'RINGING';
+    };
 
     // Caller receives acceptance from peer
-    socket.on(SOCKET_EVENTS.CALL_ACCEPT, async (payload: { peerId: string }) => {
+    const handleCallAccept = async (payload: { peerId: string; callId?: string }) => {
       try {
+        if (payload.callId) {
+          activeCallIdRef.current = payload.callId;
+        }
         setCallState('NEGOTIATING');
-        const stream = await setupLocalMedia(activePeer?.isVideo ?? true);
+        callStateRef.current = 'NEGOTIATING';
+
+        const isVideo = activePeerRef.current?.isVideo ?? true;
+        const stream = localStreamRef.current || (await setupLocalMedia(isVideo));
         const pc = await createPeerConnection(payload.peerId);
 
         stream.getTracks().forEach((track) => {
@@ -308,17 +351,25 @@ export function useWebRTC(socket: Socket | null) {
           recipientId: payload.peerId,
           targetUserId: payload.peerId,
           peerId: payload.peerId,
+          callId: activeCallIdRef.current,
           sdp: { type: offer.type, sdp: offer.sdp },
         });
       } catch (err) {
         console.error('[WebRTC] Offer creation error:', err);
         teardownCall();
       }
-    });
+    };
 
     // Receiver receives SDP offer
-    socket.on(SOCKET_EVENTS.CALL_OFFER, async (payload: { callerId: string; sdp: RTCSessionDescriptionInit }) => {
+    const handleCallOffer = async (payload: {
+      callerId: string;
+      callId?: string;
+      sdp: RTCSessionDescriptionInit;
+    }) => {
       try {
+        if (payload.callId) {
+          activeCallIdRef.current = payload.callId;
+        }
         const pc = pcRef.current;
         if (!pc) return;
 
@@ -339,67 +390,97 @@ export function useWebRTC(socket: Socket | null) {
           recipientId: payload.callerId,
           targetUserId: payload.callerId,
           peerId: payload.callerId,
+          callId: activeCallIdRef.current,
           sdp: { type: answer.type, sdp: answer.sdp },
         });
 
         setCallState('CONNECTED');
+        callStateRef.current = 'CONNECTED';
+        if (activeCallIdRef.current) {
+          socket.emit((SOCKET_EVENTS as any).CALL_CONNECTED, {
+            callId: activeCallIdRef.current,
+          });
+        }
       } catch (err) {
         console.error('[WebRTC] Answer creation error:', err);
         teardownCall();
       }
-    });
+    };
 
     // Caller receives SDP answer
-    socket.on(SOCKET_EVENTS.CALL_ANSWER, async (payload: { peerId: string; sdp: RTCSessionDescriptionInit }) => {
+    const handleCallAnswer = async (payload: {
+      peerId: string;
+      callId?: string;
+      sdp: RTCSessionDescriptionInit;
+    }) => {
       try {
+        if (payload.callId) {
+          activeCallIdRef.current = payload.callId;
+        }
         const pc = pcRef.current;
         if (!pc) return;
 
         await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
 
-        // Drain queued ICE candidates
         for (const cand of queuedCandidates.current) {
           await pc.addIceCandidate(new RTCIceCandidate(cand)).catch(console.warn);
         }
         queuedCandidates.current = [];
 
         setCallState('CONNECTED');
+        callStateRef.current = 'CONNECTED';
+        if (activeCallIdRef.current) {
+          socket.emit((SOCKET_EVENTS as any).CALL_CONNECTED, {
+            callId: activeCallIdRef.current,
+          });
+        }
       } catch (err) {
         console.error('[WebRTC] Remote description error:', err);
       }
-    });
+    };
 
     // Trickle ICE candidate handler
-    socket.on(SOCKET_EVENTS.CALL_ICE_CANDIDATE, async (payload: { senderId: string; candidate: RTCIceCandidateInit }) => {
+    const handleCallIceCandidate = async (payload: {
+      senderId: string;
+      candidate: RTCIceCandidateInit;
+    }) => {
       const pc = pcRef.current;
       if (pc && pc.remoteDescription && pc.remoteDescription.type) {
         await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(console.warn);
       } else {
         queuedCandidates.current.push(payload.candidate);
       }
-    });
+    };
 
     // Call Rejected
-    socket.on(SOCKET_EVENTS.CALL_REJECT, (payload: { peerId?: string; reason?: string }) => {
+    const handleCallReject = (payload: { peerId?: string; reason?: string }) => {
       alert(`Call was ${payload.reason || 'declined'}.`);
       teardownCall();
-    });
+    };
 
     // Call Ended
-    socket.on(SOCKET_EVENTS.CALL_END, () => {
+    const handleCallEnd = () => {
       teardownCall();
-    });
+    };
+
+    socket.on(SOCKET_EVENTS.CALL_INCOMING, handleCallIncoming);
+    socket.on(SOCKET_EVENTS.CALL_ACCEPT, handleCallAccept);
+    socket.on(SOCKET_EVENTS.CALL_OFFER, handleCallOffer);
+    socket.on(SOCKET_EVENTS.CALL_ANSWER, handleCallAnswer);
+    socket.on(SOCKET_EVENTS.CALL_ICE_CANDIDATE, handleCallIceCandidate);
+    socket.on(SOCKET_EVENTS.CALL_REJECT, handleCallReject);
+    socket.on(SOCKET_EVENTS.CALL_END, handleCallEnd);
 
     return () => {
-      socket.off(SOCKET_EVENTS.CALL_INCOMING);
-      socket.off(SOCKET_EVENTS.CALL_ACCEPT);
-      socket.off(SOCKET_EVENTS.CALL_OFFER);
-      socket.off(SOCKET_EVENTS.CALL_ANSWER);
-      socket.off(SOCKET_EVENTS.CALL_ICE_CANDIDATE);
-      socket.off(SOCKET_EVENTS.CALL_REJECT);
-      socket.off(SOCKET_EVENTS.CALL_END);
+      socket.off(SOCKET_EVENTS.CALL_INCOMING, handleCallIncoming);
+      socket.off(SOCKET_EVENTS.CALL_ACCEPT, handleCallAccept);
+      socket.off(SOCKET_EVENTS.CALL_OFFER, handleCallOffer);
+      socket.off(SOCKET_EVENTS.CALL_ANSWER, handleCallAnswer);
+      socket.off(SOCKET_EVENTS.CALL_ICE_CANDIDATE, handleCallIceCandidate);
+      socket.off(SOCKET_EVENTS.CALL_REJECT, handleCallReject);
+      socket.off(SOCKET_EVENTS.CALL_END, handleCallEnd);
     };
-  }, [socket, callState, activePeer, incomingCall, teardownCall]);
+  }, [socket, teardownCall]);
 
   return {
     callState,

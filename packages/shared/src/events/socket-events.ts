@@ -18,6 +18,7 @@ export const SOCKET_EVENTS = {
   CALL_OFFER: 'call:offer',
   CALL_ANSWER: 'call:answer',
   CALL_ICE_CANDIDATE: 'call:ice_candidate',
+  CALL_CONNECTED: 'call:connected',
 } as const;
 
 export type SocketEventName = typeof SOCKET_EVENTS[keyof typeof SOCKET_EVENTS];

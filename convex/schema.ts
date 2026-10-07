@@ -80,11 +80,16 @@ export default defineSchema({
       v.literal("REJECTED"),
       v.literal("TERMINATED")
     ),
+    connectedAt: v.optional(v.number()),
+    duration: v.optional(v.number()),
+    endedReason: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_receiver_state", ["receiverId", "state"])
-    .index("by_caller_state", ["callerId", "state"]),
+    .index("by_caller_state", ["callerId", "state"])
+    .index("by_caller", ["callerId", "createdAt"])
+    .index("by_receiver", ["receiverId", "createdAt"]),
 
   callSignals: defineTable({
     callId: v.id("calls"),

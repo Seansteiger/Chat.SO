@@ -12,6 +12,7 @@ export class ConvexSocketBridge {
   private activePeerId: string | null = null;
   private negotiationTriggered: boolean = false;
   private seenSignalIds: Set<string> = new Set();
+  private lastNotifiedCallId: string | null = null;
   public connected: boolean = true;
 
   constructor(userId: string, userName: string) {
@@ -173,6 +174,7 @@ export class ConvexSocketBridge {
           this.activeCallId = call._id;
           this.activePeerId = targetUserId;
           this.negotiationTriggered = false;
+          this.lastNotifiedCallId = call._id;
         }
         if (ack) ack({ success: true, callId: call?._id });
         break;
@@ -189,15 +191,28 @@ export class ConvexSocketBridge {
         break;
       }
 
+      case (SOCKET_EVENTS as any).CALL_CONNECTED: {
+        const callId = payload.callId || this.activeCallId;
+        if (callId) {
+          await convex.mutation(convexApi.webrtc.setConnected, {
+            callId: callId as any,
+          });
+        }
+        if (ack) ack({ success: true });
+        break;
+      }
+
       case SOCKET_EVENTS.CALL_REJECT: {
         const callId = payload.callId || this.activeCallId;
         if (callId) {
           await convex.mutation(convexApi.webrtc.rejectCall, {
             callId: callId as any,
+            reason: payload.reason || 'declined',
           });
           this.activeCallId = null;
           this.activePeerId = null;
           this.negotiationTriggered = false;
+          this.lastNotifiedCallId = null;
         }
         if (ack) ack({ success: true });
         break;
@@ -208,10 +223,12 @@ export class ConvexSocketBridge {
         if (callId) {
           await convex.mutation(convexApi.webrtc.endCall, {
             callId: callId as any,
+            reason: payload.reason || 'ended',
           });
           this.activeCallId = null;
           this.activePeerId = null;
           this.negotiationTriggered = false;
+          this.lastNotifiedCallId = null;
         }
         if (ack) ack({ success: true });
         break;
@@ -279,11 +296,17 @@ export class ConvexSocketBridge {
     });
     const unsubCall = callWatch.onUpdate(() => {
       const activeCall = callWatch.localQueryResult();
-      if (!activeCall) {
+      // If query is undefined (still loading/evaluating), do not drop active call
+      if (activeCall === undefined) {
+        return;
+      }
+
+      if (activeCall === null) {
         if (this.activeCallId) {
           this.activeCallId = null;
           this.activePeerId = null;
           this.negotiationTriggered = false;
+          this.lastNotifiedCallId = null;
           this.trigger(SOCKET_EVENTS.CALL_END, { reason: 'terminated' });
         }
         return;
@@ -294,13 +317,16 @@ export class ConvexSocketBridge {
         activeCall.callerId === this.currentUserId ? activeCall.receiverId : activeCall.callerId;
 
       if (activeCall.receiverId === this.currentUserId && activeCall.state === 'RINGING') {
-        this.trigger(SOCKET_EVENTS.CALL_INCOMING, {
-          callId: activeCall._id,
-          callerId: activeCall.callerId,
-          callerName: activeCall.callerName,
-          callerAvatar: activeCall.callerAvatar,
-          isVideo: activeCall.isVideo,
-        });
+        if (this.lastNotifiedCallId !== activeCall._id) {
+          this.lastNotifiedCallId = activeCall._id;
+          this.trigger(SOCKET_EVENTS.CALL_INCOMING, {
+            callId: activeCall._id,
+            callerId: activeCall.callerId,
+            callerName: activeCall.callerName,
+            callerAvatar: activeCall.callerAvatar,
+            isVideo: activeCall.isVideo,
+          });
+        }
       } else if (activeCall.state === 'NEGOTIATING') {
         // Trigger CALL_ACCEPT on caller so caller generates SDP offer
         if (activeCall.callerId === this.currentUserId && !this.negotiationTriggered) {
@@ -311,15 +337,17 @@ export class ConvexSocketBridge {
           });
         }
       } else if (activeCall.state === 'CONNECTED') {
-        // Connected
+        // Connected call
       } else if (activeCall.state === 'TERMINATED' || activeCall.state === 'REJECTED') {
-        this.trigger(SOCKET_EVENTS.CALL_REJECT, {
+        const reason = activeCall.state === 'REJECTED' ? 'declined' : 'ended';
+        this.trigger(activeCall.state === 'REJECTED' ? SOCKET_EVENTS.CALL_REJECT : SOCKET_EVENTS.CALL_END, {
           peerId: this.activePeerId,
-          reason: activeCall.state.toLowerCase(),
+          reason,
         });
         this.activeCallId = null;
         this.activePeerId = null;
         this.negotiationTriggered = false;
+        this.lastNotifiedCallId = null;
       }
     });
     this.unsubs.push(unsubCall);

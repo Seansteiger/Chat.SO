@@ -380,6 +380,7 @@ export const AppContent: React.FC = () => {
           lastMessageMap={lastMessageMap}
           onOpenNotificationsPanel={() => setIsNotificationsPanelOpen(true)}
           unreadNotificationsCount={unreadNotificationsCount}
+          onStartCall={(user, isVideo) => webrtc.startCall(user.id, user.displayName, isVideo)}
         />
       </div>
 
