@@ -59,6 +59,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
     NotificationService.getPermission()
   );
 
+  const handleTabChange = (tab: 'chats' | 'calls') => {
+    if (tab === activeTab) return;
+    setActiveTab(tab);
+    if (tab === 'calls') {
+      window.history.pushState({ tab: 'calls' }, '', '#calls');
+    } else {
+      if (window.location.hash === '#calls') {
+        window.history.back();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (activeTab === 'calls' && event.state?.tab !== 'calls') {
+        setActiveTab('chats');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeTab]);
+
   // Watch real-time call logs from Convex
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -301,7 +323,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex items-center p-1.5 mx-3 mt-3 bg-slate-900/90 rounded-2xl border border-white/10">
         <button
           type="button"
-          onClick={() => setActiveTab('chats')}
+          onClick={() => handleTabChange('chats')}
           className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
             activeTab === 'chats'
               ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
@@ -318,7 +340,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab('calls')}
+          onClick={() => handleTabChange('calls')}
           className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
             activeTab === 'calls'
               ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'

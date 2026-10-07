@@ -32,6 +32,90 @@ export const AppContent: React.FC = () => {
   >({});
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
 
+  // Synchronize browser history and handle hardware/browser Back button
+  const handleSelectUser = useCallback((u: UserProfile | null) => {
+    setSelectedUser(u);
+    if (u) {
+      if (window.history.state?.chatUserId !== u.id) {
+        window.history.pushState({ view: 'chat', chatUserId: u.id }, '', `#chat=${u.id}`);
+      }
+    } else {
+      if (window.history.state?.chatUserId || window.location.hash.startsWith('#chat')) {
+        window.history.back();
+      }
+    }
+  }, []);
+
+  const handleBackFromChat = useCallback(() => {
+    if (window.history.state?.chatUserId || window.location.hash.startsWith('#chat')) {
+      window.history.back();
+    } else {
+      setSelectedUser(null);
+    }
+  }, []);
+
+  const handleOpenProfileModal = useCallback(() => {
+    window.history.pushState({ view: 'modal', modal: 'profile' }, '', '#profile');
+    setIsProfileModalOpen(true);
+  }, []);
+
+  const handleCloseProfileModal = useCallback(() => {
+    setIsProfileModalOpen(false);
+    if (window.location.hash === '#profile') {
+      window.history.back();
+    }
+  }, []);
+
+  const handleOpenNotificationsPanel = useCallback(() => {
+    window.history.pushState({ view: 'modal', modal: 'notifications' }, '', '#notifications');
+    setIsNotificationsPanelOpen(true);
+  }, []);
+
+  const handleCloseNotificationsPanel = useCallback(() => {
+    setIsNotificationsPanelOpen(false);
+    if (window.location.hash === '#notifications') {
+      window.history.back();
+    }
+  }, []);
+
+  // Listen to popstate (browser back button, mobile back gesture/hardware button)
+  useEffect(() => {
+    if (!window.history.state) {
+      window.history.replaceState({ view: 'root' }, '', window.location.pathname);
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      // 1. If profile modal was open, close it
+      if (isProfileModalOpen) {
+        setIsProfileModalOpen(false);
+        return;
+      }
+
+      // 2. If notifications panel was open, close it
+      if (isNotificationsPanelOpen) {
+        setIsNotificationsPanelOpen(false);
+        return;
+      }
+
+      // 3. Handle chat navigation
+      const state = event.state;
+      if (state?.chatUserId) {
+        const u = users.find((user) => user.id === state.chatUserId);
+        if (u) {
+          setSelectedUser(u);
+        }
+      } else {
+        // Returned to contacts list on mobile or root
+        setSelectedUser(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isProfileModalOpen, isNotificationsPanelOpen, users]);
+
   // Sync in-app notification center unread count
   useEffect(() => {
     const unsub = NotificationService.subscribe((list) => {
@@ -374,11 +458,11 @@ export const AppContent: React.FC = () => {
         <Sidebar
           users={users}
           selectedUser={selectedUser}
-          onSelectUser={setSelectedUser}
-          onOpenProfile={() => setIsProfileModalOpen(true)}
+          onSelectUser={handleSelectUser}
+          onOpenProfile={handleOpenProfileModal}
           unreadMap={unreadMap}
           lastMessageMap={lastMessageMap}
-          onOpenNotificationsPanel={() => setIsNotificationsPanelOpen(true)}
+          onOpenNotificationsPanel={handleOpenNotificationsPanel}
           unreadNotificationsCount={unreadNotificationsCount}
           onStartCall={(user, isVideo) => webrtc.startCall(user.id, user.displayName, isVideo)}
         />
@@ -394,7 +478,7 @@ export const AppContent: React.FC = () => {
             onSendMessage={handleSendMessage}
             onSendTyping={handleSendTyping}
             onStartCall={handleStartCall}
-            onBack={() => setSelectedUser(null)}
+            onBack={handleBackFromChat}
           />
         </div>
       ) : (
@@ -408,10 +492,10 @@ export const AppContent: React.FC = () => {
       {/* In-App Notifications Panel */}
       <NotificationsPanel
         isOpen={isNotificationsPanelOpen}
-        onClose={() => setIsNotificationsPanelOpen(false)}
+        onClose={handleCloseNotificationsPanel}
         onSelectUser={(userId) => {
           const target = users.find((u) => u.id === userId);
-          if (target) setSelectedUser(target);
+          if (target) handleSelectUser(target);
         }}
         permission={NotificationService.getPermission()}
         onRequestPermission={async () => {
@@ -442,7 +526,7 @@ export const AppContent: React.FC = () => {
       {/* Profile Settings Modal */}
       <ProfileModal
         isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
+        onClose={handleCloseProfileModal}
       />
     </div>
   );

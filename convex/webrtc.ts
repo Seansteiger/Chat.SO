@@ -81,6 +81,77 @@ export const setConnected = mutation({
   },
 });
 
+async function insertCallLogInChat(
+  ctx: any,
+  call: any,
+  duration: number,
+  status: "completed" | "missed" | "declined",
+  now: number
+) {
+  const clientMessageId = `call-log-${call._id}`;
+
+  // Prevent duplicate insertion
+  const existing = await ctx.db
+    .query("messages")
+    .withIndex("by_client_id", (q: any) => q.eq("clientMessageId", clientMessageId))
+    .first();
+  if (existing) return;
+
+  // Find or create conversation
+  let conv = await ctx.db
+    .query("conversations")
+    .withIndex("by_participants", (q: any) =>
+      q.eq("participant1", call.callerId).eq("participant2", call.receiverId)
+    )
+    .first();
+
+  if (!conv) {
+    conv = await ctx.db
+      .query("conversations")
+      .withIndex("by_participants", (q: any) =>
+        q.eq("participant1", call.receiverId).eq("participant2", call.callerId)
+      )
+      .first();
+  }
+
+  let convId = conv?._id;
+  if (!convId) {
+    convId = await ctx.db.insert("conversations", {
+      participant1: call.callerId,
+      participant2: call.receiverId,
+      lastMessageAt: now,
+    });
+  }
+
+  const callType = call.isVideo ? "Video call" : "Voice call";
+  let content = "";
+  if (status === "completed" && duration > 0) {
+    const mins = Math.floor(duration / 60);
+    const secs = duration % 60;
+    const durStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    content = `${callType} (${durStr})`;
+  } else if (status === "declined") {
+    content = `Declined ${callType.toLowerCase()}`;
+  } else {
+    content = `Missed ${callType.toLowerCase()}`;
+  }
+
+  await ctx.db.insert("messages", {
+    conversationId: convId,
+    senderId: call.callerId,
+    clientMessageId,
+    content,
+    attachmentUrl: undefined,
+    attachmentName: undefined,
+    attachmentSize: duration,
+    attachmentMime: call.isVideo ? "call/video" : "call/audio",
+    status: "DELIVERED",
+    createdAt: now,
+  });
+
+  await ctx.db.patch(convId, { lastMessageAt: now });
+}
+
 export const rejectCall = mutation({
   args: {
     callId: v.id("calls"),
@@ -90,12 +161,15 @@ export const rejectCall = mutation({
     const call = await ctx.db.get(args.callId);
     if (!call || call.state === "TERMINATED" || call.state === "REJECTED") return;
 
+    const now = Date.now();
     await ctx.db.patch(args.callId, {
       state: "REJECTED",
       duration: 0,
       endedReason: args.reason || "declined",
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
+
+    await insertCallLogInChat(ctx, call, 0, "declined", now);
   },
 });
 
@@ -120,6 +194,14 @@ export const endCall = mutation({
       endedReason: args.reason || (call.connectedAt ? "completed" : "missed"),
       updatedAt: now,
     });
+
+    await insertCallLogInChat(
+      ctx,
+      call,
+      duration,
+      call.connectedAt ? "completed" : "missed",
+      now
+    );
   },
 });
 

@@ -6,6 +6,7 @@ import {
   CallIncomingPayload,
 } from '@chatso/shared';
 import { api } from '../services/api.js';
+import { sound } from '../services/notifications.js';
 
 interface ActivePeerInfo {
   id: string;
@@ -48,6 +49,11 @@ export function useWebRTC(socket: Socket | null) {
 
   // Cleanup helper
   const teardownCall = useCallback(() => {
+    const wasActive = callStateRef.current !== 'IDLE';
+    if (wasActive) {
+      sound.playCallEndTone();
+    }
+
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((track) => track.stop());
       localStreamRef.current = null;

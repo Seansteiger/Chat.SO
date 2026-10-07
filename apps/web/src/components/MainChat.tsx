@@ -4,6 +4,9 @@ import { useAuth } from '../hooks/useAuth.js';
 import { uploadFileDirectly, DirectUploadResult } from '../services/uploader.js';
 import {
   Phone,
+  PhoneIncoming,
+  PhoneOutgoing,
+  PhoneMissed,
   Video,
   Paperclip,
   Send,
@@ -159,6 +162,14 @@ export const MainChat: React.FC<MainChatProps> = ({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const formatCallDuration = (secs?: number | null) => {
+    if (!secs || secs <= 0) return '';
+    const mins = Math.floor(secs / 60);
+    const rem = secs % 60;
+    if (mins === 0) return `${rem}s`;
+    return `${mins}m ${rem}s`;
+  };
+
   return (
     <div className="flex-1 h-full flex flex-col bg-[#090d16] relative overflow-hidden">
       {/* Chat Top Bar */}
@@ -240,6 +251,87 @@ export const MainChat: React.FC<MainChatProps> = ({
           messages.map((msg) => {
             const isMe = msg.senderId === currentUser?.id;
             const isImage = msg.attachmentMime?.startsWith('image/');
+            const isCallLog = msg.attachmentMime?.startsWith('call/');
+            const isVideoCall = msg.attachmentMime === 'call/video';
+            const isMissed = msg.content?.toLowerCase().includes('missed');
+            const isDeclined = msg.content?.toLowerCase().includes('declined');
+
+            if (isCallLog) {
+              return (
+                <div
+                  key={msg.id || msg.clientMessageId}
+                  className={`flex flex-col my-1.5 ${isMe ? 'items-end' : 'items-start'}`}
+                >
+                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-900/90 border border-white/10 shadow-lg max-w-[85%] sm:max-w-[75%] transition-all hover:border-white/20">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        isMissed
+                          ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                          : isDeclined
+                          ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                          : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                      }`}
+                    >
+                      {isVideoCall ? (
+                        <Video className="w-5 h-5" />
+                      ) : isMissed ? (
+                        <PhoneMissed className="w-5 h-5" />
+                      ) : isMe ? (
+                        <PhoneOutgoing className="w-5 h-5" />
+                      ) : (
+                        <PhoneIncoming className="w-5 h-5" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-white">
+                        {isVideoCall ? 'Video Call' : 'Voice Call'}
+                      </p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {isMissed ? (
+                          <span className="text-rose-400 font-medium">
+                            {isMe ? 'Unanswered' : 'Missed call'}
+                          </span>
+                        ) : isDeclined ? (
+                          <span className="text-slate-400">Declined</span>
+                        ) : (
+                          <span className="text-slate-300">
+                            {isMe ? 'Outgoing' : 'Incoming'}{' '}
+                            {msg.attachmentSize && msg.attachmentSize > 0
+                              ? `• ${formatCallDuration(msg.attachmentSize)}`
+                              : ''}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+
+                    {/* 1-Tap Quick Callback Button */}
+                    <button
+                      type="button"
+                      onClick={() => onStartCall(isVideoCall)}
+                      title={isVideoCall ? 'Call back with video' : 'Call back'}
+                      className="p-2.5 rounded-xl bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95 shadow-sm"
+                    >
+                      {isVideoCall ? <Video className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* Metadata underneath */}
+                  <div
+                    className={`flex items-center gap-1.5 text-[10px] mt-1 text-slate-500 select-none ${
+                      isMe ? 'mr-1 justify-end' : 'ml-1 justify-start'
+                    }`}
+                  >
+                    <span>
+                      {new Date(msg.createdAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <div
