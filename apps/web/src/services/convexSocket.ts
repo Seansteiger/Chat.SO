@@ -9,6 +9,8 @@ export class ConvexSocketBridge {
   private currentUserName: string = 'User';
   private unsubs: Array<() => void> = [];
   private activeCallId: string | null = null;
+  private activePeerId: string | null = null;
+  private negotiationTriggered: boolean = false;
   private seenSignalIds: Set<string> = new Set();
   public connected: boolean = true;
 
@@ -148,83 +150,118 @@ export class ConvexSocketBridge {
       }
 
       case SOCKET_EVENTS.CALL_INITIATE: {
-        const call = await convex.mutation(convexApi.webrtc.initiateCall, {
+        const targetUserId = payload.recipientId || payload.targetUserId || payload.peerId;
+        if (!targetUserId) {
+          console.error('[ConvexSocket] CALL_INITIATE missing target user ID in payload:', payload);
+          if (ack) ack({ success: false, error: 'Recipient ID is required' });
+          return;
+        }
+
+        if (targetUserId === this.currentUserId) {
+          if (ack) ack({ success: false, error: 'You cannot call yourself' });
+          return;
+        }
+
+        const call: any = await convex.mutation(convexApi.webrtc.initiateCall, {
           callerId: this.currentUserId as any,
-          receiverId: payload.targetUserId as any,
-          callerName: this.currentUserName,
+          receiverId: targetUserId as any,
+          callerName: this.currentUserName || 'User',
           isVideo: !!payload.isVideo,
         });
+
         if (call) {
           this.activeCallId = call._id;
+          this.activePeerId = targetUserId;
+          this.negotiationTriggered = false;
         }
+        if (ack) ack({ success: true, callId: call?._id });
         break;
       }
 
       case SOCKET_EVENTS.CALL_ACCEPT: {
-        if (this.activeCallId) {
+        const callId = payload.callId || this.activeCallId;
+        if (callId) {
           await convex.mutation(convexApi.webrtc.acceptCall, {
-            callId: this.activeCallId as any,
+            callId: callId as any,
           });
         }
+        if (ack) ack({ success: true });
         break;
       }
 
       case SOCKET_EVENTS.CALL_REJECT: {
-        if (this.activeCallId) {
+        const callId = payload.callId || this.activeCallId;
+        if (callId) {
           await convex.mutation(convexApi.webrtc.rejectCall, {
-            callId: this.activeCallId as any,
+            callId: callId as any,
           });
           this.activeCallId = null;
+          this.activePeerId = null;
+          this.negotiationTriggered = false;
         }
+        if (ack) ack({ success: true });
         break;
       }
 
       case SOCKET_EVENTS.CALL_END: {
-        if (this.activeCallId) {
+        const callId = payload.callId || this.activeCallId;
+        if (callId) {
           await convex.mutation(convexApi.webrtc.endCall, {
-            callId: this.activeCallId as any,
+            callId: callId as any,
           });
           this.activeCallId = null;
+          this.activePeerId = null;
+          this.negotiationTriggered = false;
         }
+        if (ack) ack({ success: true });
         break;
       }
 
       case SOCKET_EVENTS.CALL_OFFER: {
-        if (this.activeCallId && payload.sdp) {
+        const targetId = payload.recipientId || payload.targetUserId || payload.peerId || this.activePeerId;
+        const callId = payload.callId || this.activeCallId;
+        if (callId && payload.sdp && targetId) {
           await convex.mutation(convexApi.webrtc.sendSignal, {
-            callId: this.activeCallId as any,
+            callId: callId as any,
             senderId: this.currentUserId as any,
-            receiverId: payload.targetUserId as any,
+            receiverId: targetId as any,
             type: 'offer',
             data: JSON.stringify(payload.sdp),
           });
         }
+        if (ack) ack({ success: true });
         break;
       }
 
       case SOCKET_EVENTS.CALL_ANSWER: {
-        if (this.activeCallId && payload.sdp) {
+        const targetId = payload.callerId || payload.recipientId || payload.targetUserId || payload.peerId || this.activePeerId;
+        const callId = payload.callId || this.activeCallId;
+        if (callId && payload.sdp && targetId) {
           await convex.mutation(convexApi.webrtc.sendSignal, {
-            callId: this.activeCallId as any,
+            callId: callId as any,
             senderId: this.currentUserId as any,
-            receiverId: payload.targetUserId as any,
+            receiverId: targetId as any,
             type: 'answer',
             data: JSON.stringify(payload.sdp),
           });
         }
+        if (ack) ack({ success: true });
         break;
       }
 
       case SOCKET_EVENTS.CALL_ICE_CANDIDATE: {
-        if (this.activeCallId && payload.candidate) {
+        const targetId = payload.targetId || payload.targetUserId || payload.recipientId || payload.peerId || this.activePeerId;
+        const callId = payload.callId || this.activeCallId;
+        if (callId && payload.candidate && targetId) {
           await convex.mutation(convexApi.webrtc.sendSignal, {
-            callId: this.activeCallId as any,
+            callId: callId as any,
             senderId: this.currentUserId as any,
-            receiverId: payload.targetUserId as any,
+            receiverId: targetId as any,
             type: 'ice_candidate',
             data: JSON.stringify(payload.candidate),
           });
         }
+        if (ack) ack({ success: true });
         break;
       }
 
@@ -245,12 +282,16 @@ export class ConvexSocketBridge {
       if (!activeCall) {
         if (this.activeCallId) {
           this.activeCallId = null;
+          this.activePeerId = null;
+          this.negotiationTriggered = false;
           this.trigger(SOCKET_EVENTS.CALL_END, { reason: 'terminated' });
         }
         return;
       }
 
       this.activeCallId = activeCall._id;
+      this.activePeerId =
+        activeCall.callerId === this.currentUserId ? activeCall.receiverId : activeCall.callerId;
 
       if (activeCall.receiverId === this.currentUserId && activeCall.state === 'RINGING') {
         this.trigger(SOCKET_EVENTS.CALL_INCOMING, {
@@ -261,12 +302,24 @@ export class ConvexSocketBridge {
           isVideo: activeCall.isVideo,
         });
       } else if (activeCall.state === 'NEGOTIATING') {
-        this.trigger(SOCKET_EVENTS.CALL_ACCEPT, { callId: activeCall._id });
+        // Trigger CALL_ACCEPT on caller so caller generates SDP offer
+        if (activeCall.callerId === this.currentUserId && !this.negotiationTriggered) {
+          this.negotiationTriggered = true;
+          this.trigger(SOCKET_EVENTS.CALL_ACCEPT, {
+            callId: activeCall._id,
+            peerId: activeCall.receiverId,
+          });
+        }
       } else if (activeCall.state === 'CONNECTED') {
         // Connected
       } else if (activeCall.state === 'TERMINATED' || activeCall.state === 'REJECTED') {
-        this.trigger(SOCKET_EVENTS.CALL_END, { reason: activeCall.state.toLowerCase() });
+        this.trigger(SOCKET_EVENTS.CALL_REJECT, {
+          peerId: this.activePeerId,
+          reason: activeCall.state.toLowerCase(),
+        });
         this.activeCallId = null;
+        this.activePeerId = null;
+        this.negotiationTriggered = false;
       }
     });
     this.unsubs.push(unsubCall);
@@ -289,12 +342,16 @@ export class ConvexSocketBridge {
             if (s.type === 'offer') {
               this.trigger(SOCKET_EVENTS.CALL_OFFER, {
                 callId: s.callId,
+                callerId: s.senderId,
                 senderId: s.senderId,
+                peerId: s.senderId,
                 sdp: parsed,
               });
             } else if (s.type === 'answer') {
               this.trigger(SOCKET_EVENTS.CALL_ANSWER, {
                 callId: s.callId,
+                peerId: s.senderId,
+                callerId: s.senderId,
                 senderId: s.senderId,
                 sdp: parsed,
               });
@@ -312,7 +369,7 @@ export class ConvexSocketBridge {
       } catch {
         // Query error ignored
       }
-    }, 400);
+    }, 200);
 
     this.unsubs.push(() => clearInterval(signalInterval));
 

@@ -102,11 +102,26 @@ export function useWebRTC(socket: Socket | null) {
       return stream;
     } catch (err) {
       console.warn('[WebRTC] Camera/mic access fallback:', err);
-      // Fallback: Try audio only if video failed
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      localStreamRef.current = stream;
-      setLocalStream(stream);
-      return stream;
+      try {
+        // Fallback: Try audio only if video failed
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        localStreamRef.current = stream;
+        setLocalStream(stream);
+        return stream;
+      } catch (audioErr) {
+        console.warn('[WebRTC] Microphone unavailable, using silent audio fallback:', audioErr);
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+          const ctx = new AudioContextClass();
+          const osc = ctx.createOscillator();
+          const dst = osc.connect(ctx.createMediaStreamDestination()) as any;
+          const dummyStream = dst.stream;
+          localStreamRef.current = dummyStream;
+          setLocalStream(dummyStream);
+          return dummyStream;
+        }
+        throw audioErr;
+      }
     }
   };
 
@@ -147,6 +162,8 @@ export function useWebRTC(socket: Socket | null) {
       if (event.candidate && socket) {
         socket.emit(SOCKET_EVENTS.CALL_ICE_CANDIDATE, {
           targetId: targetUserId,
+          recipientId: targetUserId,
+          targetUserId,
           candidate: event.candidate.toJSON(),
         });
       }
@@ -173,9 +190,10 @@ export function useWebRTC(socket: Socket | null) {
 
       socket.emit(
         SOCKET_EVENTS.CALL_INITIATE,
-        { recipientId: peerId, isVideo },
+        { recipientId: peerId, targetUserId: peerId, peerId, isVideo },
         (res: { success: boolean; error?: string }) => {
           if (!res?.success) {
+            console.warn('[WebRTC] Call initiate failed:', res?.error);
             alert(res?.error || 'User is busy or unavailable');
             teardownCall();
           }
@@ -288,6 +306,8 @@ export function useWebRTC(socket: Socket | null) {
 
         socket.emit(SOCKET_EVENTS.CALL_OFFER, {
           recipientId: payload.peerId,
+          targetUserId: payload.peerId,
+          peerId: payload.peerId,
           sdp: { type: offer.type, sdp: offer.sdp },
         });
       } catch (err) {
@@ -316,6 +336,9 @@ export function useWebRTC(socket: Socket | null) {
 
         socket.emit(SOCKET_EVENTS.CALL_ANSWER, {
           callerId: payload.callerId,
+          recipientId: payload.callerId,
+          targetUserId: payload.callerId,
+          peerId: payload.callerId,
           sdp: { type: answer.type, sdp: answer.sdp },
         });
 

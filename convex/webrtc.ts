@@ -6,10 +6,14 @@ export const initiateCall = mutation({
     callerId: v.id("users"),
     receiverId: v.id("users"),
     callerName: v.string(),
-    callerAvatar: v.optional(v.string()),
+    callerAvatar: v.optional(v.union(v.string(), v.null())),
     isVideo: v.boolean(),
   },
   handler: async (ctx, args) => {
+    if (args.callerId === args.receiverId) {
+      throw new Error("You cannot call yourself.");
+    }
+
     // Terminate any existing active calls for caller or receiver
     const existingCalls = await ctx.db
       .query("calls")
@@ -33,7 +37,7 @@ export const initiateCall = mutation({
       callerId: args.callerId,
       receiverId: args.receiverId,
       callerName: args.callerName,
-      callerAvatar: args.callerAvatar,
+      callerAvatar: args.callerAvatar || undefined,
       isVideo: args.isVideo,
       state: "RINGING",
       createdAt: Date.now(),
