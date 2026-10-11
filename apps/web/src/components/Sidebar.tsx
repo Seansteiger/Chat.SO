@@ -19,9 +19,13 @@ import {
   PhoneMissed,
   PhoneOff,
   Video,
+  MessageSquarePlus,
+  Globe,
+  X,
 } from 'lucide-react';
 import { NotificationService } from '../services/notifications.js';
 import { convex, api as convexApi } from '../convex.js';
+import { api } from '../services/api.js';
 
 interface SidebarProps {
   users: UserProfile[];
@@ -58,6 +62,66 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [notificationPerm, setNotificationPerm] = useState<NotificationPermission>(() =>
     NotificationService.getPermission()
   );
+
+  // Global Directory Search State (inline in search bar)
+  const [directoryResults, setDirectoryResults] = useState<UserProfile[]>([]);
+  const [isSearchingDirectory, setIsSearchingDirectory] = useState(false);
+
+  // "Start New Chat" Modal State
+  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [newChatQuery, setNewChatQuery] = useState('');
+  const [newChatResults, setNewChatResults] = useState<UserProfile[]>([]);
+  const [isSearchingNewChat, setIsSearchingNewChat] = useState(false);
+
+  // Debounced directory search in sidebar
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2 || activeTab !== 'chats') {
+      setDirectoryResults([]);
+      setIsSearchingDirectory(false);
+      return;
+    }
+
+    setIsSearchingDirectory(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.searchUsers(q);
+        const contactedIds = new Set(users.map((u) => u.id));
+        // Exclude users already in the contacted list to prevent duplication
+        setDirectoryResults(res.users.filter((u) => !contactedIds.has(u.id)));
+      } catch (err) {
+        console.error('[Sidebar] Failed to search directory:', err);
+      } finally {
+        setIsSearchingDirectory(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, activeTab, users]);
+
+  // Debounced search inside the New Chat modal
+  useEffect(() => {
+    const q = newChatQuery.trim();
+    if (q.length < 2) {
+      setNewChatResults([]);
+      setIsSearchingNewChat(false);
+      return;
+    }
+
+    setIsSearchingNewChat(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.searchUsers(q);
+        setNewChatResults(res.users);
+      } catch (err) {
+        console.error('[Sidebar] Failed to search in modal:', err);
+      } finally {
+        setIsSearchingNewChat(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [newChatQuery]);
 
   const handleTabChange = (tab: 'chats' | 'calls') => {
     if (tab === activeTab) return;
@@ -129,14 +193,117 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  // Filter contacts by search query
+  // Filter contacted chats by search query (matching name, username, email, phone)
   const filteredUsers = users.filter((u) => {
-    const q = searchQuery.toLowerCase();
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    const cleanDigits = q.replace(/\D/g, '');
+    const phoneDigits = (u.phoneNumber || '').replace(/\D/g, '');
     return (
       u.displayName.toLowerCase().includes(q) ||
-      u.username.toLowerCase().includes(q)
+      u.username.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      (cleanDigits.length >= 4 && phoneDigits.includes(cleanDigits))
     );
   });
+
+  const renderContactItem = (u: UserProfile) => {
+    const isSelected = selectedUser?.id === u.id;
+    const unreadCount = unreadMap[u.id] || 0;
+    const lastMsg = lastMessageMap[u.id];
+    const hasUnread = unreadCount > 0;
+
+    const formatTime = (ts?: number) => {
+      if (!ts) return null;
+      const d = new Date(ts);
+      const now = new Date();
+      if (d.toDateString() === now.toDateString()) {
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    };
+
+    const formattedTime = formatTime(lastMsg?.createdAt);
+
+    return (
+      <button
+        key={u.id}
+        type="button"
+        onClick={() => {
+          onSelectUser(u);
+          if (searchQuery) setSearchQuery('');
+        }}
+        className={`w-full p-2.5 rounded-xl flex items-center gap-3 text-left transition-all ${
+          isSelected
+            ? 'bg-blue-600/20 border border-blue-500/30 text-white'
+            : hasUnread
+            ? 'bg-slate-900/60 border border-emerald-500/20 hover:bg-slate-900/90 text-slate-100'
+            : 'hover:bg-white/5 text-slate-300'
+        }`}
+      >
+        <div className="relative shrink-0">
+          {u.avatarUrl ? (
+            <img
+              src={u.avatarUrl}
+              alt={u.displayName}
+              className="w-10 h-10 rounded-xl object-cover border border-white/10"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center font-bold text-xs text-slate-300">
+              {u.displayName.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <span
+            className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-950 ${getStatusColor(
+              u.status as UserStatus
+            )}`}
+          />
+          {hasUnread && (
+            <span className="absolute -inset-0.5 rounded-xl border border-emerald-500/60 pointer-events-none animate-pulse" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-1">
+            <span
+              className={`text-xs truncate ${
+                hasUnread ? 'font-bold text-white' : 'font-medium text-slate-200'
+              }`}
+            >
+              {u.displayName}
+            </span>
+            <span
+              className={`text-[10px] tabular-numbers shrink-0 ${
+                hasUnread
+                  ? 'text-emerald-400 font-semibold'
+                  : 'text-slate-500 capitalize'
+              }`}
+            >
+              {formattedTime || u.status.toLowerCase()}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between gap-1.5 mt-0.5">
+            <p
+              className={`text-[11px] truncate flex-1 ${
+                hasUnread ? 'text-slate-100 font-medium' : 'text-slate-400'
+              }`}
+            >
+              {lastMsg?.content ||
+                (lastMsg?.attachmentName ? `📎 ${lastMsg.attachmentName}` : `@${u.username}`)}
+            </p>
+
+            {/* WhatsApp-style unread counter badge */}
+            {hasUnread && (
+              <span className="min-w-[18px] h-[18px] px-1.5 rounded-full bg-emerald-500 text-slate-950 font-bold text-[10px] flex items-center justify-center shrink-0 shadow-sm shadow-emerald-500/40 animate-in zoom-in-75">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </div>
+        </div>
+      </button>
+    );
+  };
 
   // Filter call logs by search query
   const filteredCallLogs = callLogs.filter((c) => {
@@ -264,8 +431,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Actions: Notifications, PWA Install & Profile Settings */}
+        {/* Actions: Start New Chat, Notifications, PWA Install & Profile Settings */}
         <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsNewChatModalOpen(true)}
+            title="Start New Chat"
+            className="p-2 rounded-xl bg-blue-600/15 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 hover:text-white transition-all text-xs flex items-center justify-center shadow-sm"
+          >
+            <MessageSquarePlus className="w-4 h-4" />
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -365,9 +541,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={activeTab === 'chats' ? 'Search contacts...' : 'Search call logs...'}
-            className="w-full pl-9 pr-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+            placeholder={
+              activeTab === 'chats'
+                ? 'Search chats or find by @user, email, phone...'
+                : 'Search call logs...'
+            }
+            className="w-full pl-9 pr-8 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-white p-0.5 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -391,106 +580,123 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Content Area: Chats List OR Calls History */}
       {activeTab === 'chats' ? (
         <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
-          {filteredUsers.length === 0 ? (
-            <div className="text-center py-12 px-4 text-slate-500">
-              <UserIcon className="w-8 h-8 mx-auto mb-2 opacity-30" />
-              <p className="text-xs">No contacts found</p>
-            </div>
-          ) : (
-            filteredUsers.map((u) => {
-              const isSelected = selectedUser?.id === u.id;
-              const unreadCount = unreadMap[u.id] || 0;
-              const lastMsg = lastMessageMap[u.id];
-              const hasUnread = unreadCount > 0;
+          {searchQuery.trim().length > 0 ? (
+            /* Search Mode: Contacted Matches + Directory Matches */
+            <>
+              {/* Contacted Chats Matching Search */}
+              {filteredUsers.length > 0 && (
+                <div className="mb-2">
+                  <div className="px-2 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Recent Chats ({filteredUsers.length})
+                  </div>
+                  {filteredUsers.map(renderContactItem)}
+                </div>
+              )}
 
-              const formatTime = (ts?: number) => {
-                if (!ts) return null;
-                const d = new Date(ts);
-                const now = new Date();
-                if (d.toDateString() === now.toDateString()) {
-                  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                }
-                return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-              };
-
-              const formattedTime = formatTime(lastMsg?.createdAt);
-
-              return (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => onSelectUser(u)}
-                  className={`w-full p-2.5 rounded-xl flex items-center gap-3 text-left transition-all ${
-                    isSelected
-                      ? 'bg-blue-600/20 border border-blue-500/30 text-white'
-                      : hasUnread
-                      ? 'bg-slate-900/60 border border-emerald-500/20 hover:bg-slate-900/90 text-slate-100'
-                      : 'hover:bg-white/5 text-slate-300'
-                  }`}
-                >
-                  <div className="relative shrink-0">
-                    {u.avatarUrl ? (
-                      <img
-                        src={u.avatarUrl}
-                        alt={u.displayName}
-                        className="w-10 h-10 rounded-xl object-cover border border-white/10"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center font-bold text-xs text-slate-300">
-                        {u.displayName.charAt(0).toUpperCase()}
+              {/* Global Directory Matches */}
+              {directoryResults.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-white/5">
+                  <div className="px-2 py-1 text-[11px] font-semibold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Global Directory ({directoryResults.length})</span>
+                  </div>
+                  {directoryResults.map((u) => (
+                    <div
+                      key={u.id}
+                      onClick={() => {
+                        onSelectUser(u);
+                        setSearchQuery('');
+                      }}
+                      className="w-full p-2.5 my-1 rounded-xl bg-slate-900/50 hover:bg-blue-600/15 border border-white/5 hover:border-blue-500/30 flex items-center justify-between gap-3 text-left transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="relative shrink-0">
+                          {u.avatarUrl ? (
+                            <img
+                              src={u.avatarUrl}
+                              alt={u.displayName}
+                              className="w-10 h-10 rounded-xl object-cover border border-white/10"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 border border-white/10 flex items-center justify-center font-bold text-xs text-white">
+                              {u.displayName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span
+                            className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-950 ${getStatusColor(
+                              u.status as UserStatus
+                            )}`}
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-white group-hover:text-blue-400 transition-colors truncate">
+                            {u.displayName}
+                          </p>
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate mt-0.5">
+                            <span>@{u.username}</span>
+                            {u.phoneNumber && (
+                              <>
+                                <span>•</span>
+                                <span className="text-slate-400">{u.phoneNumber}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    )}
-                    <span
-                      className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-950 ${getStatusColor(
-                        u.status as UserStatus
-                      )}`}
-                    />
-                    {hasUnread && (
-                      <span className="absolute -inset-0.5 rounded-xl border border-emerald-500/60 pointer-events-none animate-pulse" />
-                    )}
-                  </div>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <span
-                        className={`text-xs truncate ${
-                          hasUnread ? 'font-bold text-white' : 'font-medium text-slate-200'
-                        }`}
+                      <button
+                        type="button"
+                        className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-semibold shrink-0 transition-colors shadow-sm shadow-blue-500/20"
                       >
-                        {u.displayName}
-                      </span>
-                      <span
-                        className={`text-[10px] tabular-numbers shrink-0 ${
-                          hasUnread
-                            ? 'text-emerald-400 font-semibold'
-                            : 'text-slate-500 capitalize'
-                        }`}
-                      >
-                        {formattedTime || u.status.toLowerCase()}
-                      </span>
+                        Message
+                      </button>
                     </div>
+                  ))}
+                </div>
+              )}
 
-                    <div className="flex items-center justify-between gap-1.5 mt-0.5">
-                      <p
-                        className={`text-[11px] truncate flex-1 ${
-                          hasUnread ? 'text-slate-100 font-medium' : 'text-slate-400'
-                        }`}
-                      >
-                        {lastMsg?.content ||
-                          (lastMsg?.attachmentName ? `📎 ${lastMsg.attachmentName}` : `@${u.username}`)}
-                      </p>
+              {/* Loading Indicator */}
+              {isSearchingDirectory && (
+                <div className="flex items-center justify-center py-4 text-xs text-slate-400 gap-2">
+                  <div className="w-3.5 h-3.5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                  <span>Searching directory...</span>
+                </div>
+              )}
 
-                      {/* WhatsApp-style unread counter badge */}
-                      {hasUnread && (
-                        <span className="min-w-[18px] h-[18px] px-1.5 rounded-full bg-emerald-500 text-slate-950 font-bold text-[10px] flex items-center justify-center shrink-0 shadow-sm shadow-emerald-500/40 animate-in zoom-in-75">
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+              {/* No Results at all */}
+              {filteredUsers.length === 0 && directoryResults.length === 0 && !isSearchingDirectory && (
+                <div className="text-center py-12 px-4 text-slate-500">
+                  <Search className="w-8 h-8 mx-auto mb-2 opacity-30 text-blue-400" />
+                  <p className="text-xs text-slate-300 font-medium">No users found for &ldquo;{searchQuery}&rdquo;</p>
+                  <p className="text-[11px] text-slate-500 mt-1 max-w-xs mx-auto">
+                    Try searching for their exact @username, full email address, or cellphone number.
+                  </p>
+                </div>
+              )}
+            </>
+          ) : (
+            /* Normal Mode: When not searching */
+            users.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600/20 to-indigo-600/20 border border-blue-500/30 flex items-center justify-center mb-3 shadow-lg shadow-blue-500/10">
+                  <MessageSquarePlus className="w-6 h-6 text-blue-400" />
+                </div>
+                <h3 className="text-xs font-bold text-white mb-1">No Conversations Yet</h3>
+                <p className="text-[11px] text-slate-400 max-w-xs mb-4">
+                  Chat.SO keeps your directory private. Search for friends by username, email, or cellphone number to start chatting.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsNewChatModalOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-2 shadow-md shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <MessageSquarePlus className="w-3.5 h-3.5" />
+                  <span>Start New Chat</span>
                 </button>
-              );
-            })
+              </div>
+            ) : (
+              users.map(renderContactItem)
+            )
           )}
         </div>
       ) : (
@@ -604,6 +810,157 @@ export const Sidebar: React.FC<SidebarProps> = ({
               );
             })
           )}
+        </div>
+      )}
+
+      {/* Start New Chat Modal */}
+      {isNewChatModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl glass-panel border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                  <MessageSquarePlus className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Start New Chat</h3>
+                  <p className="text-[11px] text-slate-400">Search by username, email, or cellphone</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsNewChatModalOpen(false);
+                  setNewChatQuery('');
+                  setNewChatResults([]);
+                }}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Search Input Box */}
+            <div className="p-4 border-b border-white/5 bg-slate-900/40">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={newChatQuery}
+                  onChange={(e) => setNewChatQuery(e.target.value)}
+                  placeholder="Enter @username, email, or cellphone..."
+                  className="w-full pl-9 pr-9 py-2 bg-slate-900/80 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+                />
+                {newChatQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setNewChatQuery('')}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-white p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Suggestions / Guide Chips */}
+              <div className="flex flex-wrap gap-1.5 mt-2.5 text-[11px] text-slate-400">
+                <span className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-slate-300">
+                  @username
+                </span>
+                <span className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-slate-300">
+                  user@email.com
+                </span>
+                <span className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-slate-300">
+                  +27... cellphone
+                </span>
+              </div>
+            </div>
+
+            {/* Results List */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-[160px]">
+              {isSearchingNewChat ? (
+                <div className="flex items-center justify-center py-12 text-xs text-slate-400 gap-2">
+                  <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                  <span>Searching directory...</span>
+                </div>
+              ) : newChatQuery.trim().length >= 2 ? (
+                newChatResults.length === 0 ? (
+                  <div className="text-center py-10 px-4 text-slate-500">
+                    <UserIcon className="w-8 h-8 mx-auto mb-2 opacity-30 text-blue-400" />
+                    <p className="text-xs text-slate-300 font-medium">No users found</p>
+                    <p className="text-[11px] text-slate-500 mt-1 max-w-xs mx-auto">
+                      Could not find anyone matching &ldquo;{newChatQuery}&rdquo;. Check the username, email, or cellphone number and try again.
+                    </p>
+                  </div>
+                ) : (
+                  newChatResults.map((u) => (
+                    <div
+                      key={u.id}
+                      onClick={() => {
+                        onSelectUser(u);
+                        setIsNewChatModalOpen(false);
+                        setNewChatQuery('');
+                        setNewChatResults([]);
+                      }}
+                      className="p-3 rounded-xl bg-slate-900/60 hover:bg-blue-600/15 border border-white/10 hover:border-blue-500/30 cursor-pointer flex items-center justify-between gap-3 transition-all group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="relative shrink-0">
+                          {u.avatarUrl ? (
+                            <img
+                              src={u.avatarUrl}
+                              alt={u.displayName}
+                              className="w-10 h-10 rounded-xl object-cover border border-white/10"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 border border-white/10 flex items-center justify-center font-bold text-xs text-white">
+                              {u.displayName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span
+                            className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-950 ${getStatusColor(
+                              u.status as UserStatus
+                            )}`}
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-white group-hover:text-blue-400 transition-colors truncate">
+                            {u.displayName}
+                          </p>
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate mt-0.5">
+                            <span>@{u.username}</span>
+                            {u.phoneNumber && (
+                              <>
+                                <span>•</span>
+                                <span className="text-slate-400">{u.phoneNumber}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium shrink-0 transition-colors shadow-sm shadow-blue-500/20"
+                      >
+                        Message
+                      </button>
+                    </div>
+                  ))
+                )
+              ) : (
+                <div className="text-center py-10 px-4 text-slate-500">
+                  <Search className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-xs text-slate-400">Search for anyone on Chat.SO</p>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Enter at least 2 characters to find contacts by username, email, or cellphone number.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </aside>

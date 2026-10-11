@@ -7,14 +7,16 @@ export const UpdateProfileSchema = z.object({
   displayName: z.string().min(1).max(50).optional(),
   avatarUrl: z.string().url().max(1000).nullable().optional(),
   status: UserStatusEnum.optional(),
+  phoneNumber: z.string().max(30).nullable().optional(),
 });
 
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
 
 export const UserProfileSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
   username: z.string(),
   email: z.string().email(),
+  phoneNumber: z.string().nullable().optional(),
   displayName: z.string(),
   avatarUrl: z.string().nullable().optional(),
   status: UserStatusEnum,

@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { UserStatus, MAX_FILE_SIZE_BYTES } from '@chatso/shared';
 import { useAuth } from '../hooks/useAuth.js';
 import { uploadFileDirectly } from '../services/uploader.js';
-import { X, Camera, LogOut, Check, AlertCircle } from 'lucide-react';
+import { X, Camera, LogOut, Check, AlertCircle, Phone } from 'lucide-react';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -12,6 +12,7 @@ interface ProfileModalProps {
 export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const { user, updateProfile, logout } = useAuth();
   const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
   const [status, setStatus] = useState<UserStatus>((user?.status as UserStatus) || 'ONLINE');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatarUrl || null);
   const [isUploading, setIsUploading] = useState(false);
@@ -54,6 +55,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
         displayName: displayName.trim(),
         avatarUrl,
         status,
+        phoneNumber: phoneNumber.trim() || null,
       });
       setSuccessMessage('Profile updated successfully!');
       setTimeout(() => {
@@ -142,6 +144,26 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               onChange={(e) => setDisplayName(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium text-slate-300">Cellphone Number</label>
+              <span className="text-[10px] text-slate-400">Optional</span>
+            </div>
+            <div className="relative">
+              <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="+27 82 123 4567"
+                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Friends can discover and message you using your cellphone number.
+            </p>
           </div>
 
           <div>

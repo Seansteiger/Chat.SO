@@ -5,6 +5,7 @@ export default defineSchema({
   users: defineTable({
     username: v.string(),
     email: v.string(),
+    phoneNumber: v.optional(v.string()),
     displayName: v.string(),
     passwordHash: v.string(),
     avatarUrl: v.optional(v.string()),
@@ -15,6 +16,7 @@ export default defineSchema({
   })
     .index("by_username", ["username"])
     .index("by_email", ["email"])
+    .index("by_phoneNumber", ["phoneNumber"])
     .index("by_sessionToken", ["sessionToken"]),
 
   verificationCodes: defineTable({

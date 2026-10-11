@@ -28,6 +28,7 @@ function formatConvexUser(user: any): UserProfile {
     id: user._id,
     username: user.username,
     email: user.email,
+    phoneNumber: user.phoneNumber || undefined,
     displayName: user.displayName,
     avatarUrl: user.avatarUrl || undefined,
     status: user.status,
@@ -116,8 +117,36 @@ export const api = {
   },
 
   getUsers: async () => {
-    const users = await convex.query(convexApi.users.listUsers, {});
+    try {
+      const me = await api.getMe();
+      const users = await convex.query(convexApi.users.listContactedUsers, {
+        currentUserId: me.user.id as any,
+      });
+      return { users: users.map(formatConvexUser) };
+    } catch {
+      return { users: [] };
+    }
+  },
+
+  getContactedUsers: async () => {
+    const me = await api.getMe();
+    const users = await convex.query(convexApi.users.listContactedUsers, {
+      currentUserId: me.user.id as any,
+    });
     return { users: users.map(formatConvexUser) };
+  },
+
+  searchUsers: async (queryStr: string) => {
+    try {
+      const me = await api.getMe();
+      const users = await convex.query(convexApi.users.searchUsers, {
+        query: queryStr,
+        currentUserId: me.user.id as any,
+      });
+      return { users: users.map(formatConvexUser) };
+    } catch {
+      return { users: [] };
+    }
   },
 
   updateProfile: async (data: UpdateProfileInput) => {
@@ -127,6 +156,7 @@ export const api = {
       displayName: data.displayName,
       avatarUrl: data.avatarUrl || undefined,
       status: data.status,
+      phoneNumber: data.phoneNumber || undefined,
     });
     return { user: formatConvexUser(updated) };
   },

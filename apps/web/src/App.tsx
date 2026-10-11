@@ -36,6 +36,13 @@ export const AppContent: React.FC = () => {
   const handleSelectUser = useCallback((u: UserProfile | null) => {
     setSelectedUser(u);
     if (u) {
+      // Ensure newly searched user is immediately present in users list
+      setUsers((prev) => {
+        if (!prev.some((existing) => existing.id === u.id)) {
+          return [u, ...prev];
+        }
+        return prev;
+      });
       if (window.history.state?.chatUserId !== u.id) {
         window.history.pushState({ view: 'chat', chatUserId: u.id }, '', `#chat=${u.id}`);
       }
@@ -183,17 +190,59 @@ export const AppContent: React.FC = () => {
     };
   }, [currentUser?.id, selectedUser?.id]);
 
-  // Fetch users on login
+  // Reactively watch contacted users list from Convex in real-time
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    let unsub: (() => void) | null = null;
+    try {
+      const watch = (convex as any).watchQuery(
+        convexApi.users.listContactedUsers,
+        { currentUserId: currentUser.id }
+      );
+
+      unsub = watch.onUpdate(() => {
+        const contacted = watch.localQueryResult();
+        if (Array.isArray(contacted)) {
+          const formatted = contacted.map((u: any): UserProfile => ({
+            id: u._id,
+            username: u.username,
+            email: u.email,
+            phoneNumber: u.phoneNumber || undefined,
+            displayName: u.displayName,
+            avatarUrl: u.avatarUrl || undefined,
+            status: u.status,
+            lastSeenAt: new Date(u.lastSeenAt || Date.now()).toISOString(),
+            createdAt: new Date(u._creationTime || u.createdAt || Date.now()).toISOString(),
+          }));
+
+          setUsers(
+            selectedUser && !formatted.some((u) => u.id === selectedUser.id)
+              ? [selectedUser, ...formatted]
+              : formatted
+          );
+        }
+      });
+    } catch (err) {
+      console.warn('Convex contacted users watch error:', err);
+    }
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [currentUser?.id, selectedUser]);
+
+  // Fetch contacted users on login
   const loadUsers = useCallback(async () => {
     try {
-      const res = await api.getUsers();
+      const res = await api.getContactedUsers();
       setUsers(res.users);
-      // Auto-select first user on desktop if none selected
+      // Auto-select first contacted user on desktop if none selected
       if (!selectedUser && res.users.length > 0 && typeof window !== 'undefined' && window.innerWidth >= 768) {
         setSelectedUser(res.users[0]);
       }
     } catch (err) {
-      console.error('[App] Failed to load users:', err);
+      console.error('[App] Failed to load contacted users:', err);
     }
   }, [selectedUser]);
 
@@ -482,10 +531,14 @@ export const AppContent: React.FC = () => {
           />
         </div>
       ) : (
-        <div className="hidden md:flex flex-1 flex-col items-center justify-center text-slate-500 bg-[#090d16]">
-          <MessageSquare className="w-12 h-12 mb-3 opacity-30" />
-          <p className="text-sm font-semibold text-slate-300">No conversation selected</p>
-          <p className="text-xs text-slate-500 mt-1">Select a contact from the sidebar to start chatting</p>
+        <div className="hidden md:flex flex-1 flex-col items-center justify-center text-slate-500 bg-[#090d16] p-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center mb-4 text-blue-400">
+            <MessageSquare className="w-8 h-8 opacity-75" />
+          </div>
+          <p className="text-base font-bold text-slate-200">No conversation selected</p>
+          <p className="text-xs text-slate-400 mt-1 max-w-sm">
+            Select a contact from the sidebar or search by @username, email, or cellphone number to start chatting.
+          </p>
         </div>
       )}
 
