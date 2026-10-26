@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-export const UserStatusEnum = z.enum(['ONLINE', 'BUSY', 'OFFLINE']);
+export const UserStatusEnum = z.enum([
+  'ONLINE',
+  'BUSY',
+  'OFFLINE',
+  'LOW_BATTERY',
+  'DEEP_FOCUS',
+]);
 export type UserStatus = z.infer<typeof UserStatusEnum>;
 
 export const UpdateProfileSchema = z.object({
@@ -8,6 +14,10 @@ export const UpdateProfileSchema = z.object({
   avatarUrl: z.string().url().max(1000).nullable().optional(),
   status: UserStatusEnum.optional(),
   phoneNumber: z.string().max(30).nullable().optional(),
+  bio: z.string().max(250).optional(),
+  sendReadReceipts: z.boolean().optional(),
+  sendTypingIndicators: z.boolean().optional(),
+  allowCalls: z.boolean().optional(),
 });
 
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
@@ -20,6 +30,10 @@ export const UserProfileSchema = z.object({
   displayName: z.string(),
   avatarUrl: z.string().nullable().optional(),
   status: UserStatusEnum,
+  bio: z.string().nullable().optional(),
+  sendReadReceipts: z.boolean().optional(),
+  sendTypingIndicators: z.boolean().optional(),
+  allowCalls: z.boolean().optional(),
   lastSeenAt: z.string().or(z.date()),
   createdAt: z.string().or(z.date()),
 });

@@ -23,7 +23,7 @@ export const setAuthToken = (token: string | null) => {
 
 export const getAuthToken = () => currentToken;
 
-function formatConvexUser(user: any): UserProfile {
+export function formatConvexUser(user: any): UserProfile {
   return {
     id: user._id,
     username: user.username,
@@ -32,8 +32,40 @@ function formatConvexUser(user: any): UserProfile {
     displayName: user.displayName,
     avatarUrl: user.avatarUrl || undefined,
     status: user.status,
+    bio: user.bio || undefined,
+    sendReadReceipts: user.sendReadReceipts !== false,
+    sendTypingIndicators: user.sendTypingIndicators !== false,
+    allowCalls: user.allowCalls !== false,
     lastSeenAt: new Date(user.lastSeenAt || Date.now()).toISOString(),
     createdAt: new Date(user._creationTime || user.createdAt || Date.now()).toISOString(),
+  };
+}
+
+export function formatConvexMessage(m: any): MessageDto {
+  return {
+    id: m._id,
+    conversationId: m.conversationId,
+    circleId: m.circleId,
+    senderId: m.senderId,
+    clientMessageId: m.clientMessageId,
+    content: m.content,
+    attachmentUrl: m.attachmentUrl,
+    attachmentName: m.attachmentName,
+    attachmentSize: m.attachmentSize,
+    attachmentMime: m.attachmentMime,
+    status: m.status,
+    replyToId: m.replyToId,
+    replySnippet: m.replySnippet,
+    isEdited: m.isEdited,
+    editedAt: m.editedAt,
+    isDeleted: m.isDeleted,
+    deletedAt: m.deletedAt,
+    isSilent: m.isSilent,
+    isPinned: m.isPinned,
+    voiceDuration: m.voiceDuration,
+    pollId: m.pollId,
+    reactions: m.reactions || [],
+    createdAt: new Date(m.createdAt).toISOString(),
   };
 }
 
@@ -44,6 +76,7 @@ export const api = {
       email: data.email,
       password: data.password,
       displayName: data.displayName || data.username,
+      deviceName: typeof navigator !== 'undefined' ? (navigator.userAgent.includes('Mobile') ? 'Mobile Device' : 'Desktop Browser') : 'Browser',
     });
     setAuthToken(res.sessionToken);
     return { token: res.sessionToken, user: formatConvexUser(res.user) };
@@ -53,6 +86,7 @@ export const api = {
     const res = await convex.mutation(convexApi.users.login, {
       usernameOrEmail: data.usernameOrEmail,
       password: data.password,
+      deviceName: typeof navigator !== 'undefined' ? (navigator.userAgent.includes('Mobile') ? 'Mobile Device' : 'Desktop Browser') : 'Browser',
     });
     setAuthToken(res.sessionToken);
     return { token: res.sessionToken, user: formatConvexUser(res.user) };
@@ -116,6 +150,15 @@ export const api = {
     return { user: formatConvexUser(user) };
   },
 
+  logout: async () => {
+    if (currentToken) {
+      try {
+        await convex.mutation(convexApi.users.logout, { sessionToken: currentToken });
+      } catch {}
+      setAuthToken(null);
+    }
+  },
+
   getUsers: async () => {
     try {
       const me = await api.getMe();
@@ -149,7 +192,7 @@ export const api = {
     }
   },
 
-  updateProfile: async (data: UpdateProfileInput) => {
+  updateProfile: async (data: UpdateProfileInput & { bio?: string; sendReadReceipts?: boolean; sendTypingIndicators?: boolean; allowCalls?: boolean }) => {
     const me = await api.getMe();
     const updated = await convex.mutation(convexApi.users.updateProfile, {
       userId: me.user.id as any,
@@ -157,6 +200,10 @@ export const api = {
       avatarUrl: data.avatarUrl || undefined,
       status: data.status,
       phoneNumber: data.phoneNumber || undefined,
+      bio: data.bio,
+      sendReadReceipts: data.sendReadReceipts,
+      sendTypingIndicators: data.sendTypingIndicators,
+      allowCalls: data.allowCalls,
     });
     return { user: formatConvexUser(updated) };
   },
@@ -171,24 +218,122 @@ export const api = {
 
     const msgs = await convex.query(convexApi.messages.listMessages, {
       conversationId: conv._id,
+      currentUserId: me.user.id as any,
     });
     return {
       conversationId: conv._id,
-      messages: msgs.map((m: any): MessageDto => ({
-        id: m._id,
-        conversationId: m.conversationId,
-        senderId: m.senderId,
-        clientMessageId: m.clientMessageId,
-        content: m.content,
-        attachmentUrl: m.attachmentUrl,
-        attachmentName: m.attachmentName,
-        attachmentSize: m.attachmentSize,
-        attachmentMime: m.attachmentMime,
-        status: m.status,
-        createdAt: new Date(m.createdAt).toISOString(),
-      })),
+      conversationStatus: conv.status || 'ACCEPTED',
+      initiatorId: conv.initiatorId,
+      isSelfVault: !!conv.isSelfVault,
+      pinnedMessageId: conv.pinnedMessageId,
+      messages: msgs.map(formatConvexMessage),
       nextCursor: null,
     };
+  },
+
+  getOrCreateConversation: async (userId1: string, userId2: string) => {
+    return await convex.mutation(convexApi.messages.getOrCreateConversation, {
+      userId1: userId1 as any,
+      userId2: userId2 as any,
+    });
+  },
+
+  getOrCreatePersonalVault: async () => {
+    const me = await api.getMe();
+    const vault = await convex.mutation(convexApi.messages.getOrCreatePersonalVault, {
+      userId: me.user.id as any,
+    });
+    return vault;
+  },
+
+  sendMessage: async (params: {
+    conversationId: string;
+    senderId: string;
+    clientMessageId: string;
+    content: string;
+    attachmentUrl?: string;
+    attachmentName?: string;
+    attachmentSize?: number;
+    attachmentMime?: string;
+    replyToId?: string;
+    isSilent?: boolean;
+    voiceDuration?: number;
+    pollId?: string;
+  }) => {
+    return await convex.mutation(convexApi.messages.sendMessage, {
+      conversationId: params.conversationId as any,
+      senderId: params.senderId as any,
+      clientMessageId: params.clientMessageId,
+      content: params.content,
+      attachmentUrl: params.attachmentUrl,
+      attachmentName: params.attachmentName,
+      attachmentSize: params.attachmentSize,
+      attachmentMime: params.attachmentMime,
+      replyToId: params.replyToId as any,
+      isSilent: params.isSilent,
+      voiceDuration: params.voiceDuration,
+      pollId: params.pollId as any,
+    });
+  },
+
+  editMessage: async (messageId: string, newContent: string) => {
+    const me = await api.getMe();
+    return await convex.mutation(convexApi.messages.editMessage, {
+      messageId: messageId as any,
+      userId: me.user.id as any,
+      newContent,
+    });
+  },
+
+  deleteMessage: async (messageId: string) => {
+    const me = await api.getMe();
+    return await convex.mutation(convexApi.messages.deleteMessage, {
+      messageId: messageId as any,
+      userId: me.user.id as any,
+    });
+  },
+
+  toggleReaction: async (messageId: string, emoji: string) => {
+    const me = await api.getMe();
+    return await convex.mutation(convexApi.messages.toggleReaction, {
+      messageId: messageId as any,
+      userId: me.user.id as any,
+      emoji,
+    });
+  },
+
+  togglePinMessage: async (conversationId: string, messageId: string) => {
+    const me = await api.getMe();
+    return await convex.mutation(convexApi.messages.togglePinMessage, {
+      conversationId: conversationId as any,
+      messageId: messageId as any,
+      userId: me.user.id as any,
+    });
+  },
+
+  saveMessage: async (messageId: string) => {
+    const me = await api.getMe();
+    return await convex.mutation(convexApi.messages.saveMessage, {
+      userId: me.user.id as any,
+      messageId: messageId as any,
+    });
+  },
+
+  unsaveMessage: async (messageId: string) => {
+    const me = await api.getMe();
+    return await convex.mutation(convexApi.messages.unsaveMessage, {
+      userId: me.user.id as any,
+      messageId: messageId as any,
+    });
+  },
+
+  respondToHandshake: async (conversationId: string, action: 'ACCEPT' | 'DECLINE') => {
+    const me = await api.getMe();
+    return await convex.mutation(convexApi.messages.respondToHandshake, {
+      conversationId: conversationId as any,
+      currentUserId: me.user.id as any,
+      action,
+    });
   },
 
   signUploadUrl: async (data: SignUploadUrlInput): Promise<SignUploadUrlResponse> => {

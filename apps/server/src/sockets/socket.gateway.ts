@@ -102,7 +102,23 @@ export const initSocketGateway = (httpServer: HttpServer): Server => {
       try {
         console.log('[Socket] chat:send received from', userId, 'payload:', payload);
         const validated = SendMessageSchema.parse(payload);
-        const { clientMessageId, recipientId, content, attachmentUrl, attachmentName, attachmentSize, attachmentMime } = validated;
+        const {
+          clientMessageId,
+          recipientId,
+          content,
+          attachmentUrl,
+          attachmentName,
+          attachmentSize,
+          attachmentMime,
+          replyToId,
+          isSilent,
+          voiceDuration,
+          pollId,
+        } = validated;
+        if (!recipientId) {
+          if (callback) callback({ success: false, error: 'Recipient ID is required for direct messaging' });
+          return;
+        }
 
         // Find or create 1-on-1 conversation
         let conversation = await prisma.conversation.findFirst({
@@ -142,13 +158,21 @@ export const initSocketGateway = (httpServer: HttpServer): Server => {
           },
         });
 
+        const messagePayload = {
+          ...message,
+          replyToId: replyToId || null,
+          isSilent: !!isSilent,
+          voiceDuration: voiceDuration || null,
+          pollId: pollId || null,
+        };
+
         // Acknowledge sender
         if (typeof callback === 'function') {
-          callback({ success: true, message });
+          callback({ success: true, message: messagePayload });
         }
 
         // Dispatch to recipient's room
-        io.to(`user:${recipientId}`).emit(SOCKET_EVENTS.CHAT_RECEIVE, message);
+        io.to(`user:${recipientId}`).emit(SOCKET_EVENTS.CHAT_RECEIVE, messagePayload);
 
         // Notify sender if delivered immediately
         if (isRecipientOnline) {

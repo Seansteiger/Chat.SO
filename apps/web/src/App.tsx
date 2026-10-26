@@ -3,10 +3,11 @@ import { UserProfile, MessageDto, SOCKET_EVENTS } from '@chatso/shared';
 import { useAuth } from './hooks/useAuth.js';
 import { useSocket } from './hooks/useSocket.js';
 import { useWebRTC } from './hooks/useWebRTC.js';
-import { api } from './services/api.js';
+import { api, formatConvexMessage } from './services/api.js';
 import { AuthScreen } from './components/AuthScreen.js';
 import { Sidebar } from './components/Sidebar.js';
 import { MainChat } from './components/MainChat.js';
+import { CircleChat } from './components/CircleChat.js';
 import { VideoCallOverlay } from './components/VideoCallOverlay.js';
 import { IncomingCallDialog } from './components/IncomingCallDialog.js';
 import { ProfileModal } from './components/ProfileModal.js';
@@ -22,6 +23,16 @@ export const AppContent: React.FC = () => {
 
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [selectedCircleId, setSelectedCircleId] = useState<string | null>(null);
+
+  const [activeConvInfo, setActiveConvInfo] = useState<{
+    conversationId?: string;
+    status?: 'ACCEPTED' | 'PENDING' | 'DECLINED';
+    initiatorId?: string;
+    isSelfVault?: boolean;
+    pinnedMessageId?: string;
+  }>({});
+
   const [messages, setMessages] = useState<MessageDto[]>([]);
   const [peerTypingMap, setPeerTypingMap] = useState<Record<string, boolean>>({});
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -34,9 +45,9 @@ export const AppContent: React.FC = () => {
 
   // Synchronize browser history and handle hardware/browser Back button
   const handleSelectUser = useCallback((u: UserProfile | null) => {
+    setSelectedCircleId(null);
     setSelectedUser(u);
     if (u) {
-      // Ensure newly searched user is immediately present in users list
       setUsers((prev) => {
         if (!prev.some((existing) => existing.id === u.id)) {
           return [u, ...prev];
@@ -48,6 +59,20 @@ export const AppContent: React.FC = () => {
       }
     } else {
       if (window.history.state?.chatUserId || window.location.hash.startsWith('#chat')) {
+        window.history.back();
+      }
+    }
+  }, []);
+
+  const handleSelectCircle = useCallback((circleId: string | null) => {
+    setSelectedUser(null);
+    setSelectedCircleId(circleId);
+    if (circleId) {
+      if (window.history.state?.circleId !== circleId) {
+        window.history.pushState({ view: 'circle', circleId }, '', `#circle=${circleId}`);
+      }
+    } else {
+      if (window.history.state?.circleId || window.location.hash.startsWith('#circle')) {
         window.history.back();
       }
     }
@@ -85,35 +110,34 @@ export const AppContent: React.FC = () => {
     }
   }, []);
 
-  // Listen to popstate (browser back button, mobile back gesture/hardware button)
+  // Listen to popstate
   useEffect(() => {
     if (!window.history.state) {
       window.history.replaceState({ view: 'root' }, '', window.location.pathname);
     }
 
     const handlePopState = (event: PopStateEvent) => {
-      // 1. If profile modal was open, close it
       if (isProfileModalOpen) {
         setIsProfileModalOpen(false);
         return;
       }
 
-      // 2. If notifications panel was open, close it
       if (isNotificationsPanelOpen) {
         setIsNotificationsPanelOpen(false);
         return;
       }
 
-      // 3. Handle chat navigation
       const state = event.state;
-      if (state?.chatUserId) {
-        const u = users.find((user) => user.id === state.chatUserId);
-        if (u) {
-          setSelectedUser(u);
-        }
-      } else {
-        // Returned to contacts list on mobile or root
+      if (state?.circleId) {
+        setSelectedCircleId(state.circleId);
         setSelectedUser(null);
+      } else if (state?.chatUserId) {
+        setSelectedCircleId(null);
+        const u = users.find((user) => user.id === state.chatUserId);
+        if (u) setSelectedUser(u);
+      } else {
+        setSelectedUser(null);
+        setSelectedCircleId(null);
       }
     };
 
@@ -131,23 +155,7 @@ export const AppContent: React.FC = () => {
     return () => unsub();
   }, []);
 
-  // Listen for clicks on notifications in OS Notifications Panel / Action Center
-  useEffect(() => {
-    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-      const handleSwMsg = (event: MessageEvent) => {
-        if (event.data?.type === 'NOTIFICATION_CLICK' && event.data?.senderId) {
-          const u = users.find((user) => user.id === event.data.senderId);
-          if (u) setSelectedUser(u);
-        }
-      };
-      navigator.serviceWorker.addEventListener('message', handleSwMsg);
-      return () => {
-        navigator.serviceWorker.removeEventListener('message', handleSwMsg);
-      };
-    }
-  }, [users]);
-
-  // Reactively watch conversation summaries for real-time WhatsApp-style unread counts & previews
+  // Watch conversation summaries
   useEffect(() => {
     if (!currentUser?.id) return;
 
@@ -190,7 +198,7 @@ export const AppContent: React.FC = () => {
     };
   }, [currentUser?.id, selectedUser?.id]);
 
-  // Reactively watch contacted users list from Convex in real-time
+  // Watch contacted users list
   useEffect(() => {
     if (!currentUser?.id) return;
 
@@ -212,6 +220,10 @@ export const AppContent: React.FC = () => {
             displayName: u.displayName,
             avatarUrl: u.avatarUrl || undefined,
             status: u.status,
+            bio: u.bio || undefined,
+            sendReadReceipts: u.sendReadReceipts !== false,
+            sendTypingIndicators: u.sendTypingIndicators !== false,
+            allowCalls: u.allowCalls !== false,
             lastSeenAt: new Date(u.lastSeenAt || Date.now()).toISOString(),
             createdAt: new Date(u._creationTime || u.createdAt || Date.now()).toISOString(),
           }));
@@ -237,7 +249,6 @@ export const AppContent: React.FC = () => {
     try {
       const res = await api.getContactedUsers();
       setUsers(res.users);
-      // Auto-select first contacted user on desktop if none selected
       if (!selectedUser && res.users.length > 0 && typeof window !== 'undefined' && window.innerWidth >= 768) {
         setSelectedUser(res.users[0]);
       }
@@ -256,18 +267,18 @@ export const AppContent: React.FC = () => {
   useEffect(() => {
     if (!selectedUser) {
       setMessages([]);
+      setActiveConvInfo({});
       return;
     }
 
-    // Mark as read in Convex immediately
-    if (currentUser?.id && selectedUser?.id) {
+    // Mark as read in Convex immediately (respecting privacy)
+    if (currentUser?.id && selectedUser?.id && currentUser?.sendReadReceipts !== false) {
       (convex as any).mutation(convexApi.messages.markConversationAsRead, {
         currentUserId: currentUser.id,
         peerId: selectedUser.id,
       }).catch(() => {});
     }
 
-    // Clear local unread badge for active chat immediately
     setUnreadMap((prev) => ({ ...prev, [selectedUser.id]: 0 }));
 
     let unsubWatch: (() => void) | null = null;
@@ -275,37 +286,29 @@ export const AppContent: React.FC = () => {
     const loadHistory = async () => {
       try {
         const res = await api.getMessages(selectedUser.id);
+        setActiveConvInfo({
+          conversationId: res.conversationId,
+          status: res.conversationStatus,
+          initiatorId: res.initiatorId,
+          isSelfVault: res.isSelfVault,
+          pinnedMessageId: res.pinnedMessageId,
+        });
         setMessages(res.messages);
 
-        // Subscribe reactively to conversation messages in real time
         if (res.conversationId) {
           const watch = (convex as any).watchQuery(convexApi.messages.listMessages, {
             conversationId: res.conversationId,
+            currentUserId: currentUser?.id,
           });
           unsubWatch = watch.onUpdate(() => {
             const currentMsgs = watch.localQueryResult();
             if (Array.isArray(currentMsgs)) {
-              setMessages(
-                currentMsgs.map((m: any): MessageDto => ({
-                  id: m._id,
-                  conversationId: m.conversationId,
-                  senderId: m.senderId,
-                  clientMessageId: m.clientMessageId,
-                  content: m.content,
-                  attachmentUrl: m.attachmentUrl,
-                  attachmentName: m.attachmentName,
-                  attachmentSize: m.attachmentSize,
-                  attachmentMime: m.attachmentMime,
-                  status: m.status,
-                  createdAt: new Date(m.createdAt).toISOString(),
-                }))
-              );
+              setMessages(currentMsgs.map(formatConvexMessage));
             }
           });
         }
 
-        // Emit read receipt
-        if (socket && res.messages.length > 0) {
+        if (socket && res.messages.length > 0 && currentUser?.sendReadReceipts !== false) {
           const lastMsg = res.messages[res.messages.length - 1];
           socket.emit(SOCKET_EVENTS.CHAT_READ, {
             peerId: selectedUser.id,
@@ -323,13 +326,12 @@ export const AppContent: React.FC = () => {
     return () => {
       if (unsubWatch) unsubWatch();
     };
-  }, [selectedUser, socket, currentUser?.id]);
+  }, [selectedUser, socket, currentUser?.id, currentUser?.sendReadReceipts]);
 
   // Socket event listeners
   useEffect(() => {
     if (!socket) return;
 
-    // Presence update
     const handlePresence = (payload: { userId: string; status: any; lastSeenAt: any }) => {
       setUsers((prev) =>
         prev.map((u) =>
@@ -343,19 +345,20 @@ export const AppContent: React.FC = () => {
       }
     };
 
-    // Chat receive
     const handleChatReceive = (msg: MessageDto) => {
-      // Find sender name for notification
       const sender = users.find((u) => u.id === msg.senderId);
       const senderName = sender?.displayName || 'Chat.SO Message';
 
-      // Trigger audio chime and desktop notification
+      // Quiet social check: suppress chime if msg isSilent or if current user is in LOW_BATTERY or DEEP_FOCUS
+      const isSilent = msg.isSilent || currentUser?.status === 'LOW_BATTERY' || currentUser?.status === 'DEEP_FOCUS';
+
       NotificationService.notify(senderName, {
         body: msg.content || (msg.attachmentName ? `Attachment: ${msg.attachmentName}` : 'Sent an attachment'),
         tag: `chat-${msg.senderId}`,
         senderId: msg.senderId,
+        silent: isSilent,
         onClick: () => {
-          if (sender) setSelectedUser(sender);
+          if (sender) handleSelectUser(sender);
         },
       });
 
@@ -367,15 +370,15 @@ export const AppContent: React.FC = () => {
           return [...prev, msg];
         });
 
-        // Mark as read immediately if current chat is active
-        socket.emit(SOCKET_EVENTS.CHAT_READ, {
-          peerId: msg.senderId,
-          lastReadMessageId: msg.id,
-        });
+        if (currentUser?.sendReadReceipts !== false) {
+          socket.emit(SOCKET_EVENTS.CHAT_READ, {
+            peerId: msg.senderId,
+            lastReadMessageId: msg.id,
+          });
+        }
       }
     };
 
-    // Chat delivered
     const handleChatDelivered = (payload: { clientMessageId: string; messageId: string }) => {
       setMessages((prev) =>
         prev.map((m) =>
@@ -384,7 +387,6 @@ export const AppContent: React.FC = () => {
       );
     };
 
-    // Chat read receipt
     const handleChatRead = (payload: { readerId: string; lastReadMessageId?: string }) => {
       if (selectedUser?.id === payload.readerId) {
         setMessages((prev) =>
@@ -395,7 +397,6 @@ export const AppContent: React.FC = () => {
       }
     };
 
-    // Chat typing
     const handleChatTyping = (payload: { senderId: string; isTyping: boolean }) => {
       setPeerTypingMap((prev) => ({ ...prev, [payload.senderId]: payload.isTyping }));
     };
@@ -413,34 +414,40 @@ export const AppContent: React.FC = () => {
       socket.off(SOCKET_EVENTS.CHAT_READ, handleChatRead);
       socket.off(SOCKET_EVENTS.CHAT_TYPING, handleChatTyping);
     };
-  }, [socket, selectedUser, currentUser, users]);
+  }, [socket, selectedUser, currentUser, users, handleSelectUser]);
 
-  // Handle incoming call ringtone
+  // Handle incoming call ringtone (muting ringtone if user is in Low Battery / Deep Focus)
   useEffect(() => {
     if (webrtc.incomingCall) {
-      sound.startRingtone();
+      if (currentUser?.status !== 'LOW_BATTERY' && currentUser?.status !== 'DEEP_FOCUS' && currentUser?.allowCalls !== false) {
+        sound.startRingtone();
+      }
     } else {
       sound.stopRingtone();
     }
     return () => {
       sound.stopRingtone();
     };
-  }, [webrtc.incomingCall]);
+  }, [webrtc.incomingCall, currentUser?.status, currentUser?.allowCalls]);
 
-  // Send message with optimistic update
-  const handleSendMessage = (params: {
+  // Send message
+  const handleSendMessage = async (params: {
     content: string;
     attachmentUrl?: string;
     attachmentName?: string;
     attachmentSize?: number;
     attachmentMime?: string;
+    replyToId?: string;
+    isSilent?: boolean;
+    voiceDuration?: number;
+    pollId?: string;
   }) => {
-    if (!selectedUser || !socket || !currentUser) return;
+    if (!selectedUser || !currentUser) return;
 
     const clientMessageId = crypto.randomUUID();
     const optimisticMessage: MessageDto = {
       id: clientMessageId,
-      conversationId: '',
+      conversationId: activeConvInfo.conversationId || '',
       senderId: currentUser.id,
       clientMessageId,
       content: params.content,
@@ -448,15 +455,60 @@ export const AppContent: React.FC = () => {
       attachmentName: params.attachmentName || null,
       attachmentSize: params.attachmentSize || null,
       attachmentMime: params.attachmentMime || null,
+      replyToId: params.replyToId,
+      isSilent: params.isSilent,
+      voiceDuration: params.voiceDuration,
+      pollId: params.pollId,
       status: 'SENT',
       createdAt: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, optimisticMessage]);
 
-    socket.emit(
-      SOCKET_EVENTS.CHAT_SEND,
-      {
+    // Send via Convex backend directly for instant multi-device sync
+    let targetConvId = activeConvInfo.conversationId;
+    if (!targetConvId && selectedUser && currentUser) {
+      try {
+        const conv = await api.getOrCreateConversation(currentUser.id, selectedUser.id);
+        if (conv?._id) {
+          targetConvId = conv._id;
+          setActiveConvInfo({
+            conversationId: conv._id,
+            status: conv.status || 'PENDING',
+            initiatorId: conv.initiatorId,
+            isSelfVault: !!conv.isSelfVault,
+            pinnedMessageId: conv.pinnedMessageId,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to get or create conversation on send:', err);
+      }
+    }
+
+    if (targetConvId) {
+      try {
+        await api.sendMessage({
+          conversationId: targetConvId,
+          senderId: currentUser.id,
+          clientMessageId,
+          content: params.content,
+          attachmentUrl: params.attachmentUrl,
+          attachmentName: params.attachmentName,
+          attachmentSize: params.attachmentSize,
+          attachmentMime: params.attachmentMime,
+          replyToId: params.replyToId,
+          isSilent: params.isSilent,
+          voiceDuration: params.voiceDuration,
+          pollId: params.pollId,
+        });
+      } catch (err) {
+        console.error('Failed to send via Convex:', err);
+      }
+    }
+
+    // Socket.IO emission fallback
+    if (socket && selectedUser.id !== currentUser.id) {
+      socket.emit(SOCKET_EVENTS.CHAT_SEND, {
         clientMessageId,
         recipientId: selectedUser.id,
         content: params.content,
@@ -464,19 +516,16 @@ export const AppContent: React.FC = () => {
         attachmentName: params.attachmentName,
         attachmentSize: params.attachmentSize,
         attachmentMime: params.attachmentMime,
-      },
-      (ack: { success: boolean; message?: MessageDto; error?: string }) => {
-        if (ack?.success && ack.message) {
-          setMessages((prev) =>
-            prev.map((m) => (m.clientMessageId === clientMessageId ? ack.message! : m))
-          );
-        }
-      }
-    );
+        replyToId: params.replyToId,
+        isSilent: params.isSilent,
+        voiceDuration: params.voiceDuration,
+        pollId: params.pollId,
+      });
+    }
   };
 
   const handleSendTyping = (isTyping: boolean) => {
-    if (!selectedUser || !socket) return;
+    if (!selectedUser || !socket || currentUser?.sendTypingIndicators === false) return;
     socket.emit(SOCKET_EVENTS.CHAT_TYPING, {
       recipientId: selectedUser.id,
       isTyping,
@@ -502,12 +551,14 @@ export const AppContent: React.FC = () => {
 
   return (
     <div className="h-[100dvh] w-screen flex bg-[#090d16] text-slate-100 overflow-hidden font-sans">
-      {/* Left Sidebar (Contacts / Chats) */}
-      <div className={`h-full ${selectedUser ? 'hidden md:flex' : 'flex w-full'} md:w-80 shrink-0`}>
+      {/* Left Sidebar (Contacts, Circles, Vault, Calls) */}
+      <div className={`h-full ${selectedUser || selectedCircleId ? 'hidden md:flex' : 'flex w-full'} md:w-80 shrink-0`}>
         <Sidebar
           users={users}
           selectedUser={selectedUser}
           onSelectUser={handleSelectUser}
+          selectedCircleId={selectedCircleId}
+          onSelectCircle={handleSelectCircle}
           onOpenProfile={handleOpenProfileModal}
           unreadMap={unreadMap}
           lastMessageMap={lastMessageMap}
@@ -517,11 +568,23 @@ export const AppContent: React.FC = () => {
         />
       </div>
 
-      {/* Main Conversation Feed */}
-      {selectedUser ? (
+      {/* Main Content Area */}
+      {selectedCircleId ? (
+        <div className="h-full flex-1 flex flex-col flex w-full">
+          <CircleChat
+            circleId={selectedCircleId}
+            onBack={() => setSelectedCircleId(null)}
+          />
+        </div>
+      ) : selectedUser ? (
         <div className={`h-full flex-1 flex flex-col ${selectedUser ? 'flex w-full' : 'hidden md:flex'}`}>
           <MainChat
             peer={selectedUser}
+            conversationId={activeConvInfo.conversationId}
+            conversationStatus={activeConvInfo.status}
+            initiatorId={activeConvInfo.initiatorId}
+            isSelfVault={activeConvInfo.isSelfVault || selectedUser.id === currentUser?.id}
+            pinnedMessageId={activeConvInfo.pinnedMessageId}
             messages={messages}
             isPeerTyping={!!peerTypingMap[selectedUser.id]}
             onSendMessage={handleSendMessage}
@@ -535,9 +598,9 @@ export const AppContent: React.FC = () => {
           <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center mb-4 text-blue-400">
             <MessageSquare className="w-8 h-8 opacity-75" />
           </div>
-          <p className="text-base font-bold text-slate-200">No conversation selected</p>
+          <p className="text-base font-bold text-slate-200">Chat.SO Quiet Social</p>
           <p className="text-xs text-slate-400 mt-1 max-w-sm">
-            Select a contact from the sidebar or search by @username, email, or cellphone number to start chatting.
+            Select a quiet conversation, visit your Personal Vault, or join an Intimate Circle.
           </p>
         </div>
       )}
@@ -576,7 +639,7 @@ export const AppContent: React.FC = () => {
         onReject={webrtc.rejectCall}
       />
 
-      {/* Profile Settings Modal */}
+      {/* Profile & Boundaries Settings Modal */}
       <ProfileModal
         isOpen={isProfileModalOpen}
         onClose={handleCloseProfileModal}

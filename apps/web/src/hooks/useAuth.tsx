@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, RegisterInput, LoginInput, UpdateProfileInput } from '@chatso/shared';
-import { api, setAuthToken, getAuthToken } from '../services/api.js';
+import { api, setAuthToken, getAuthToken, formatConvexUser } from '../services/api.js';
+import { convex, api as convexApi } from '../convex.js';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -48,6 +49,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initAuth();
   }, []);
+
+  // Reactive subscription on session state: immediately syncs profile updates & handles remote revocation
+  useEffect(() => {
+    if (!token) return;
+    try {
+      const watch = convex.watchQuery(convexApi.users.getMe, { sessionToken: token });
+      const unsubscribe = watch.onUpdate(() => {
+        try {
+          const result = watch.localQueryResult();
+          if (result === null) {
+            // Session revoked or deleted remotely
+            setAuthToken(null);
+            setTokenState(null);
+            setUser(null);
+          } else if (result) {
+            setUser(formatConvexUser(result));
+          }
+        } catch (e) {
+          console.error('[useAuth] Error in session watch update:', e);
+        }
+      });
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
+    } catch (e) {
+      console.warn('[useAuth] Could not watchQuery getMe:', e);
+    }
+  }, [token]);
 
   const login = async (data: LoginInput) => {
     setIsLoading(true);
@@ -123,6 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    api.logout().catch(() => {});
     setAuthToken(null);
     setTokenState(null);
     setUser(null);

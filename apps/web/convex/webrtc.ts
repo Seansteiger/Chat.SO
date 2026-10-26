@@ -14,6 +14,41 @@ export const initiateCall = mutation({
       throw new Error("You cannot call yourself.");
     }
 
+    // Verify receiver exists and check quiet boundaries
+    const receiver = await ctx.db.get(args.receiverId);
+    if (!receiver) {
+      throw new Error("Recipient user not found.");
+    }
+
+    if (receiver.allowCalls === false) {
+      throw new Error(`${receiver.displayName} has disabled incoming calls in their privacy settings.`);
+    }
+
+    if (receiver.status === "LOW_BATTERY" || receiver.status === "DEEP_FOCUS") {
+      throw new Error(`${receiver.displayName} is in quiet/focus mode (calls muted).`);
+    }
+
+    // Enforce Message Request Handshake gatekeeper
+    const conv1 = await ctx.db
+      .query("conversations")
+      .withIndex("by_participants", (q) =>
+        q.eq("participant1", args.callerId).eq("participant2", args.receiverId)
+      )
+      .first();
+    const conv2 = !conv1
+      ? await ctx.db
+          .query("conversations")
+          .withIndex("by_participants", (q) =>
+            q.eq("participant1", args.receiverId).eq("participant2", args.callerId)
+          )
+          .first()
+      : null;
+    const conv = conv1 || conv2;
+
+    if (conv && conv.status === "PENDING" && conv.initiatorId === args.callerId) {
+      throw new Error("You must wait for the message request handshake to be approved before calling.");
+    }
+
     // Terminate any existing active calls for caller or receiver
     const existingCalls = await ctx.db
       .query("calls")

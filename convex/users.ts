@@ -16,6 +16,7 @@ export const register = mutation({
     email: v.string(),
     password: v.string(),
     displayName: v.string(),
+    deviceName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const cleanUsername = args.username.trim().toLowerCase();
@@ -50,8 +51,20 @@ export const register = mutation({
       displayName: args.displayName.trim() || cleanUsername,
       passwordHash,
       status: "ONLINE",
+      sendReadReceipts: true,
+      sendTypingIndicators: true,
+      allowCalls: true,
       lastSeenAt: Date.now(),
       sessionToken,
+    });
+
+    // Multi-device session support: record this active session
+    await ctx.db.insert("sessions", {
+      userId,
+      token: sessionToken,
+      deviceName: args.deviceName || "Desktop / Browser",
+      createdAt: Date.now(),
+      lastActiveAt: Date.now(),
     });
 
     const user = await ctx.db.get(userId);
@@ -63,6 +76,7 @@ export const login = mutation({
   args: {
     usernameOrEmail: v.string(),
     password: v.string(),
+    deviceName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const queryStr = args.usernameOrEmail.trim().toLowerCase();
@@ -87,6 +101,17 @@ export const login = mutation({
     }
 
     const sessionToken = "tok_" + crypto.randomUUID();
+
+    // Multi-device session support: do NOT invalidate other devices!
+    await ctx.db.insert("sessions", {
+      userId: user._id,
+      token: sessionToken,
+      deviceName: args.deviceName || "Web Client",
+      createdAt: Date.now(),
+      lastActiveAt: Date.now(),
+    });
+
+    // Also update legacy user pointer
     await ctx.db.patch(user._id, {
       status: "ONLINE",
       lastSeenAt: Date.now(),
@@ -102,11 +127,75 @@ export const getMe = query({
   args: { sessionToken: v.optional(v.string()) },
   handler: async (ctx, args) => {
     if (!args.sessionToken) return null;
+
+    // 1. Try sessions table first (multi-device)
+    const session = await ctx.db
+      .query("sessions")
+      .withIndex("by_token", (q) => q.eq("token", args.sessionToken!))
+      .first();
+
+    if (session) {
+      return await ctx.db.get(session.userId);
+    }
+
+    // If token starts with "tok_", it corresponds to a modern session that was revoked
+    if (args.sessionToken.startsWith("tok_")) {
+      return null;
+    }
+
+    // 2. Fallback to user by sessionToken (legacy single-device)
     const user = await ctx.db
       .query("users")
       .withIndex("by_sessionToken", (q) => q.eq("sessionToken", args.sessionToken))
       .first();
     return user;
+  },
+});
+
+export const logout = mutation({
+  args: { sessionToken: v.string() },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("sessions")
+      .withIndex("by_token", (q) => q.eq("token", args.sessionToken))
+      .first();
+
+    if (session) {
+      await ctx.db.delete(session._id);
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_sessionToken", (q) => q.eq("sessionToken", args.sessionToken))
+      .first();
+    if (user) {
+      await ctx.db.patch(user._id, { sessionToken: undefined });
+    }
+  },
+});
+
+export const listActiveSessions = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("sessions")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .collect();
+  },
+});
+
+export const revokeSession = mutation({
+  args: { sessionId: v.id("sessions") },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.sessionId);
+    if (session) {
+      const user = await ctx.db.get(session.userId);
+      if (user && user.sessionToken === session.token) {
+        await ctx.db.patch(user._id, { sessionToken: undefined });
+      }
+      await ctx.db.delete(args.sessionId);
+    }
   },
 });
 
@@ -148,10 +237,12 @@ export const listContactedUsers = query({
 
     const contactMap = new Map<string, number>();
 
+    const convMap = new Map<string, any>();
     for (const conv of [...p1, ...p2]) {
       const otherId = conv.participant1 === args.currentUserId ? conv.participant2 : conv.participant1;
       const prev = contactMap.get(otherId) || 0;
       contactMap.set(otherId, Math.max(prev, conv.lastMessageAt || 0));
+      convMap.set(otherId, conv);
     }
 
     for (const call of [...c1, ...c2]) {
@@ -168,7 +259,13 @@ export const listContactedUsers = query({
     for (const id of contactedUserIds) {
       const u = await ctx.db.get(id);
       if (u) {
-        users.push(u);
+        const conv = convMap.get(id);
+        if (conv && conv.status === "PENDING" && conv.initiatorId === args.currentUserId) {
+          // Handshake gatekeeper: hide presence until approved
+          users.push({ ...u, status: "OFFLINE" });
+        } else {
+          users.push(u);
+        }
       }
     }
 
@@ -253,7 +350,28 @@ export const searchUsers = query({
       }
 
       if (matched) {
-        matches.push({ user, score });
+        let userResult = user;
+        if (args.currentUserId) {
+          const conv1 = await ctx.db
+            .query("conversations")
+            .withIndex("by_participants", (q) =>
+              q.eq("participant1", args.currentUserId!).eq("participant2", user._id)
+            )
+            .first();
+          const conv2 = !conv1
+            ? await ctx.db
+                .query("conversations")
+                .withIndex("by_participants", (q) =>
+                  q.eq("participant1", user._id).eq("participant2", args.currentUserId!)
+                )
+                .first()
+            : null;
+          const conv = conv1 || conv2;
+          if (!conv || (conv.status === "PENDING" && conv.initiatorId === args.currentUserId)) {
+            userResult = { ...user, status: "OFFLINE" };
+          }
+        }
+        matches.push({ user: userResult, score });
       }
     }
 
@@ -267,8 +385,20 @@ export const updateProfile = mutation({
     userId: v.id("users"),
     displayName: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
-    status: v.optional(v.union(v.literal("ONLINE"), v.literal("BUSY"), v.literal("OFFLINE"))),
+    status: v.optional(
+      v.union(
+        v.literal("ONLINE"),
+        v.literal("BUSY"),
+        v.literal("OFFLINE"),
+        v.literal("LOW_BATTERY"),
+        v.literal("DEEP_FOCUS")
+      )
+    ),
     phoneNumber: v.optional(v.string()),
+    bio: v.optional(v.string()),
+    sendReadReceipts: v.optional(v.boolean()),
+    sendTypingIndicators: v.optional(v.boolean()),
+    allowCalls: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
@@ -281,6 +411,10 @@ export const updateProfile = mutation({
     if (args.phoneNumber !== undefined) {
       patch.phoneNumber = args.phoneNumber ? args.phoneNumber.trim() : undefined;
     }
+    if (args.bio !== undefined) patch.bio = args.bio;
+    if (args.sendReadReceipts !== undefined) patch.sendReadReceipts = args.sendReadReceipts;
+    if (args.sendTypingIndicators !== undefined) patch.sendTypingIndicators = args.sendTypingIndicators;
+    if (args.allowCalls !== undefined) patch.allowCalls = args.allowCalls;
 
     await ctx.db.patch(args.userId, patch);
     return await ctx.db.get(args.userId);
@@ -290,7 +424,13 @@ export const updateProfile = mutation({
 export const setPresence = mutation({
   args: {
     userId: v.id("users"),
-    status: v.union(v.literal("ONLINE"), v.literal("BUSY"), v.literal("OFFLINE")),
+    status: v.union(
+      v.literal("ONLINE"),
+      v.literal("BUSY"),
+      v.literal("OFFLINE"),
+      v.literal("LOW_BATTERY"),
+      v.literal("DEEP_FOCUS")
+    ),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.userId, {

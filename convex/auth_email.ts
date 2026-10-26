@@ -243,6 +243,14 @@ export const verifyAndRegister = mutation({
       isEmailVerified: true,
     });
 
+    await ctx.db.insert("sessions", {
+      userId,
+      token: sessionToken,
+      deviceName: "Email Verified Web Client",
+      createdAt: Date.now(),
+      lastActiveAt: Date.now(),
+    });
+
     const user = await ctx.db.get(userId);
     return { user, sessionToken };
   },
@@ -287,6 +295,13 @@ export const verifySignupByLink = mutation({
     if (existingUser) {
       const sessionToken = "tok_" + crypto.randomUUID();
       await ctx.db.patch(existingUser._id, { sessionToken, isEmailVerified: true, status: "ONLINE" });
+      await ctx.db.insert("sessions", {
+        userId: existingUser._id,
+        token: sessionToken,
+        deviceName: "Magic Link Browser",
+        createdAt: Date.now(),
+        lastActiveAt: Date.now(),
+      });
       const updated = await ctx.db.get(existingUser._id);
       return { user: updated, sessionToken };
     }
@@ -315,6 +330,14 @@ export const verifySignupByLink = mutation({
       lastSeenAt: Date.now(),
       sessionToken,
       isEmailVerified: true,
+    });
+
+    await ctx.db.insert("sessions", {
+      userId,
+      token: sessionToken,
+      deviceName: "Magic Link Browser",
+      createdAt: Date.now(),
+      lastActiveAt: Date.now(),
     });
 
     const user = await ctx.db.get(userId);
@@ -455,6 +478,14 @@ export const resetPasswordWithCode = mutation({
       passwordHash,
       sessionToken,
       lastSeenAt: Date.now(),
+    });
+
+    await ctx.db.insert("sessions", {
+      userId: user._id,
+      token: sessionToken,
+      deviceName: "Password Reset Session",
+      createdAt: Date.now(),
+      lastActiveAt: Date.now(),
     });
 
     const updatedUser = await ctx.db.get(user._id);

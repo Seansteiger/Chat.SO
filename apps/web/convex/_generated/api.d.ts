@@ -9,8 +9,10 @@
  */
 
 import type * as auth_email from "../auth_email.js";
+import type * as circles from "../circles.js";
 import type * as files from "../files.js";
 import type * as messages from "../messages.js";
+import type * as polls from "../polls.js";
 import type * as users from "../users.js";
 import type * as webrtc from "../webrtc.js";
 
@@ -22,8 +24,10 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth_email: typeof auth_email;
+  circles: typeof circles;
   files: typeof files;
   messages: typeof messages;
+  polls: typeof polls;
   users: typeof users;
   webrtc: typeof webrtc;
 }>;

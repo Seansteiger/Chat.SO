@@ -225,11 +225,14 @@ export class NotificationService {
       body?: string;
       tag?: string;
       senderId?: string;
+      silent?: boolean;
       onClick?: () => void;
     }
   ) {
-    // 1. Play pleasant two-tone chime sound
-    sound.playMessageChime();
+    // 1. Play pleasant two-tone chime sound unless silent is requested
+    if (!options?.silent) {
+      sound.playMessageChime();
+    }
 
     // 2. Add to in-app notifications store
     const newNotif: InAppNotification = {
