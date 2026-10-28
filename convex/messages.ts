@@ -188,21 +188,13 @@ export const sendMessage = mutation({
     }
 
     // 3. Determine real delivery status:
-    // If recipient is active (online within 60s), status = "DELIVERED"; otherwise "SENT"
+    // In accordance with standard messaging protocols (Telegram / WhatsApp):
+    // Every new message sent to another person always starts with status = "SENT" (1 tick).
+    // It is promoted to "DELIVERED" (2 ticks) only when the recipient's device receives it.
+    // Self-vault messages start as "DELIVERED".
     const conv = await ctx.db.get(args.conversationId);
-    let initialStatus: "SENT" | "DELIVERED" = "SENT";
-    if (conv) {
-      const recipientId = conv.participant1 === args.senderId ? conv.participant2 : conv.participant1;
-      if (recipientId === args.senderId) {
-        // Self-vault
-        initialStatus = "DELIVERED";
-      } else {
-        const recipient = await ctx.db.get(recipientId);
-        const now = Date.now();
-        const isOnline = recipient && recipient.status !== "OFFLINE" && (now - (recipient.lastSeenAt || 0) <= 60000);
-        initialStatus = isOnline ? "DELIVERED" : "SENT";
-      }
-    }
+    const isSelfVault = !!(conv && conv.participant1 === args.senderId && conv.participant2 === args.senderId);
+    const initialStatus: "SENT" | "DELIVERED" = isSelfVault ? "DELIVERED" : "SENT";
 
     const messageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
@@ -859,25 +851,30 @@ export const getMessagesForUserConversations = query({
 export const markMessagesDelivered = mutation({
   args: {
     userId: v.id("users"),
+    conversationId: v.optional(v.id("conversations")),
   },
   handler: async (ctx, args) => {
-    // When recipient opens app or comes online, update any pending "SENT" messages to "DELIVERED"
-    const p1 = await ctx.db
-      .query("conversations")
-      .withIndex("by_p1", (q) => q.eq("participant1", args.userId))
-      .collect();
+    // When recipient opens app, receives queries, or comes online, update any pending "SENT" messages to "DELIVERED"
+    let convIds: any[] = [];
+    if (args.conversationId) {
+      convIds = [args.conversationId];
+    } else {
+      const p1 = await ctx.db
+        .query("conversations")
+        .withIndex("by_p1", (q) => q.eq("participant1", args.userId))
+        .collect();
 
-    const p2 = await ctx.db
-      .query("conversations")
-      .withIndex("by_p2", (q) => q.eq("participant2", args.userId))
-      .collect();
+      const p2 = await ctx.db
+        .query("conversations")
+        .withIndex("by_p2", (q) => q.eq("participant2", args.userId))
+        .collect();
 
-    const seenConvIds = new Set<string>();
-    const convIds: any[] = [];
-    for (const c of [...p1, ...p2]) {
-      if (!seenConvIds.has(c._id)) {
-        seenConvIds.add(c._id);
-        convIds.push(c._id);
+      const seenConvIds = new Set<string>();
+      for (const c of [...p1, ...p2]) {
+        if (!seenConvIds.has(c._id)) {
+          seenConvIds.add(c._id);
+          convIds.push(c._id);
+        }
       }
     }
 

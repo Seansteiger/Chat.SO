@@ -199,6 +199,16 @@ export const AppContent: React.FC = () => {
           setUnreadMap(newUnreadMap);
           setLastMessageMap(newLastMsgMap);
           NotificationService.updateBadge(totalUnread);
+
+          // Deliveries acknowledgement: If any message sent by someone else is pending delivery ('SENT'), mark DELIVERED
+          if (currentUser?.id) {
+            const hasPendingSent = summaries.some(
+              (s: any) => s.lastMessage && s.lastMessage.senderId !== currentUser.id && s.lastMessage.status === 'SENT'
+            );
+            if (hasPendingSent) {
+              api.markMessagesDelivered(currentUser.id);
+            }
+          }
         }
       });
     } catch (err) {
@@ -301,6 +311,7 @@ export const AppContent: React.FC = () => {
       const st = currentUserStatusRef.current;
       if (uid) {
         api.heartbeat(st as any, uid);
+        api.markMessagesDelivered(uid);
       }
     }, 25000);
 
@@ -424,6 +435,17 @@ export const AppContent: React.FC = () => {
                 );
                 return [...formatted, ...pendingOptimistic];
               });
+
+              // Acknowledge delivery if peer sent any messages currently marked as SENT
+              if (res.conversationId && currentUser?.id) {
+                const hasIncomingSent = currentMsgs.some(
+                  (m: any) => m.senderId !== currentUser.id && m.status === 'SENT'
+                );
+                if (hasIncomingSent) {
+                  api.markMessagesDelivered(currentUser.id, res.conversationId);
+                }
+              }
+
               if (currentUser?.sendReadReceipts !== false && currentUser?.id) {
                 (convex as any).mutation(convexApi.messages.markAsRead, {
                   conversationId: res.conversationId,

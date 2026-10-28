@@ -360,10 +360,11 @@ export const api = {
     });
   },
 
-  markMessagesDelivered: async (userId: string) => {
+  markMessagesDelivered: async (userId: string, conversationId?: string) => {
     try {
       await convex.mutation(convexApi.messages.markMessagesDelivered, {
         userId: userId as any,
+        conversationId: conversationId as any,
       });
     } catch (err) {
       console.warn('[API] markMessagesDelivered failed:', err);

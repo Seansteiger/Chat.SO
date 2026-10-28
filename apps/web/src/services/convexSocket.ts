@@ -385,7 +385,15 @@ export class ConvexSocketBridge {
       if (!Array.isArray(msgs)) return;
 
       if (isInitialLoad) {
-        msgs.forEach((m: any) => seenMsgIds.add(m._id));
+        msgs.forEach((m: any) => {
+          seenMsgIds.add(m._id);
+          if (m.senderId !== this.currentUserId && m.status === 'SENT') {
+            (convex as any).mutation(convexApi.messages.markMessagesDelivered, {
+              userId: this.currentUserId as any,
+              conversationId: m.conversationId as any,
+            }).catch(() => {});
+          }
+        });
         isInitialLoad = false;
         return;
       }
@@ -394,6 +402,12 @@ export class ConvexSocketBridge {
         if (!seenMsgIds.has(m._id)) {
           seenMsgIds.add(m._id);
           if (m.senderId !== this.currentUserId) {
+            if (m.status === 'SENT') {
+              (convex as any).mutation(convexApi.messages.markMessagesDelivered, {
+                userId: this.currentUserId as any,
+                conversationId: m.conversationId as any,
+              }).catch(() => {});
+            }
             const dto: MessageDto = {
               id: m._id,
               conversationId: m.conversationId,
