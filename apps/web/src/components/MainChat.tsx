@@ -33,6 +33,8 @@ import {
   PanelRight,
   ShieldAlert,
   ShieldCheck,
+  Smile,
+  Plus,
 } from 'lucide-react';
 import { MarkdownText } from './MarkdownText.js';
 import { VoiceNotePlayer } from './VoiceNotePlayer.js';
@@ -40,6 +42,7 @@ import { PollCard } from './PollCard.js';
 import { ContextDrawer } from './ContextDrawer.js';
 import { CreatePollModal } from './CreatePollModal.js';
 import { Emoji } from './Emoji.js';
+import { EmojiPickerDrawer } from './EmojiPickerDrawer.js';
 import { useEmojiSet } from '../hooks/useEmojiSet.js';
 
 interface MainChatProps {
@@ -96,6 +99,10 @@ export const MainChat: React.FC<MainChatProps> = ({
 
   // Poll modal
   const [isPollModalOpen, setIsPollModalOpen] = useState(false);
+
+  // Emoji picker drawers
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [reactingMessageId, setReactingMessageId] = useState<string | null>(null);
 
   // Editing message
   const [editingMessage, setEditingMessage] = useState<MessageDto | null>(null);
@@ -929,32 +936,42 @@ export const MainChat: React.FC<MainChatProps> = ({
 
                     {/* WhatsApp + Telegram Floating Glassy Reaction Capsule */}
                     <div
-                      className={`absolute -top-5 ${
-                        isMe ? 'right-2' : 'left-2'
-                      } hidden group-hover:flex items-center gap-1 bg-slate-900/90 dark:bg-[#0f172a]/95 backdrop-blur-xl border border-white/20 rounded-full px-2 py-1 shadow-[0_8px_30px_rgba(0,0,0,0.5)] ring-1 ring-white/10 z-30 transition-all animate-in fade-in zoom-in-95 duration-150`}
+                      className={`absolute -top-6 ${
+                        isMe ? 'right-0 sm:right-2' : 'left-0 sm:left-2'
+                      } hidden group-hover:flex items-center gap-1 bg-slate-900/95 dark:bg-[#0f172a]/95 backdrop-blur-2xl border border-white/20 rounded-full px-2.5 py-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.6)] ring-1 ring-white/10 z-30 transition-all animate-in fade-in zoom-in-95 duration-150 whitespace-nowrap`}
                     >
-                      {/* Active Emojis */}
+                      {/* Active Quick Reactions */}
                       {activeReactions.map((emoji) => (
                         <button
                           key={emoji}
                           type="button"
                           onClick={() => handleReaction(msg.id, emoji)}
                           title={`React with ${emoji}`}
-                          className="p-1 rounded-full hover:bg-white/15 hover:scale-135 active:scale-95 transition-all duration-150 flex items-center justify-center -translate-y-0 hover:-translate-y-1"
+                          className="w-7 h-7 rounded-full hover:bg-white/20 hover:scale-130 active:scale-95 transition-all duration-150 flex items-center justify-center shrink-0 cursor-pointer"
                         >
-                          <Emoji emoji={emoji} className="w-5 h-5 drop-shadow-sm" />
+                          <Emoji emoji={emoji} size={20} className="w-5 h-5 drop-shadow-sm pointer-events-none" />
                         </button>
                       ))}
 
+                      {/* Plus Button for full reaction picker */}
+                      <button
+                        type="button"
+                        onClick={() => setReactingMessageId(reactingMessageId === msg.id ? null : msg.id)}
+                        title="More emojis & reactions"
+                        className="w-6 h-6 rounded-full hover:bg-white/20 text-slate-300 hover:text-white transition-all flex items-center justify-center shrink-0 cursor-pointer text-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+
                       {/* Divider */}
-                      <div className="h-4 w-px bg-white/15 mx-0.5" />
+                      <div className="h-4 w-px bg-white/20 mx-1 shrink-0" />
 
                       {/* Reply Button */}
                       <button
                         type="button"
                         onClick={() => setReplyingTo(msg)}
                         title="Reply to message"
-                        className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                        className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors shrink-0"
                       >
                         <Reply className="w-3.5 h-3.5" />
                       </button>
@@ -964,7 +981,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                         type="button"
                         onClick={() => handleSaveMessage(msg.id)}
                         title="Save to Personal Vault"
-                        className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-amber-400 transition-colors"
+                        className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-amber-400 transition-colors shrink-0"
                       >
                         <Bookmark className="w-3.5 h-3.5" />
                       </button>
@@ -974,7 +991,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                         type="button"
                         onClick={() => handleTogglePin(msg.id)}
                         title={msg.isPinned ? 'Unpin message' : 'Pin message'}
-                        className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-amber-400 transition-colors"
+                        className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-amber-400 transition-colors shrink-0"
                       >
                         <Pin className="w-3.5 h-3.5" />
                       </button>
@@ -985,7 +1002,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                           type="button"
                           onClick={() => handleStartEdit(msg)}
                           title="Edit message"
-                          className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-blue-400 transition-colors"
+                          className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-blue-400 transition-colors shrink-0"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
@@ -997,12 +1014,25 @@ export const MainChat: React.FC<MainChatProps> = ({
                           type="button"
                           onClick={() => handleDeleteMessage(msg.id)}
                           title="Delete message"
-                          className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-rose-400 transition-colors"
+                          className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-rose-400 transition-colors shrink-0"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
+
+                    {/* Anchored Full Reactions Drawer for this message */}
+                    {reactingMessageId === msg.id && (
+                      <EmojiPickerDrawer
+                        isOpen={true}
+                        onClose={() => setReactingMessageId(null)}
+                        onSelectEmoji={(emoji) => {
+                          handleReaction(msg.id, emoji);
+                          setReactingMessageId(null);
+                        }}
+                        title="React to message"
+                      />
+                    )}
                   </div>
 
                   {/* Reaction Badges Display */}
@@ -1248,6 +1278,32 @@ export const MainChat: React.FC<MainChatProps> = ({
               >
                 {isSilent ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
               </button>
+
+              {/* WhatsApp / Telegram Emoji Picker Button */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                  title="Emoji & Reactions Picker"
+                  className={`p-2 rounded-xl transition-colors ${
+                    isEmojiPickerOpen
+                      ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
+                      : 'dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-amber-500'
+                  }`}
+                >
+                  <Smile className="w-4 h-4" />
+                </button>
+
+                <EmojiPickerDrawer
+                  isOpen={isEmojiPickerOpen}
+                  onClose={() => setIsEmojiPickerOpen(false)}
+                  onSelectEmoji={(emoji) => {
+                    setInputText((prev) => prev + emoji);
+                    setIsEmojiPickerOpen(false);
+                  }}
+                  title="Insert Emoji"
+                />
+              </div>
 
               <input
                 type="text"
