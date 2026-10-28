@@ -394,9 +394,9 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
   const activeReactions = currentSet.emojis;
 
   return (
-    <div className="flex-1 h-full flex flex-col dark:bg-[#09090b] bg-[#fbfbfa] relative overflow-hidden transition-colors duration-200">
+    <div className="chatso-main-chat flex-1 h-full flex flex-col dark:bg-[#09090b] bg-[#fbfbfa] relative overflow-hidden transition-colors duration-200">
       {/* Top Bar */}
-      <div className="h-16 px-4 md:px-6 border-b dark:border-white/[0.08] border-slate-200/80 flex items-center justify-between dark:bg-[#121215]/80 bg-white/90 backdrop-blur-md shrink-0 z-10 transition-colors">
+      <div className="chatso-header h-16 px-4 md:px-6 border-b dark:border-white/[0.08] border-slate-200/80 flex items-center justify-between dark:bg-[#121215]/80 bg-white/90 backdrop-blur-md shrink-0 z-10 transition-colors">
         <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
@@ -626,7 +626,9 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
 
                   {/* Message Bubble */}
                   <div
-                    className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-3.5 shadow-sm text-sm relative transition-all ${
+                    className={`chatso-bubble ${
+                      isMe ? 'chatso-bubble-sent' : 'chatso-bubble-received'
+                    } max-w-[85%] sm:max-w-[75%] rounded-2xl p-3.5 shadow-sm text-sm relative transition-all ${
                       isMe
                         ? 'bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-700 text-white rounded-br-xs border border-purple-400/20 shadow-md'
                         : 'dark:bg-[#18181b] bg-white border dark:border-white/[0.08] border-slate-200/80 dark:text-slate-100 text-slate-800 rounded-bl-xs shadow-sm'
@@ -825,7 +827,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
         </div>
       ) : (
         /* Input Bar (Suspended Stitch Dock) */
-        <div className="p-3 md:p-4 border-t dark:border-white/[0.08] border-slate-200/80 dark:bg-[#121215]/85 bg-white/90 backdrop-blur-md pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+        <div className="chatso-input-dock p-3 md:p-4 border-t dark:border-white/[0.08] border-slate-200/80 dark:bg-[#121215]/85 bg-white/90 backdrop-blur-md pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
           <form onSubmit={handleSendMessage} className="flex items-center gap-2">
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
             <button
