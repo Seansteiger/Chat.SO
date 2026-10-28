@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { UserProfile, MessageDto, SOCKET_EVENTS } from '@chatso/shared';
 import { useAuth } from './hooks/useAuth.js';
 import { useSocket } from './hooks/useSocket.js';
@@ -263,31 +263,53 @@ export const AppContent: React.FC = () => {
     }
   }, [isAuthenticated, loadUsers]);
 
+  const currentUserIdRef = useRef<string | undefined>(currentUser?.id);
+  const currentUserStatusRef = useRef<string | undefined>(currentUser?.status);
+
+  useEffect(() => {
+    currentUserIdRef.current = currentUser?.id;
+    currentUserStatusRef.current = currentUser?.status;
+  }, [currentUser?.id, currentUser?.status]);
+
   // Presence Lifecycle: Heartbeat while open + immediate OFFLINE on browser/tab close
   useEffect(() => {
-    if (!currentUser?.id) return;
+    const userId = currentUser?.id;
+    if (!userId) return;
 
-    // 1. Initial presence on mount
-    api.setPresence('ONLINE', currentUser.id);
+    // 1. Initial presence on mount: if user was marked OFFLINE, bring them to ONLINE
+    if (currentUser?.status === 'OFFLINE') {
+      api.setPresence('ONLINE', userId);
+    } else {
+      api.heartbeat(currentUser?.status as any, userId);
+    }
 
-    // 2. Regular heartbeat every 25 seconds
+    // 2. Regular heartbeat every 25 seconds to keep presence fresh
     const interval = setInterval(() => {
-      api.heartbeat(currentUser.status as any, currentUser.id);
+      const uid = currentUserIdRef.current;
+      const st = currentUserStatusRef.current;
+      if (uid) {
+        api.heartbeat(st as any, uid);
+      }
     }, 25000);
 
     // 3. Mark OFFLINE immediately when user closes the app, tab, or navigates away
     const handleClose = () => {
-      try {
-        (convex as any).mutation(convexApi.users.setPresence, {
-          userId: currentUser.id,
-          status: 'OFFLINE',
-        }).catch(() => {});
-      } catch {}
+      const uid = currentUserIdRef.current;
+      if (uid) {
+        try {
+          (convex as any).mutation(convexApi.users.setPresence, {
+            userId: uid,
+            status: 'OFFLINE',
+          }).catch(() => {});
+        } catch {}
+      }
     };
 
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        api.heartbeat(currentUser.status as any, currentUser.id);
+      const uid = currentUserIdRef.current;
+      const st = currentUserStatusRef.current;
+      if (document.visibilityState === 'visible' && uid) {
+        api.heartbeat(st as any, uid);
       }
     };
 
@@ -300,9 +322,10 @@ export const AppContent: React.FC = () => {
       window.removeEventListener('beforeunload', handleClose);
       window.removeEventListener('pagehide', handleClose);
       document.removeEventListener('visibilitychange', handleVisibility);
-      handleClose();
+      // NOTE: Do not invoke handleClose() here during React re-renders or navigation!
+      // handleClose is solely for window beforeunload / pagehide events.
     };
-  }, [currentUser?.id, currentUser?.status]);
+  }, [currentUser?.id]);
 
   // Listen for Service Worker notification clicks (background wakeups)
   useEffect(() => {
