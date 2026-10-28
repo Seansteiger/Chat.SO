@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { convex, api as convexApi } from '../convex.js';
 import { api } from '../services/api.js';
+import { NotificationService } from '../services/notifications.js';
 import { CreateCircleModal } from './CreateCircleModal.js';
 import { SavedMessagesModal } from './SavedMessagesModal.js';
 
@@ -85,6 +86,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [newChatQuery, setNewChatQuery] = useState('');
   const [newChatResults, setNewChatResults] = useState<UserProfile[]>([]);
   const [isSearchingNewChat, setIsSearchingNewChat] = useState(false);
+
+  // Notification Permission Prompt
+  const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        const dismissed = sessionStorage.getItem('chatso_notif_banner_dismissed');
+        if (!dismissed) setShowNotifPrompt(true);
+      }
+    }
+  }, []);
 
   // Watch Circles
   useEffect(() => {
@@ -533,76 +546,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Modern Navigation Tabs: Chats, Circles, Requests, Calls */}
-      <div className="flex items-center p-1.5 mx-3 mt-3 bg-slate-900/90 rounded-2xl border border-white/10 text-xs">
-        <button
-          type="button"
-          onClick={() => setActiveTab('chats')}
-          className={`flex-1 py-1.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-all ${
-            activeTab === 'chats'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <MessageSquare className="w-3.5 h-3.5" />
-          <span>Chats</span>
-          {totalUnreadChats > 0 && (
-            <span className="min-w-[16px] h-4 px-1 rounded-full bg-emerald-500 text-slate-950 font-bold text-[9px] flex items-center justify-center">
-              {totalUnreadChats}
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('circles')}
-          className={`flex-1 py-1.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-all ${
-            activeTab === 'circles'
-              ? 'bg-purple-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Users className="w-3.5 h-3.5" />
-          <span>Circles</span>
-          {myCircles.length > 0 && (
-            <span className="min-w-[16px] h-4 px-1 rounded-full bg-purple-400/30 text-purple-200 font-bold text-[9px] flex items-center justify-center">
-              {myCircles.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('requests')}
-          className={`flex-1 py-1.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-all ${
-            activeTab === 'requests'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <ShieldAlert className="w-3.5 h-3.5" />
-          <span>Requests</span>
-          {pendingRequests.length > 0 && (
-            <span className="min-w-[16px] h-4 px-1 rounded-full bg-amber-400 text-slate-950 font-bold text-[9px] flex items-center justify-center">
-              {pendingRequests.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('calls')}
-          className={`flex-1 py-1.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-all ${
-            activeTab === 'calls'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Phone className="w-3.5 h-3.5" />
-          <span>Calls</span>
-        </button>
-      </div>
-
       {/* Search Input */}
       <div className="p-3 border-b border-white/5">
         <div className="relative">
@@ -630,6 +573,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           )}
         </div>
+
+        {/* Telegram-style Notification Permission Banner */}
+        {showNotifPrompt && (
+          <div className="mt-2.5 p-2.5 rounded-xl bg-blue-950/70 border border-blue-500/30 flex items-center justify-between gap-2 text-xs text-blue-200 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Bell className="w-4 h-4 text-blue-400 shrink-0" />
+              <span className="truncate text-[11px]">Turn on notifications for calls & texts</span>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await NotificationService.requestPermission();
+                  if (res !== 'default') setShowNotifPrompt(false);
+                }}
+                className="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium text-[11px] transition-colors shadow-sm"
+              >
+                Enable
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNotifPrompt(false);
+                  sessionStorage.setItem('chatso_notif_banner_dismissed', '1');
+                }}
+                className="p-1 text-slate-400 hover:text-white"
+                title="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main Tab Content */}
@@ -869,6 +845,102 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
       )}
+
+      {/* Telegram-style Bottom Navigation Bar */}
+      <nav className="mt-auto shrink-0 border-t border-white/10 bg-slate-950/95 backdrop-blur-md px-2 pt-2 pb-[max(0.65rem,env(safe-area-inset-bottom,0px))] flex items-center justify-around z-20 shadow-2xl">
+        {/* Chats Tab */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('chats')}
+          className={`flex-1 py-1 flex flex-col items-center justify-center relative transition-all group ${
+            activeTab === 'chats' ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <div className="relative p-1">
+            <MessageSquare className="w-5 h-5 transition-transform group-active:scale-95" />
+            {totalUnreadChats > 0 && (
+              <span className="absolute -top-1 -right-2 min-w-[17px] h-[17px] px-1 rounded-full bg-emerald-500 text-slate-950 font-bold text-[9px] flex items-center justify-center ring-2 ring-slate-950">
+                {totalUnreadChats > 99 ? '99+' : totalUnreadChats}
+              </span>
+            )}
+          </div>
+          <span className={`text-[10px] tracking-tight mt-0.5 ${activeTab === 'chats' ? 'font-bold text-white' : 'font-medium'}`}>
+            Chats
+          </span>
+        </button>
+
+        {/* Circles Tab */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('circles')}
+          className={`flex-1 py-1 flex flex-col items-center justify-center relative transition-all group ${
+            activeTab === 'circles' ? 'text-purple-400' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <div className="relative p-1">
+            <Users className="w-5 h-5 transition-transform group-active:scale-95" />
+            {myCircles.length > 0 && (
+              <span className="absolute -top-1 -right-2 min-w-[17px] h-[17px] px-1 rounded-full bg-purple-500 text-white font-bold text-[9px] flex items-center justify-center ring-2 ring-slate-950">
+                {myCircles.length}
+              </span>
+            )}
+          </div>
+          <span className={`text-[10px] tracking-tight mt-0.5 ${activeTab === 'circles' ? 'font-bold text-white' : 'font-medium'}`}>
+            Circles
+          </span>
+        </button>
+
+        {/* Requests Tab */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('requests')}
+          className={`flex-1 py-1 flex flex-col items-center justify-center relative transition-all group ${
+            activeTab === 'requests' ? 'text-amber-400' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <div className="relative p-1">
+            <ShieldAlert className="w-5 h-5 transition-transform group-active:scale-95" />
+            {pendingRequests.length > 0 && (
+              <span className="absolute -top-1 -right-2 min-w-[17px] h-[17px] px-1 rounded-full bg-amber-400 text-slate-950 font-bold text-[9px] flex items-center justify-center ring-2 ring-slate-950">
+                {pendingRequests.length}
+              </span>
+            )}
+          </div>
+          <span className={`text-[10px] tracking-tight mt-0.5 ${activeTab === 'requests' ? 'font-bold text-white' : 'font-medium'}`}>
+            Requests
+          </span>
+        </button>
+
+        {/* Calls Tab */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('calls')}
+          className={`flex-1 py-1 flex flex-col items-center justify-center relative transition-all group ${
+            activeTab === 'calls' ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <div className="relative p-1">
+            <Phone className="w-5 h-5 transition-transform group-active:scale-95" />
+          </div>
+          <span className={`text-[10px] tracking-tight mt-0.5 ${activeTab === 'calls' ? 'font-bold text-white' : 'font-medium'}`}>
+            Calls
+          </span>
+        </button>
+
+        {/* Settings Tab (Telegram standard 5th tab) */}
+        <button
+          type="button"
+          onClick={onOpenProfile}
+          className="flex-1 py-1 flex flex-col items-center justify-center relative text-slate-400 hover:text-slate-200 transition-all group"
+        >
+          <div className="relative p-1">
+            <Settings className="w-5 h-5 transition-transform group-active:scale-95" />
+          </div>
+          <span className="text-[10px] font-medium tracking-tight mt-0.5">
+            Settings
+          </span>
+        </button>
+      </nav>
 
       {/* Modals */}
       <CreateCircleModal

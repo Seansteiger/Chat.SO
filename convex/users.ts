@@ -199,12 +199,26 @@ export const revokeSession = mutation({
   },
 });
 
+// Helper: resolve effective presence dynamically
+const PRESENCE_TTL_MS = 60 * 1000; // 60 seconds without heartbeat marks status as OFFLINE
+
+function resolveUserPresence(user: any): any {
+  if (!user) return user;
+  const now = Date.now();
+  const lastSeen = user.lastSeenAt || 0;
+  if (user.status !== "OFFLINE" && now - lastSeen > PRESENCE_TTL_MS) {
+    return { ...user, status: "OFFLINE" };
+  }
+  return user;
+}
+
 export const listUsers = query({
   args: { currentUserId: v.optional(v.id("users")) },
   handler: async (ctx, args) => {
     const users = await ctx.db.query("users").collect();
-    if (!args.currentUserId) return users;
-    return users.filter((u) => u._id !== args.currentUserId);
+    const resolved = users.map(resolveUserPresence);
+    if (!args.currentUserId) return resolved;
+    return resolved.filter((u) => u._id !== args.currentUserId);
   },
 });
 
@@ -260,11 +274,12 @@ export const listContactedUsers = query({
       const u = await ctx.db.get(id);
       if (u) {
         const conv = convMap.get(id);
+        const resolved = resolveUserPresence(u);
         if (conv && conv.status === "PENDING" && conv.initiatorId === args.currentUserId) {
           // Handshake gatekeeper: hide presence until approved
-          users.push({ ...u, status: "OFFLINE" });
+          users.push({ ...resolved, status: "OFFLINE" });
         } else {
-          users.push(u);
+          users.push(resolved);
         }
       }
     }
@@ -289,8 +304,9 @@ export const searchUsers = query({
     const allUsers = await ctx.db.query("users").take(200);
     const matches: Array<{ user: any; score: number }> = [];
 
-    for (const user of allUsers) {
-      if (args.currentUserId && user._id === args.currentUserId) continue;
+    for (const rawUser of allUsers) {
+      if (args.currentUserId && rawUser._id === args.currentUserId) continue;
+      const user = resolveUserPresence(rawUser);
 
       let matched = false;
       let score = 0;
@@ -437,5 +453,31 @@ export const setPresence = mutation({
       status: args.status,
       lastSeenAt: Date.now(),
     });
+  },
+});
+
+export const heartbeat = mutation({
+  args: {
+    userId: v.id("users"),
+    status: v.optional(
+      v.union(
+        v.literal("ONLINE"),
+        v.literal("BUSY"),
+        v.literal("OFFLINE"),
+        v.literal("LOW_BATTERY"),
+        v.literal("DEEP_FOCUS")
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user) return;
+    const patch: any = { lastSeenAt: Date.now() };
+    if (args.status && args.status !== "OFFLINE") {
+      patch.status = args.status;
+    } else if (user.status === "OFFLINE") {
+      patch.status = "ONLINE";
+    }
+    await ctx.db.patch(args.userId, patch);
   },
 });

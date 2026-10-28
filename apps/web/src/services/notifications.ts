@@ -146,6 +146,7 @@ type NotificationListener = (notifications: InAppNotification[]) => void;
 export class NotificationService {
   private static notificationsList: InAppNotification[] = [];
   private static listeners: Set<NotificationListener> = new Set();
+  private static activeCallNotification: Notification | null = null;
 
   public static isSupported(): boolean {
     return typeof window !== 'undefined' && 'Notification' in window;
@@ -219,6 +220,98 @@ export class NotificationService {
     }
   }
 
+  // Incoming audio/video call notification
+  public static async notifyCall(params: {
+    callId: string;
+    callerName: string;
+    callerId: string;
+    isVideo?: boolean;
+    onAnswer?: () => void;
+    onDecline?: () => void;
+  }) {
+    const title = `Incoming ${params.isVideo ? 'Video' : 'Voice'} Call`;
+    const body = `${params.callerName} is calling you on Chat.SO...`;
+
+    // 1. Add to in-app notification list
+    const newNotif: InAppNotification = {
+      id: crypto.randomUUID(),
+      senderId: params.callerId,
+      senderName: params.callerName,
+      content: `Incoming ${params.isVideo ? 'video' : 'voice'} call`,
+      createdAt: Date.now(),
+      read: false,
+    };
+    this.notificationsList = [newNotif, ...this.notificationsList.slice(0, 49)];
+    this.notifyListeners();
+
+    // 2. Dispatch high-priority OS notification
+    if (this.isSupported() && Notification.permission === 'granted') {
+      try {
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg && 'showNotification' in reg) {
+            await (reg as any).showNotification(title, {
+              body,
+              icon: '/icons/icon-192.svg',
+              badge: '/icons/icon-192.svg',
+              tag: 'chatso-active-call',
+              renotify: true,
+              requireInteraction: true,
+              vibrate: [500, 250, 500, 250, 500],
+              data: {
+                type: 'CALL',
+                callId: params.callId,
+                callerId: params.callerId,
+                url: window.location.href,
+              },
+            });
+            return;
+          }
+        }
+
+        if (this.activeCallNotification) {
+          this.activeCallNotification.close();
+        }
+        const n = new Notification(title, {
+          body,
+          icon: '/icons/icon-192.svg',
+          badge: '/icons/icon-192.svg',
+          tag: 'chatso-active-call',
+          requireInteraction: true,
+        } as any);
+
+        n.onclick = () => {
+          window.focus();
+          if (params.onAnswer) params.onAnswer();
+          n.close();
+        };
+
+        this.activeCallNotification = n;
+      } catch (err) {
+        console.warn('Call notification error:', err);
+      }
+    }
+  }
+
+  // Dismiss call notification on hangup / accept / reject
+  public static async closeCallNotification() {
+    try {
+      if (this.activeCallNotification) {
+        this.activeCallNotification.close();
+        this.activeCallNotification = null;
+      }
+      if (this.isSupported() && 'serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg && 'getNotifications' in reg) {
+          const notifs = await reg.getNotifications({ tag: 'chatso-active-call' });
+          notifs.forEach((n) => n.close());
+        }
+      }
+    } catch {
+      // Ignored
+    }
+  }
+
   public static async notify(
     title: string,
     options?: {
@@ -251,8 +344,8 @@ export class NotificationService {
       try {
         // Try Service Worker showNotification first (persists to OS Notification Center / Action Center)
         if ('serviceWorker' in navigator) {
-          const reg = await navigator.serviceWorker.ready;
-          if (reg) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg && 'showNotification' in reg) {
             await (reg as any).showNotification(title, {
               body: options?.body || 'New message on Chat.SO',
               icon: '/icons/icon-192.svg',

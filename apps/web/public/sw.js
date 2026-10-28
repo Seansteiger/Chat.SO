@@ -107,7 +107,13 @@ self.addEventListener('notificationclick', (event) => {
       // If a Chat.SO window is already open, focus it and post a message
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          if (event.notification.data?.senderId && 'postMessage' in client) {
+          if (event.notification.data?.type === 'CALL' && 'postMessage' in client) {
+            client.postMessage({
+              type: 'CALL_NOTIFICATION_CLICK',
+              callId: event.notification.data.callId,
+              callerId: event.notification.data.callerId,
+            });
+          } else if (event.notification.data?.senderId && 'postMessage' in client) {
             client.postMessage({
               type: 'NOTIFICATION_CLICK',
               senderId: event.notification.data.senderId,

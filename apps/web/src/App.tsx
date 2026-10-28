@@ -263,6 +263,71 @@ export const AppContent: React.FC = () => {
     }
   }, [isAuthenticated, loadUsers]);
 
+  // Presence Lifecycle: Heartbeat while open + immediate OFFLINE on browser/tab close
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    // 1. Initial presence on mount
+    api.setPresence('ONLINE', currentUser.id);
+
+    // 2. Regular heartbeat every 25 seconds
+    const interval = setInterval(() => {
+      api.heartbeat(currentUser.status as any, currentUser.id);
+    }, 25000);
+
+    // 3. Mark OFFLINE immediately when user closes the app, tab, or navigates away
+    const handleClose = () => {
+      try {
+        (convex as any).mutation(convexApi.users.setPresence, {
+          userId: currentUser.id,
+          status: 'OFFLINE',
+        }).catch(() => {});
+      } catch {}
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        api.heartbeat(currentUser.status as any, currentUser.id);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleClose);
+    window.addEventListener('pagehide', handleClose);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleClose);
+      window.removeEventListener('pagehide', handleClose);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      handleClose();
+    };
+  }, [currentUser?.id, currentUser?.status]);
+
+  // Listen for Service Worker notification clicks (background wakeups)
+  useEffect(() => {
+    const handleSwMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'NOTIFICATION_CLICK' && event.data.senderId) {
+        const target = users.find((u) => u.id === event.data.senderId);
+        if (target) {
+          handleSelectUser(target);
+        } else {
+          api.getContactedUsers().then((res) => {
+            const found = res.users.find((u) => u.id === event.data.senderId);
+            if (found) handleSelectUser(found);
+          });
+        }
+      }
+    };
+
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleSwMessage);
+      return () => {
+        navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+      };
+    }
+  }, [users, handleSelectUser]);
+
   // Load message history and watch messages reactively when selectedUser changes
   useEffect(() => {
     if (!selectedUser) {
@@ -352,15 +417,29 @@ export const AppContent: React.FC = () => {
       // Quiet social check: suppress chime if msg isSilent or if current user is in LOW_BATTERY or DEEP_FOCUS
       const isSilent = msg.isSilent || currentUser?.status === 'LOW_BATTERY' || currentUser?.status === 'DEEP_FOCUS';
 
-      NotificationService.notify(senderName, {
-        body: msg.content || (msg.attachmentName ? `Attachment: ${msg.attachmentName}` : 'Sent an attachment'),
-        tag: `chat-${msg.senderId}`,
-        senderId: msg.senderId,
-        silent: isSilent,
-        onClick: () => {
-          if (sender) handleSelectUser(sender);
-        },
-      });
+      // Only suppress desktop pop-up if user is currently looking at this exact chat window
+      const isActivelyChatting = typeof document !== 'undefined' && !document.hidden && selectedUser?.id === msg.senderId;
+
+      if (!isActivelyChatting) {
+        NotificationService.notify(senderName, {
+          body: msg.content || (msg.attachmentName ? `Attachment: ${msg.attachmentName}` : 'Sent an attachment'),
+          tag: `chat-${msg.senderId}`,
+          senderId: msg.senderId,
+          silent: isSilent,
+          onClick: () => {
+            if (sender) {
+              handleSelectUser(sender);
+            } else {
+              api.getContactedUsers().then((res) => {
+                const found = res.users.find((u) => u.id === msg.senderId);
+                if (found) handleSelectUser(found);
+              });
+            }
+          },
+        });
+      } else if (!isSilent) {
+        sound.playMessageChime();
+      }
 
       if (selectedUser?.id === msg.senderId) {
         setMessages((prev) => {
@@ -416,19 +495,29 @@ export const AppContent: React.FC = () => {
     };
   }, [socket, selectedUser, currentUser, users, handleSelectUser]);
 
-  // Handle incoming call ringtone (muting ringtone if user is in Low Battery / Deep Focus)
+  // Handle incoming call ringtone and OS notification
   useEffect(() => {
     if (webrtc.incomingCall) {
       if (currentUser?.status !== 'LOW_BATTERY' && currentUser?.status !== 'DEEP_FOCUS' && currentUser?.allowCalls !== false) {
         sound.startRingtone();
       }
+      NotificationService.notifyCall({
+        callId: webrtc.incomingCall.callerId,
+        callerName: webrtc.incomingCall.callerName || 'Someone',
+        callerId: webrtc.incomingCall.callerId,
+        isVideo: webrtc.incomingCall.isVideo,
+        onAnswer: () => webrtc.acceptCall(),
+        onDecline: () => webrtc.rejectCall(),
+      });
     } else {
       sound.stopRingtone();
+      NotificationService.closeCallNotification();
     }
     return () => {
       sound.stopRingtone();
+      NotificationService.closeCallNotification();
     };
-  }, [webrtc.incomingCall, currentUser?.status, currentUser?.allowCalls]);
+  }, [webrtc.incomingCall, currentUser?.status, currentUser?.allowCalls, webrtc]);
 
   // Send message
   const handleSendMessage = async (params: {

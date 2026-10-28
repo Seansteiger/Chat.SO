@@ -208,6 +208,30 @@ export const api = {
     return { user: formatConvexUser(updated) };
   },
 
+  setPresence: async (status: 'ONLINE' | 'BUSY' | 'OFFLINE' | 'LOW_BATTERY' | 'DEEP_FOCUS', userId?: string) => {
+    try {
+      const targetUserId = userId || (await api.getMe()).user.id;
+      await convex.mutation(convexApi.users.setPresence, {
+        userId: targetUserId as any,
+        status,
+      });
+    } catch (err) {
+      console.warn('[API] setPresence failed:', err);
+    }
+  },
+
+  heartbeat: async (status?: 'ONLINE' | 'BUSY' | 'OFFLINE' | 'LOW_BATTERY' | 'DEEP_FOCUS', userId?: string) => {
+    try {
+      const targetUserId = userId || (await api.getMe()).user.id;
+      await convex.mutation(convexApi.users.heartbeat, {
+        userId: targetUserId as any,
+        status,
+      });
+    } catch {
+      // Background heartbeat failures are non-blocking
+    }
+  },
+
   getMessages: async (peerId: string) => {
     const me = await api.getMe();
     const conv = await convex.mutation(convexApi.messages.getOrCreateConversation, {
