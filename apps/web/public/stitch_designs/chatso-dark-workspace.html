@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Chat.SO — Ultra-Low Latency Messaging</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-surface-variant": "#c7c4d7",
+            "on-primary-fixed": "#07006c",
+            "on-tertiary-fixed": "#001e2c",
+            "surface": "#131315",
+            "secondary-fixed-dim": "#4edea3",
+            "on-secondary-fixed-variant": "#005236",
+            "on-tertiary": "#00354a",
+            "on-secondary": "#003824",
+            "primary": "#c0c1ff",
+            "primary-container": "#8083ff",
+            "on-tertiary-container": "#002d40",
+            "error-container": "#93000a",
+            "outline-variant": "#464554",
+            "primary-fixed-dim": "#c0c1ff",
+            "on-error": "#690005",
+            "surface-container-highest": "#353437",
+            "inverse-on-surface": "#313032",
+            "tertiary": "#7bd0ff",
+            "primary-fixed": "#e1e0ff",
+            "on-primary-fixed-variant": "#2f2ebe",
+            "on-surface": "#e5e1e4",
+            "on-primary": "#1000a9",
+            "tertiary-fixed-dim": "#7bd0ff",
+            "secondary": "#4edea3",
+            "on-tertiary-fixed-variant": "#004c69",
+            "on-secondary-container": "#00311f",
+            "surface-variant": "#353437",
+            "on-primary-container": "#0d0096",
+            "surface-container": "#201f22",
+            "tertiary-container": "#009bd1",
+            "surface-container-low": "#1c1b1d",
+            "inverse-surface": "#e5e1e4",
+            "surface-bright": "#39393b",
+            "background": "#131315",
+            "secondary-fixed": "#6ffbbe",
+            "surface-container-high": "#2a2a2c",
+            "outline": "#908fa0",
+            "surface-tint": "#c0c1ff",
+            "surface-container-lowest": "#0e0e10",
+            "surface-dim": "#131315",
+            "secondary-container": "#00a572",
+            "on-background": "#e5e1e4",
+            "on-secondary-fixed": "#002113",
+            "inverse-primary": "#494bd6",
+            "on-error-container": "#ffdad6",
+            "tertiary-fixed": "#c4e7ff",
+            "error": "#ffb4ab"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-2xl": "2rem",
+            "space-lg": "1rem",
+            "gutter-compact": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "0.75rem",
+            "space-xl": "1.5rem",
+            "space-2xs": "0.125rem",
+            "gutter": "1rem",
+            "space-sm": "0.5rem",
+            "margin-edge": "0.75rem",
+            "margin": "1.5rem"
+          },
+          "fontFamily": {
+            "display-lg": ["Geist", "sans-serif"],
+            "display-md": ["Geist", "sans-serif"],
+            "headline-sm": ["Geist", "sans-serif"],
+            "body-lg": ["Geist", "sans-serif"],
+            "label-caps": ["JetBrains Mono", "monospace"],
+            "code-block": ["JetBrains Mono", "monospace"],
+            "body-md": ["Geist", "sans-serif"],
+            "label-meta": ["Geist", "sans-serif"],
+            "code-inline": ["JetBrains Mono", "monospace"],
+            "body-sm": ["Geist", "sans-serif"]
+          },
+          "fontSize": {
+            "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.03em", "fontWeight": "600" }],
+            "display-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+            "body-lg": ["15px", { "lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "400" }],
+            "label-caps": ["10px", { "lineHeight": "14px", "letterSpacing": "0.06em", "fontWeight": "500" }],
+            "code-block": ["12.5px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "label-meta": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "code-inline": ["13px", { "lineHeight": "18px", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    /* Custom scrollbar for terminal/dense feeds */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+    .presence-pulse {
+      box-shadow: 0 0 0 0 rgba(78, 222, 163, 0.7);
+      animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(78, 222, 163, 0.6); }
+      70% { box-shadow: 0 0 0 5px rgba(78, 222, 163, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(78, 222, 163, 0); }
+    }
+  </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased overflow-hidden select-none font-body-md text-body-md">
+<div class="flex h-screen w-screen bg-surface-container-lowest text-on-surface overflow-hidden">
+<!-- 1. SLIM ICON NAVIGATION RAIL (Shared Component: SideNavBar) -->
+<!-- JSON: fixed left-0 top-0 h-screen w-16, style_bg_color: bg-surface-container-lowest, border-r border-outline-variant/30 -->
+<aside class="w-16 h-full bg-surface-container-lowest border-r border-outline-variant/30 flex flex-col justify-between items-center py-4 z-40 shrink-0">
+<!-- Top Brand Anchor -->
+<div class="flex flex-col items-center gap-4">
+<!-- Glowing Hexagon Logo -->
+<div class="relative group cursor-pointer">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-container/30 to-inverse-primary/20 border border-primary/40 flex items-center justify-center shadow-lg shadow-inverse-primary/20 transition-all duration-300 group-hover:scale-105 group-hover:border-primary">
+<svg class="w-5 h-5 text-primary drop-shadow-[0_0_8px_rgba(192,193,255,0.8)]" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 2L2 7V17L12 22L22 17V7L12 2ZM12 4.18L19.5 8.35V15.65L12 19.82L4.5 15.65V8.35L12 4.18ZM10.5 8V16H13.5V8H10.5Z"></path>
+</svg>
+</div>
+<div class="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-secondary rounded-full ring-2 ring-surface-container-lowest"></div>
+</div>
+<!-- Rail Action CTA: "add" -->
+<button class="w-9 h-9 rounded-xl bg-surface-container-high border border-outline-variant/40 flex items-center justify-center text-on-surface hover:text-primary hover:border-primary/50 transition-colors duration-150 active:scale-95" title="Quick Compose">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+<!-- Navigation Pills list from JSON: ["Chats", "Circles", "Calls", "Saved Vault", "Notifications"] -->
+<!-- Icons: ["chat", "groups", "call", "bookmark", "notifications"] -->
+<!-- Current Intent is active conversation -> "Chats" is active tab -->
+<nav class="flex flex-col items-center gap-1.5 mt-2">
+<!-- Item 1: Chats (ACTIVE) -->
+<button class="flex items-center justify-center text-primary bg-primary/10 rounded-xl p-3 border-l-2 border-primary relative group" title="Chats">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">chat</span>
+<!-- Tooltip -->
+<span class="absolute left-16 bg-surface-container-high text-on-surface font-label-meta text-label-meta px-2 py-1 rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap">Chats</span>
+</button>
+<!-- Item 2: Circles -->
+<button class="flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-xl p-3 transition-colors duration-150 relative group" title="Circles">
+<span class="material-symbols-outlined text-[20px]">groups</span>
+<span class="absolute left-16 bg-surface-container-high text-on-surface font-label-meta text-label-meta px-2 py-1 rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap">Circles</span>
+</button>
+<!-- Item 3: Calls -->
+<button class="flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-xl p-3 transition-colors duration-150 relative group" title="Calls">
+<span class="material-symbols-outlined text-[20px]">call</span>
+<span class="absolute left-16 bg-surface-container-high text-on-surface font-label-meta text-label-meta px-2 py-1 rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap">Calls</span>
+</button>
+<!-- Item 4: Saved Vault -->
+<button class="flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-xl p-3 transition-colors duration-150 relative group" title="Saved Vault">
+<span class="material-symbols-outlined text-[20px]">bookmark</span>
+<span class="absolute left-16 bg-surface-container-high text-on-surface font-label-meta text-label-meta px-2 py-1 rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap">Saved Vault</span>
+</button>
+<!-- Item 5: Notifications with Counter Badge -->
+<button class="flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-xl p-3 transition-colors duration-150 relative group" title="Notifications">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-2 right-2 w-4 h-4 bg-error-container text-on-error font-label-caps text-[9px] font-semibold rounded-full flex items-center justify-center ring-2 ring-surface-container-lowest">3</span>
+<span class="absolute left-16 bg-surface-container-high text-on-surface font-label-meta text-label-meta px-2 py-1 rounded shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap">Notifications</span>
+</button>
+</nav>
+</div>
+<!-- Bottom Nav Rail Actions (Dark Mode, Install PWA, Profile Settings / User Avatar) -->
+<div class="flex flex-col items-center gap-2">
+<button class="w-9 h-9 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors duration-150" title="Dark Mode">
+<span class="material-symbols-outlined text-[19px]">dark_mode</span>
+</button>
+<button class="w-9 h-9 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors duration-150" title="Install PWA">
+<span class="material-symbols-outlined text-[19px]">download</span>
+</button>
+<!-- Current User Avatar Profile -->
+<div class="pt-2 border-t border-outline-variant/30 flex flex-col items-center cursor-pointer group" title="Profile Settings (David K.)">
+<div class="relative w-9 h-9 rounded-xl overflow-hidden ring-1 ring-white/10 group-hover:ring-primary/60 transition-all">
+<img class="w-full h-full object-cover" data-alt="High quality close up portrait photo of a male creative technologist named David with short styled dark hair wearing sleek dark technical apparel in a dark ambient neon studio setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCI4Cq-8dvDJcGrEA8iKxNQw0BpnanN4CUf-NukJ02o-khWI0skk9M9pQeRTXJygHoTfMOH_vmvG47wYRSSCJtusKgvSmBAXcOWCP9dailpP-2oFd-RPRXRQJwJhbpJEaFTpwXH5Rb2kIFEacj4Tc4zpEl_Yoi452UxrhstEvWVoHryMVbJUiYQhT8412bXXuVtTr1GTfKzCl1ENB_eUpckfebk901XGC4n3VH5hVu9Y0agoAdS6ASxVT_wSWnSED4SWAHoucWNt1w"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-secondary rounded-full ring-2 ring-surface-container-lowest presence-pulse"></span>
+</div>
+</div>
+</div>
+</aside>
+<!-- 2. SIDEBAR NAVIGATION PANE: CHATS & CIRCLES LIST (320px) -->
+<section class="w-80 h-full bg-surface-container-low border-r border-outline-variant/20 flex flex-col shrink-0">
+<!-- Header with Workspace Branding & Quick Action Pills -->
+<div class="h-14 px-4 border-b border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary tracking-tight">Chat.SO</h1>
+<span class="font-label-caps text-label-caps text-on-surface-variant/70 px-1.5 py-0.5 rounded bg-surface-container-high border border-outline-variant/20">v2.4</span>
+</div>
+<div class="flex items-center gap-1.5">
+<button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="New Chat">
+<span class="material-symbols-outlined text-[18px]">edit_square</span>
+</button>
+<button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Create Circle">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+<!-- Omnibox Search Bar with Keyboard Shortcut Hint -->
+<div class="p-3">
+<div class="relative flex items-center bg-surface-container-lowest/80 border border-outline-variant/30 rounded-lg px-3 py-1.5 focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/40 transition-all">
+<span class="material-symbols-outlined text-outline text-[18px] mr-2">search</span>
+<input class="bg-transparent border-none text-body-sm font-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-0 p-0 w-full" placeholder="Search Vault or messages..." type="text"/>
+<kbd class="font-label-caps text-[10px] bg-surface-container-high border border-outline-variant/40 text-on-surface-variant px-1.5 py-0.5 rounded shadow-sm">⌘K</kbd>
+</div>
+</div>
+<!-- Segmented Category Filters (Direct Messages, Circles, Calls, Requests) -->
+<div class="px-3 pb-2 flex items-center gap-1 border-b border-outline-variant/20 text-body-sm font-body-sm overflow-x-auto">
+<button class="px-2.5 py-1 rounded-md text-primary font-medium bg-primary/10 border-b-2 border-primary flex items-center gap-1.5">
+<span>Direct Messages</span>
+<span class="font-label-caps text-[9px] bg-primary/20 text-primary px-1 rounded-full">4</span>
+</button>
+<button class="px-2 py-1 rounded-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high flex items-center gap-1 transition-colors">
+<span>Circles</span>
+<span class="font-label-caps text-[9px] bg-surface-container-highest text-on-surface-variant px-1 rounded-full">8</span>
+</button>
+<button class="px-2 py-1 rounded-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span>Calls</span>
+</button>
+<button class="px-2 py-1 rounded-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span>Requests</span>
+</button>
+</div>
+<!-- Conversation List Items (Vertical Scrollable Feed) -->
+<div class="flex-1 overflow-y-auto px-2 py-2 space-y-1">
+<!-- Active Item: Sarah Chen -->
+<div class="group relative flex items-center gap-3 p-2.5 rounded-lg bg-primary/10 border border-primary/20 text-on-surface cursor-pointer transition-all duration-150">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-7 bg-primary rounded-r"></div>
+<div class="relative w-10 h-10 rounded-lg overflow-hidden shrink-0 ring-1 ring-primary/40">
+<img class="w-full h-full object-cover" data-alt="Portrait photography of Sarah Chen, an Asian female software architect wearing glasses and a dark turtleneck with sleek ambient background reflections." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKxX-996HVzbCvChap-9_liGmWR9gJE76u5R061AN2oY7BY0aDiqCLK_mmGwivXO9x6rVaGzLc35-3VejnnAOqBQeErNfQqS7_D3mcKcGFHVtMHydbYBgDZb1k5dXXL9sRXhOgnCRZe_zvxv6dAN0dSWZUaHfsYAtA7GW2KhRNFiAFTq3dChTtyOm8DqWGfD6EkE9anpUUhaENtKtrfaB4gM1imA1uNb6GvAKt0TEq3XgiGwFI2T8dr5TIOJV4ivZFT-TSlNqXttE"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-secondary rounded-full ring-2 ring-surface-container-low presence-pulse"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1 min-w-0">
+<span class="font-body-md text-body-md font-semibold text-on-surface truncate">Sarah Chen</span>
+<span class="material-symbols-outlined text-primary text-[15px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<span class="font-label-meta text-label-meta text-primary font-medium shrink-0">Just now</span>
+</div>
+<div class="flex items-center justify-between mt-0.5">
+<p class="font-body-sm text-body-sm text-on-surface truncate">Just uploaded the new WebRTC audio spec!</p>
+<div class="flex items-center gap-1 shrink-0 ml-1">
+<span class="font-label-caps text-[9px] bg-primary text-on-primary-fixed font-bold px-1.5 py-0.2 rounded-full">1</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 2: Engineering Core #general -->
+<div class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-surface-container-high/60 cursor-pointer text-on-surface-variant hover:text-on-surface transition-all duration-150">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest border border-outline-variant/30 flex items-center justify-center shrink-0 text-tertiary font-label-caps font-semibold">
+            #
+          </div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md font-medium text-on-surface truncate">Engineering Core</span>
+<span class="font-label-meta text-label-meta text-outline shrink-0">4m</span>
+</div>
+<div class="flex items-center justify-between mt-0.5">
+<p class="font-body-sm text-body-sm text-outline truncate">deploying v2.4 to staging cluster</p>
+<div class="flex items-center gap-1 text-[11px] text-secondary font-label-meta">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span>34</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 3: Alex Rivera (Product Lead) -->
+<div class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-surface-container-high/60 cursor-pointer text-on-surface-variant hover:text-on-surface transition-all duration-150">
+<div class="relative w-10 h-10 rounded-lg overflow-hidden shrink-0 ring-1 ring-outline-variant/30">
+<img class="w-full h-full object-cover" data-alt="Close up professional portrait of Alex Rivera, a Hispanic male product leader with a trimmed beard and dark minimalist hoodie against a dark architectural office interior." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBh0JlvQ3I6ekDpqrZNoIQKhkbdAL6wX3Fhpx_qg49qqEWFZF53fAmOwZI9TNPS2m81hUGc7UCZ4ucKio2eYmGkE-HIW0em6Ar0DrFgG6Qgidq9iUzuHM-UqhgSDp0mDHoOmx49y3D7KbW6P5hDAx_ml1XodDyN2ATSKQgfxbRJ6pFe5v_ZfZUSc54_AblPKy5I24j_Q3IcnOYxXJJWXcPE2Jyb26wNI_jw3kilmYWNuvx5X6hQPzCUtaVAF3fYGrU04hpT-9msmog"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-yellow-400 rounded-full ring-2 ring-surface-container-low"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md font-medium text-on-surface truncate">Alex Rivera</span>
+<span class="font-label-meta text-label-meta text-outline shrink-0">12m</span>
+</div>
+<p class="font-body-sm text-body-sm text-outline truncate mt-0.5">Let's review the call recordings at 3pm</p>
+</div>
+</div>
+<!-- Item 4: Design Systems #tokens (Private) -->
+<div class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-surface-container-high/60 cursor-pointer text-on-surface-variant hover:text-on-surface transition-all duration-150">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high border border-outline-variant/30 flex items-center justify-center shrink-0 text-primary-container">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1 min-w-0">
+<span class="font-body-md text-body-md font-medium text-on-surface truncate">Design Systems</span>
+</div>
+<span class="font-label-meta text-label-meta text-outline shrink-0">1h</span>
+</div>
+<div class="flex items-center justify-between mt-0.5">
+<p class="font-body-sm text-body-sm text-outline truncate">Updated shadow-elevation tokens</p>
+<span class="font-label-caps text-[9px] bg-surface-container-highest text-on-surface px-1.5 rounded-full">4</span>
+</div>
+</div>
+</div>
+<!-- Item 5: DevOps & Infra -->
+<div class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-surface-container-high/60 cursor-pointer text-on-surface-variant hover:text-on-surface transition-all duration-150">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high border border-outline-variant/30 flex items-center justify-center shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md font-medium text-on-surface truncate">DevOps &amp; Infra</span>
+<span class="font-label-meta text-label-meta text-outline shrink-0">2h</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary truncate mt-0.5">CI/CD pipeline passed in 42s</p>
+</div>
+</div>
+</div>
+<!-- Quick Server Connection / Node Footprint -->
+<div class="p-3 border-t border-outline-variant/20 bg-surface-container-lowest/40 flex items-center justify-between text-label-meta font-label-meta text-outline">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span>us-west-edge-01 (14ms)</span>
+</div>
+<span class="font-label-caps text-[10px] text-on-surface-variant">TLS 1.3</span>
+</div>
+</section>
+<!-- 3. MAIN ACTIVE CHAT CONVERSATION CANVAS (Flex-1) -->
+<main class="flex-1 flex flex-col bg-surface-container-lowest relative min-w-0">
+<!-- Canvas Header Bar (Shared Component: TopNavBar adaptation) -->
+<header class="h-14 px-6 border-b border-outline-variant/20 flex items-center justify-between bg-surface/80 backdrop-blur-md z-30 shrink-0">
+<!-- Recipient Metadata -->
+<div class="flex items-center gap-3 min-w-0">
+<div class="relative w-9 h-9 rounded-lg overflow-hidden shrink-0 ring-1 ring-white/10">
+<img class="w-full h-full object-cover" data-alt="Sarah Chen portrait in high-resolution digital framing with dark rim lighting and serene focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdEIVSRtLsEMr_XHrBsJXqS3qEhyyKerN9MlJfWIVTykjWGDRX1oOiIIDT8EzNxOzDLdWrLOo8JFW9lNWG1DfhksGJCXSWVezfogr3KQNASgXI07g50jNjUO8eqpv1GsNtRZK_5fLXpfYQR3C-5stiuUCIeb9TtAhUf37eQboMLJoAXeJw1e9gBJ9VvPLQ032YfNNehj4B0x_zssqcjmdPIOL_rwO61-kYngE9DARYTbdlft07AvK7jo3WRDUi6AOJlCtW6Df5lnA"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-secondary rounded-full ring-2 ring-surface"></span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<h2 class="font-headline-sm text-headline-sm font-semibold text-on-surface truncate">Sarah Chen</h2>
+<span class="material-symbols-outlined text-primary text-[16px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div class="flex items-center gap-2 font-label-meta text-label-meta text-secondary">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span>Active now • Audio/Video ready</span>
+</div>
+</div>
+</div>
+<!-- Header Actions Cluster (Video Call, Voice Call, Search Vault, Pin, Context Drawer) -->
+<div class="flex items-center gap-2">
+<!-- Primary CTA: Start Video Call -->
+<button class="bg-primary hover:bg-primary-fixed text-on-primary font-medium px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 text-body-sm font-body-sm shadow-sm transition-all duration-150 active:scale-95">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">videocam</span>
+<span>Start Call</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Voice Call">
+<span class="material-symbols-outlined text-[18px]">call</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Search in Chat">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</button>
+<div class="h-4 w-px bg-outline-variant/30 mx-1"></div>
+<button class="px-2 py-1 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high flex items-center gap-1 transition-colors" title="Pinned Items">
+<span class="material-symbols-outlined text-[18px]">push_pin</span>
+<span class="font-label-caps text-[10px] bg-surface-container-highest px-1 rounded">4</span>
+</button>
+<button class="p-2 rounded-lg text-primary hover:text-primary-fixed hover:bg-surface-container-high transition-colors" title="Toggle Inspector Drawer">
+<span class="material-symbols-outlined text-[18px]">dock_to_right</span>
+</button>
+</div>
+</header>
+<!-- Pinned Message Alert Ribbon -->
+<div class="px-6 py-2 bg-surface-container-high/40 border-b border-outline-variant/20 flex items-center justify-between text-body-sm font-body-sm backdrop-blur-sm">
+<div class="flex items-center gap-2 text-on-surface-variant truncate">
+<span class="material-symbols-outlined text-primary text-[16px] shrink-0">push_pin</span>
+<span class="font-medium text-on-surface">Pinned:</span>
+<span class="truncate">WebRTC signaling architecture &amp; 50MB direct GCS file uploader specs</span>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-4">
+<button class="font-label-meta text-label-meta text-primary hover:underline font-medium">View Thread</button>
+<button class="text-outline hover:text-on-surface p-0.5">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</div>
+</div>
+<!-- Message Stream (Scrollable) -->
+<div class="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+<!-- Date Divider -->
+<div class="flex items-center justify-center">
+<span class="font-label-meta text-label-meta text-outline-variant bg-surface-container border border-outline-variant/30 px-3 py-1 rounded-full">
+            Today, October 28
+          </span>
+</div>
+<!-- 1. Incoming Message Group (Sarah Chen) -->
+<div class="flex items-start gap-3.5 group max-w-3xl">
+<div class="w-10 h-10 rounded-lg overflow-hidden shrink-0 ring-1 ring-outline-variant/40 mt-0.5">
+<img class="w-full h-full object-cover" data-alt="Sarah Chen portrait avatar thumbnail in deep tech environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlMYvuH5D55AYJQpPlYQcsi5f9YfuyzmdL2opfscKVbtMUjhmsM3xHeFrX-oz-86I7KIu6BJT0NpVWgBs7JKIJ6a8xbDT2kODKWiypn6cx7sCsomhG9CTQzfMGWFDz22MLt6r-6WfW4lko3TYEe7VPdmVxFUhzFb3SobqJ3oImETbvAiiWMaEb49uEIz03lVna1D0ddUS06dD4J4FcpktrzS_segAcRyMl0lodE78YO2VbgLQQGq3YUVn3QwMPbhT0yhudFEdOS6w"/>
+</div>
+<div class="flex-1 min-w-0 space-y-2">
+<!-- Author Header -->
+<div class="flex items-baseline gap-2">
+<span class="font-body-md text-body-md font-semibold text-on-surface">Sarah Chen</span>
+<span class="font-label-meta text-label-meta text-outline">Lead Architect • 10:11 AM</span>
+</div>
+<!-- Message Body Text -->
+<div class="bg-surface-container/70 border border-outline-variant/20 rounded-xl p-4 text-on-surface text-body-lg font-body-lg leading-relaxed shadow-sm">
+<p>Here is the new WebRTC signaling connection handler with zero-copy packet relay and fallback ICE candidates. Latency drops to ~12ms p99:</p>
+<!-- Code Snippet Card (JetBrains Mono) -->
+<div class="mt-3 bg-surface-container-lowest border border-outline-variant/30 rounded-lg overflow-hidden">
+<div class="flex items-center justify-between px-3.5 py-1.5 bg-surface-container-high/50 border-b border-outline-variant/20 text-on-surface-variant font-label-caps text-label-caps">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span>signaling_client.ts</span>
+</div>
+<button class="flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors" title="Copy snippet">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span>Copy</span>
+</button>
+</div>
+<pre class="p-3.5 font-code-block text-code-block text-on-surface overflow-x-auto leading-relaxed"><code><span class="text-primary-container">const</span> peerConnection = <span class="text-tertiary">new</span> <span class="text-secondary">RTCPeerConnection</span>({
+  iceServers: [{ urls: <span class="text-secondary-fixed-dim">'stun:turn.chat.so:3478'</span> }],
+  iceCandidatePoolSize: <span class="text-tertiary-fixed">10</span>,
+  bundlePolicy: <span class="text-secondary-fixed-dim">'max-bundle'</span>
+});
+peerConnection.ontrack = (event) =&gt; audioContext.sink(event.streams[0]);</code></pre>
+</div>
+<!-- Direct Cloud File Attachment Card -->
+<div class="mt-3.5 flex items-center justify-between p-3 bg-surface-container-low rounded-lg border border-outline-variant/30 hover:border-primary/40 transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high border border-outline-variant/30 flex items-center justify-center shrink-0 text-primary">
+<span class="material-symbols-outlined text-[20px]">draft</span>
+</div>
+<div class="min-w-0">
+<div class="font-body-md text-body-md font-medium text-on-surface truncate">ChatSO-Architecture-v3.fig</div>
+<div class="font-label-meta text-label-meta text-outline flex items-center gap-2">
+<span>48.2 MB</span>
+<span>•</span>
+<span class="font-label-caps text-[10px]">sha256: 7f8a9...b2</span>
+</div>
+</div>
+</div>
+<button class="p-2 rounded-lg bg-surface-container-high text-on-surface hover:text-primary border border-outline-variant/20 hover:border-primary/30 transition-all shrink-0 ml-3" title="Download Asset">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+<!-- Interactive Architecture Poll Widget Card -->
+<div class="mt-3.5 p-4 bg-surface-container-low border border-outline-variant/30 rounded-xl space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">poll</span>
+<h4 class="font-body-md text-body-md font-semibold text-on-surface">Architecture Voting: Signaling Gateway Protocol</h4>
+</div>
+<span class="font-label-caps text-label-caps text-secondary bg-secondary/10 px-2 py-0.5 rounded-full border border-secondary/20">Active Poll</span>
+</div>
+<div class="space-y-2">
+<!-- Option 1 (72% Leader) -->
+<div class="relative overflow-hidden rounded-lg border border-primary/40 bg-surface-container-high/40 p-2.5 cursor-pointer">
+<div class="absolute inset-0 bg-primary/15 w-[72%] transition-all"></div>
+<div class="relative flex items-center justify-between font-body-sm text-body-sm">
+<div class="flex items-center gap-2">
+<span class="w-4 h-4 rounded-full border-2 border-primary bg-primary flex items-center justify-center">
+<span class="w-1.5 h-1.5 bg-on-primary rounded-full"></span>
+</span>
+<span class="font-medium text-on-surface">WebSockets + Convex Gateway</span>
+</div>
+<span class="font-label-caps text-label-caps text-primary font-semibold">72% (40)</span>
+</div>
+</div>
+<!-- Option 2 (21%) -->
+<div class="relative overflow-hidden rounded-lg border border-outline-variant/30 bg-surface-container-high/20 p-2.5 cursor-pointer">
+<div class="absolute inset-0 bg-surface-variant/40 w-[21%] transition-all"></div>
+<div class="relative flex items-center justify-between font-body-sm text-body-sm">
+<div class="flex items-center gap-2">
+<span class="w-4 h-4 rounded-full border border-outline"></span>
+<span class="text-on-surface-variant">WebRTC DataChannels Direct</span>
+</div>
+<span class="font-label-caps text-label-caps text-outline">21% (12)</span>
+</div>
+</div>
+<!-- Option 3 (7%) -->
+<div class="relative overflow-hidden rounded-lg border border-outline-variant/30 bg-surface-container-high/20 p-2.5 cursor-pointer">
+<div class="absolute inset-0 bg-surface-variant/40 w-[7%] transition-all"></div>
+<div class="relative flex items-center justify-between font-body-sm text-body-sm">
+<div class="flex items-center gap-2">
+<span class="w-4 h-4 rounded-full border border-outline"></span>
+<span class="text-on-surface-variant">Server-Sent Events (SSE) Fallback</span>
+</div>
+<span class="font-label-caps text-label-caps text-outline">7% (4)</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1 border-t border-outline-variant/20 font-label-meta text-label-meta text-outline">
+<span>56 team members voted • Closes in 4h</span>
+<button class="text-primary hover:underline font-medium font-body-sm text-body-sm">Change vote</button>
+</div>
+</div>
+<!-- Voice Note Player Widget Card -->
+<div class="mt-3.5 p-3 bg-surface-container-low border border-outline-variant/30 rounded-xl flex items-center gap-3">
+<button class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md hover:bg-primary-fixed transition-transform active:scale-95 shrink-0" title="Play Voice Memo">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<!-- Audio Waveform Visualization -->
+<div class="flex-1 space-y-1">
+<div class="flex items-center gap-1 h-7">
+<div class="w-1 h-3 rounded-full bg-primary"></div>
+<div class="w-1 h-5 rounded-full bg-primary"></div>
+<div class="w-1 h-7 rounded-full bg-primary"></div>
+<div class="w-1 h-4 rounded-full bg-primary"></div>
+<div class="w-1 h-6 rounded-full bg-primary"></div>
+<div class="w-1 h-7 rounded-full bg-primary"></div>
+<div class="w-1 h-5 rounded-full bg-primary"></div>
+<div class="w-1 h-3 rounded-full bg-primary"></div>
+<div class="w-1 h-6 rounded-full bg-outline-variant"></div>
+<div class="w-1 h-4 rounded-full bg-outline-variant"></div>
+<div class="w-1 h-7 rounded-full bg-outline-variant"></div>
+<div class="w-1 h-5 rounded-full bg-outline-variant"></div>
+<div class="w-1 h-3 rounded-full bg-outline-variant"></div>
+<div class="w-1 h-5 rounded-full bg-outline-variant"></div>
+<div class="w-1 h-4 rounded-full bg-outline-variant"></div>
+<div class="w-1 h-6 rounded-full bg-outline-variant"></div>
+<div class="w-1 h-2 rounded-full bg-outline-variant"></div>
+</div>
+<div class="flex items-center justify-between font-label-meta text-label-meta text-outline">
+<span>0:48 / 1:30</span>
+<span class="font-label-caps text-[9px] bg-surface-container-high px-1.5 py-0.5 rounded text-on-surface-variant font-medium">1.5x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 2. Outgoing Message (Me / David K.) -->
+<div class="flex flex-col items-end space-y-1.5 max-w-xl ml-auto">
+<!-- Reply Quote Snippet -->
+<div class="bg-surface-container-low border-l-2 border-primary/60 px-3 py-1.5 rounded text-outline font-body-sm text-body-sm max-w-md truncate">
+<span class="text-primary font-medium">Sarah Chen:</span> "Here is the new WebRTC signaling connection handler..."
+          </div>
+<!-- Outgoing Message Bubble with Subtle Indigo Aura -->
+<div class="bg-primary-container/20 border border-primary-container/40 text-on-surface rounded-2xl rounded-tr-sm p-4 shadow-lg shadow-inverse-primary/5">
+<p class="font-body-lg text-body-lg leading-relaxed">
+              Looks fantastic! Deploying the signaling server updates now to the edge mesh.
+            </p>
+<div class="flex items-center justify-end gap-1.5 mt-2 font-label-meta text-label-meta text-primary">
+<span>10:14 AM</span>
+<span class="material-symbols-outlined text-[16px] text-tertiary">done_all</span>
+</div>
+</div>
+<!-- Emoji Reaction Chips -->
+<div class="flex items-center gap-1.5 pt-0.5">
+<button class="flex items-center gap-1 bg-surface-container border border-outline-variant/30 hover:border-primary/50 text-on-surface font-label-caps text-[11px] px-2 py-0.5 rounded-full transition-colors">
+<span>🚀</span>
+<span class="text-primary font-bold">5</span>
+</button>
+<button class="flex items-center gap-1 bg-surface-container border border-outline-variant/30 hover:border-primary/50 text-on-surface font-label-caps text-[11px] px-2 py-0.5 rounded-full transition-colors">
+<span>🔥</span>
+<span class="text-on-surface-variant">8</span>
+</button>
+<button class="flex items-center gap-1 bg-surface-container border border-outline-variant/30 hover:border-primary/50 text-on-surface font-label-caps text-[11px] px-2 py-0.5 rounded-full transition-colors">
+<span>❤️</span>
+<span class="text-on-surface-variant">3</span>
+</button>
+</div>
+</div>
+<!-- Live Typing Indicator -->
+<div class="flex items-center gap-2 text-outline font-label-meta text-label-meta">
+<div class="flex items-center gap-1 bg-surface-container/60 border border-outline-variant/20 px-2.5 py-1 rounded-full">
+<span class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"></span>
+<span class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0.2s]"></span>
+<span class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0.4s]"></span>
+<span class="ml-1 text-on-surface-variant font-body-sm text-body-sm">Sarah Chen is typing...</span>
+</div>
+</div>
+</div>
+<!-- Floating Bottom Composer Dock -->
+<footer class="px-6 pb-6 pt-2 bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest/95 to-transparent shrink-0">
+<div class="relative bg-surface/90 backdrop-blur-xl border border-white/10 rounded-2xl p-2.5 shadow-2xl flex items-center gap-2">
+<!-- Left Attachment Toolbar -->
+<div class="flex items-center gap-1 shrink-0">
+<button class="p-2 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Attach File">
+<span class="material-symbols-outlined text-[20px]">attach_file</span>
+</button>
+<button class="p-2 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Create Poll">
+<span class="material-symbols-outlined text-[20px]">poll</span>
+</button>
+<button class="p-2 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Insert Emoji">
+<span class="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
+</button>
+</div>
+<!-- Main Text Input -->
+<div class="flex-1 min-w-0">
+<input class="w-full bg-transparent border-none text-body-md font-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-0 p-1" placeholder="Type a message to Sarah Chen, or press / for slash commands..." type="text"/>
+</div>
+<!-- Right Toolbar Controls & Send Dispatch -->
+<div class="flex items-center gap-1.5 shrink-0">
+<button class="p-2 rounded-xl text-on-surface-variant hover:text-secondary hover:bg-surface-container-high transition-colors" title="Record Voice Memo">
+<span class="material-symbols-outlined text-[20px]">mic</span>
+</button>
+<button class="p-2 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Silent Delivery">
+<span class="material-symbols-outlined text-[20px]">notifications_off</span>
+</button>
+<!-- Primary Send Button -->
+<button class="bg-primary hover:bg-primary-fixed text-on-primary font-medium px-4 py-2 rounded-xl flex items-center gap-1.5 text-body-sm font-body-sm shadow-md transition-all active:scale-95">
+<span>Send</span>
+<kbd class="font-label-caps text-[9px] bg-on-primary-fixed-variant text-primary-fixed px-1 py-0.5 rounded ml-0.5">↵</kbd>
+</button>
+</div>
+</div>
+</footer>
+</main>
+<!-- 4. RIGHT-HAND CONTEXT DRAWER / INSPECTOR PANEL (320px) -->
+<aside class="w-80 h-full bg-surface-container-low border-l border-outline-variant/20 flex flex-col shrink-0 overflow-y-auto">
+<!-- Drawer Header Bar -->
+<div class="h-14 px-5 border-b border-outline-variant/20 flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Member Details</h3>
+<button class="p-1.5 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<!-- User Profile Hero -->
+<div class="p-5 flex flex-col items-center text-center border-b border-outline-variant/20">
+<div class="relative w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-primary/40 shadow-xl mb-3">
+<img class="w-full h-full object-cover" data-alt="High detail artistic portrait of Sarah Chen, lead systems architect, in a dark high-tech environment with cyan-indigo rim light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBG6SCm3vAOhkEEmERgGqkv7uqJ_zBe1F1VqLeOyK2CMp_8T_FSe49QkQ5GMs6unizxfdSHK-xc5av-wtKaieT-vwTtihn_GQzKSjCOjrKe5Z4D_P4VnRsVdJKIHi_B1OR5clN8h0Rm4pGAJGrbLWCwgPqVBt3Ca8y6vsc2iU5DejuPrNGaQDwgESS_mJ2zyTyFVjdgbBTQkFA8fBszeKb8A4WV9OJUFhxmvbg89lMAL1HF692iNpSPlJLSHhn5xSAT6Yhr7jxRDIA"/>
+<span class="absolute bottom-1 right-1 w-3.5 h-3.5 bg-secondary rounded-full ring-2 ring-surface-container-low"></span>
+</div>
+<div class="flex items-center gap-1.5">
+<h4 class="font-headline-sm text-headline-sm font-bold text-on-surface">Sarah Chen</h4>
+<span class="material-symbols-outlined text-primary text-[17px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<span class="font-label-meta text-label-meta text-primary mt-0.5 font-medium">@sarah • Principal Architect</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-2 max-w-xs leading-relaxed">
+          Building low-latency real-time communications &amp; PWA mesh networking protocols.
+        </p>
+<div class="flex items-center gap-1 text-outline font-label-meta text-label-meta mt-2">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span data-location="San Francisco, CA">San Francisco, CA</span>
+</div>
+<!-- Quick Member Action Buttons -->
+<div class="grid grid-cols-3 gap-2 w-full mt-4">
+<button class="flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container border border-outline-variant/30 hover:border-primary/40 text-on-surface transition-all">
+<span class="material-symbols-outlined text-[18px] text-primary">call</span>
+<span class="font-label-meta text-[10px] mt-1">Audio</span>
+</button>
+<button class="flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container border border-outline-variant/30 hover:border-primary/40 text-on-surface transition-all">
+<span class="material-symbols-outlined text-[18px] text-secondary">videocam</span>
+<span class="font-label-meta text-[10px] mt-1">Video</span>
+</button>
+<button class="flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container border border-outline-variant/30 hover:border-primary/40 text-on-surface transition-all">
+<span class="material-symbols-outlined text-[18px] text-outline">notifications_off</span>
+<span class="font-label-meta text-[10px] mt-1">Mute</span>
+</button>
+</div>
+</div>
+<!-- Section: Shared Media & Files (128) -->
+<div class="p-5 border-b border-outline-variant/20 space-y-3">
+<div class="flex items-center justify-between">
+<h5 class="font-body-md text-body-md font-semibold text-on-surface">Shared Media &amp; Files</h5>
+<span class="font-label-caps text-label-caps text-outline">128</span>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<div class="aspect-square rounded-lg bg-surface-container-high overflow-hidden border border-outline-variant/30 cursor-pointer hover:opacity-80 transition-opacity">
+<img class="w-full h-full object-cover" data-alt="Technical diagram screenshot showing WebRTC network mesh architecture on dark background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaLyH3IMAin0oTcCK3xJr2stTOqumwXG5LFk3NbEcNZ3eY3_9ciV4gJhY2LI21luWQfXehqYAPwlvFeLM_hgyz6XdZIPsN__fiYXq22LtWkylo_Y3sKrikxYPviLuGnF5QiMbIyRSXSHCT29FblL_qqNQ05Of90s6IYFlt4sy6BRTYTQ9zZZ-zAZvaamILbw4FRyg2DB7jmM3KOSZBKqtYHYLs-bmmw0l8wez_istv3jhQdu9WnrjPToDKpjYZaRo91h3TkJ_LtJE"/>
+</div>
+<div class="aspect-square rounded-lg bg-surface-container-high overflow-hidden border border-outline-variant/30 cursor-pointer hover:opacity-80 transition-opacity">
+<img class="w-full h-full object-cover" data-alt="UI dashboard mockup screenshot featuring dark mode charts and data visualization." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQ5j-fHpROMYXPTCEnWvEv0_Pmk85L1E76ia4M-H-wfANecFDNr2hN-8Q6oTM_ydlWf5iJd1aD2_EViBwPkMD0LjjS2SFuiU-sF8dJGuM2vDol5_S5eaXIMJBF9dZo4IwvrIoGPoJe90_DYrCF8w81SbMa9Wzqdn8RqTgspthlQYoTOm7hjlXdDw5QDpeUDBX1YwNmqyHDzUAC8pk1dCCzvpvg4ie_Vnt9l4b0BOLXK3lwfUbSqUKrjOllh8J2pe0XAnoGqF2Oqi4"/>
+</div>
+<div class="aspect-square rounded-lg bg-surface-container-high overflow-hidden border border-outline-variant/30 cursor-pointer hover:opacity-80 transition-opacity">
+<img class="w-full h-full object-cover" data-alt="Code editor screenshot showing TypeScript definitions and server logs." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-45rofTCaDAypzmN5tbqeDJhDWviNb3zMaL6NRHjPH_XR7CN4ZrT9cDevuPqSEhnIilVZaSIKCkLoAe0H3_BqeZqEiqCA4CS4tyJ3VaHvQ5uzCwPcuHQxKqaXU6NvuXHtBxIKGeZt8xgNLflUPVsyAKB_sNABdi3ECv94lIO1jzPAVfeVj-InxuLIqQCMuVMaglXUqZNwXLM15lt55n8mbcGhVlGx8bN0swjZyZ4wWga38_xTfR6A-tGP3HQd46AkTu0ra9Z8rIU"/>
+</div>
+<div class="aspect-square rounded-lg bg-surface-container-high border border-outline-variant/30 flex items-center justify-center font-label-caps text-label-caps text-primary cursor-pointer hover:bg-surface-container-highest transition-colors">
+            +125
+          </div>
+</div>
+</div>
+<!-- Section: Mutual Circles -->
+<div class="p-5 border-b border-outline-variant/20 space-y-3">
+<div class="flex items-center justify-between">
+<h5 class="font-body-md text-body-md font-semibold text-on-surface">Mutual Circles</h5>
+<span class="font-label-caps text-label-caps text-outline">3</span>
+</div>
+<div class="space-y-2">
+<div class="flex items-center gap-2.5 p-2 rounded-lg bg-surface-container/50 border border-outline-variant/20 hover:border-outline-variant/40 cursor-pointer">
+<span class="font-label-caps text-[11px] text-tertiary bg-tertiary/10 p-1.5 rounded">#</span>
+<div class="min-w-0">
+<div class="font-body-sm text-body-sm font-medium text-on-surface truncate">frontend-core</div>
+<div class="font-label-meta text-[10px] text-outline">24 members</div>
+</div>
+</div>
+<div class="flex items-center gap-2.5 p-2 rounded-lg bg-surface-container/50 border border-outline-variant/20 hover:border-outline-variant/40 cursor-pointer">
+<span class="font-label-caps text-[11px] text-secondary bg-secondary/10 p-1.5 rounded">#</span>
+<div class="min-w-0">
+<div class="font-body-sm text-body-sm font-medium text-on-surface truncate">infra-edge-mesh</div>
+<div class="font-label-meta text-[10px] text-outline">12 members</div>
+</div>
+</div>
+<div class="flex items-center gap-2.5 p-2 rounded-lg bg-surface-container/50 border border-outline-variant/20 hover:border-outline-variant/40 cursor-pointer">
+<span class="font-label-caps text-[11px] text-primary bg-primary/10 p-1.5 rounded">#</span>
+<div class="min-w-0">
+<div class="font-body-sm text-body-sm font-medium text-on-surface truncate">product-architecture</div>
+<div class="font-label-meta text-[10px] text-outline">8 members</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Security / Cryptographic Verification Footnote -->
+<div class="mt-auto p-4 m-4 rounded-xl bg-surface-container-lowest border border-outline-variant/30 flex items-start gap-2.5 text-label-meta font-label-meta text-outline">
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5">verified_user</span>
+<div class="leading-tight">
+<span class="text-on-surface font-medium block">End-to-End Encrypted</span>
+<span>WebRTC DTLS-SRTP v1.3 • Verified Identity Fingerprint: <span class="font-label-caps text-[9px] text-primary">0x4B92..71E</span></span>
+</div>
+</div>
+</aside>
+</div>
+</body></html>

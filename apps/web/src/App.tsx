@@ -6,6 +6,7 @@ import { useWebRTC } from './hooks/useWebRTC.js';
 import { api, formatConvexMessage } from './services/api.js';
 import { AuthScreen } from './components/AuthScreen.js';
 import { Sidebar } from './components/Sidebar.js';
+import { NavigationRail } from './components/NavigationRail.js';
 import { MainChat } from './components/MainChat.js';
 import { CircleChat } from './components/CircleChat.js';
 import { VideoCallOverlay } from './components/VideoCallOverlay.js';
@@ -15,6 +16,7 @@ import { MessageSquare } from 'lucide-react';
 import { convex, api as convexApi } from './convex.js';
 import { NotificationService, sound } from './services/notifications.js';
 import { NotificationsPanel } from './components/NotificationsPanel.js';
+import { ThemeProvider } from './hooks/useTheme.js';
 
 export const AppContent: React.FC = () => {
   const { user: currentUser, isAuthenticated, isLoading } = useAuth();
@@ -39,9 +41,33 @@ export const AppContent: React.FC = () => {
   const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
   const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
   const [lastMessageMap, setLastMessageMap] = useState<
-    Record<string, { content?: string; attachmentName?: string; createdAt: number }>
+    Record<string, { content?: string; attachmentName?: string; createdAt: number; senderId?: string; status?: any }>
   >({});
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<'chats' | 'circles' | 'requests' | 'calls'>('chats');
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+  // Watch pending handshake requests count for notification badge
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    let unsub: (() => void) | null = null;
+    try {
+      const watch = (convex as any).watchQuery(convexApi.messages.listPendingRequests, {
+        currentUserId: currentUser.id as any,
+      });
+      unsub = watch.onUpdate(() => {
+        const res = watch.localQueryResult();
+        if (Array.isArray(res)) setPendingRequestsCount(res.length);
+      });
+    } catch (err) {
+      console.warn('Pending requests count watch error:', err);
+    }
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [currentUser?.id]);
+
+  const totalUnreadChats = Object.values(unreadMap).reduce((acc, curr) => acc + (curr || 0), 0);
 
   // Synchronize browser history and handle hardware/browser Back button
   const handleSelectUser = useCallback((u: UserProfile | null) => {
@@ -651,7 +677,7 @@ export const AppContent: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#090d16]">
+      <div className="h-screen w-screen flex items-center justify-center dark:bg-[#09090b] bg-[#fbfbfa]">
         <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
       </div>
     );
@@ -662,7 +688,19 @@ export const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="h-[100dvh] w-screen flex bg-[#090d16] text-slate-100 overflow-hidden font-sans">
+    <div className="h-[100dvh] w-screen flex dark:bg-[#09090b] bg-[#fbfbfa] dark:text-slate-100 text-slate-900 overflow-hidden font-sans transition-colors duration-200">
+      {/* Desktop Navigation Rail (Stitch 64px Slim Bar) */}
+      <NavigationRail
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        unreadChatsCount={totalUnreadChats}
+        pendingRequestsCount={pendingRequestsCount}
+        unreadNotificationsCount={unreadNotificationsCount}
+        onOpenNotifications={handleOpenNotificationsPanel}
+        onOpenSavedMessages={() => currentUser && handleSelectUser(currentUser)}
+        onOpenProfile={handleOpenProfileModal}
+      />
+
       {/* Left Sidebar (Contacts, Circles, Vault, Calls) */}
       <div className={`h-full ${selectedUser || selectedCircleId ? 'hidden md:flex' : 'flex w-full'} md:w-80 shrink-0`}>
         <Sidebar
@@ -677,6 +715,8 @@ export const AppContent: React.FC = () => {
           onOpenNotificationsPanel={handleOpenNotificationsPanel}
           unreadNotificationsCount={unreadNotificationsCount}
           onStartCall={(user, isVideo) => webrtc.startCall(user.id, user.displayName, isVideo)}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
         />
       </div>
 
@@ -706,12 +746,12 @@ export const AppContent: React.FC = () => {
           />
         </div>
       ) : (
-        <div className="hidden md:flex flex-1 flex-col items-center justify-center text-slate-500 bg-[#090d16] p-6 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center mb-4 text-blue-400">
+        <div className="hidden md:flex flex-1 flex-col items-center justify-center dark:text-slate-500 text-slate-400 dark:bg-[#09090b] bg-[#fbfbfa] p-6 text-center select-none transition-colors duration-200">
+          <div className="w-16 h-16 rounded-2xl dark:bg-blue-600/10 bg-blue-50 border dark:border-blue-500/20 border-blue-200/60 flex items-center justify-center mb-4 text-blue-500 shadow-sm">
             <MessageSquare className="w-8 h-8 opacity-75" />
           </div>
-          <p className="text-base font-bold text-slate-200">Chat.SO Quiet Social</p>
-          <p className="text-xs text-slate-400 mt-1 max-w-sm">
+          <p className="text-base font-bold dark:text-slate-200 text-slate-800">Chat.SO Quiet Social</p>
+          <p className="text-xs dark:text-slate-400 text-slate-500 mt-1 max-w-sm">
             Select a quiet conversation, visit your Personal Vault, or join an Intimate Circle.
           </p>
         </div>
@@ -761,7 +801,11 @@ export const AppContent: React.FC = () => {
 };
 
 export function App() {
-  return <AppContent />;
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
 }
 
 export default App;

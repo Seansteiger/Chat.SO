@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserStatus, MAX_FILE_SIZE_BYTES } from '@chatso/shared';
 import { useAuth } from '../hooks/useAuth.js';
+import { useTheme } from '../hooks/useTheme.js';
 import { uploadFileDirectly } from '../services/uploader.js';
 import { convex, api as convexApi } from '../convex.js';
 import {
@@ -17,6 +18,8 @@ import {
   EyeOff,
   Keyboard,
   PhoneOff,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 interface ProfileModalProps {
@@ -26,6 +29,7 @@ interface ProfileModalProps {
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const { user, updateProfile, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
   const [bio, setBio] = useState(user?.bio || '');
@@ -128,35 +132,69 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
   return (
     <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md overflow-y-auto overflow-x-hidden">
       <div className="min-h-full w-full flex flex-col items-center justify-start p-4 py-8 sm:py-12">
-        <div className="w-full max-w-lg my-auto rounded-2xl p-6 glass-panel border border-white/10 shadow-2xl relative space-y-5">
+        <div className="w-full max-w-lg my-auto rounded-2xl p-6 dark:glass-panel bg-white text-slate-900 dark:text-white border dark:border-white/10 border-slate-200 shadow-2xl relative space-y-5 transition-colors">
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="absolute top-4 right-4 p-2 rounded-xl dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
 
           <div>
-            <h2 className="text-lg font-bold text-white">Profile & Quiet Settings</h2>
-            <p className="text-xs text-slate-400">Configure your introvert boundaries and active devices</p>
+            <h2 className="text-lg font-bold dark:text-white text-slate-900">Profile & Quiet Settings</h2>
+            <p className="text-xs dark:text-slate-400 text-slate-500">Configure your introvert boundaries and active devices</p>
           </div>
 
           {errorMessage && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+            <div className="p-3 rounded-xl dark:bg-red-500/10 bg-red-50 border dark:border-red-500/20 border-red-200 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {successMessage && (
-            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+            <div className="p-3 rounded-xl dark:bg-emerald-500/10 bg-emerald-50 border dark:border-emerald-500/20 border-emerald-200 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
               <Check className="w-4 h-4 shrink-0" />
               <span>{successMessage}</span>
             </div>
           )}
 
           <form onSubmit={handleSave} className="space-y-4">
+            {/* Visual Appearance & Theme Selection */}
+            <div>
+              <label className="block text-xs font-medium dark:text-slate-300 text-slate-700 mb-1.5">
+                Visual Experience
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => theme !== 'dark' && toggleTheme()}
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                    theme === 'dark'
+                      ? 'bg-blue-600/20 border-blue-500/50 text-blue-400 shadow-sm'
+                      : 'dark:bg-slate-900/50 bg-slate-100 dark:border-white/10 border-slate-200 dark:text-slate-400 text-slate-600 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Moon className="w-4 h-4 text-blue-400" />
+                  <span>Obsidian Dark</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => theme !== 'light' && toggleTheme()}
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                    theme === 'light'
+                      ? 'bg-amber-500/20 border-amber-500/50 text-amber-700 dark:text-amber-400 shadow-sm'
+                      : 'dark:bg-slate-900/50 bg-slate-100 dark:border-white/10 border-slate-200 dark:text-slate-400 text-slate-600 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Sun className="w-4 h-4 text-amber-500" />
+                  <span>Architect Light</span>
+                </button>
+              </div>
+            </div>
+
             {/* Avatar Upload */}
             <div className="flex flex-col items-center justify-center mb-2">
               <div className="relative group">
@@ -164,7 +202,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                   <img
                     src={avatarUrl}
                     alt="Avatar"
-                    className="w-20 h-20 rounded-2xl object-cover border-2 border-white/20 shadow-lg"
+                    className="w-20 h-20 rounded-2xl object-cover border-2 dark:border-white/20 border-slate-300 shadow-lg"
                   />
                 ) : (
                   <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-bold text-2xl text-white shadow-lg">
@@ -194,40 +232,40 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                   )}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-400 mt-2">Click image to upload avatar</p>
+              <p className="text-[11px] dark:text-slate-400 text-slate-500 mt-2">Click image to upload avatar</p>
             </div>
 
             {/* Display Name */}
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Display Name</label>
+              <label className="block text-xs font-medium dark:text-slate-300 text-slate-700 mb-1">Display Name</label>
               <input
                 type="text"
                 required
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3.5 py-2.5 rounded-xl dark:bg-slate-900/60 bg-slate-50 border dark:border-white/10 border-slate-200 dark:text-white text-slate-900 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
 
             {/* Bio / Quiet Note */}
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Bio / Quiet Intro</label>
+              <label className="block text-xs font-medium dark:text-slate-300 text-slate-700 mb-1">Bio / Quiet Intro</label>
               <input
                 type="text"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="e.g. Async enthusiast. Prefers thoughtful notes over calls."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3.5 py-2.5 rounded-xl dark:bg-slate-900/60 bg-slate-50 border dark:border-white/10 border-slate-200 dark:text-white text-slate-900 text-sm dark:placeholder-slate-500 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
 
             {/* Social Battery Status */}
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Social Battery Mode</label>
+              <label className="block text-xs font-medium dark:text-slate-300 text-slate-700 mb-1">Social Battery Mode</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as UserStatus)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3.5 py-2.5 rounded-xl dark:bg-slate-900 bg-white border dark:border-white/10 border-slate-200 dark:text-white text-slate-900 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="ONLINE">Open to Chat (Available for text & calls)</option>
                 <option value="LOW_BATTERY">Low Battery (Async Only - Mutes calls)</option>
@@ -240,8 +278,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
             {/* Cellphone Number */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-medium text-slate-300">Cellphone Number</label>
-                <span className="text-[10px] text-slate-400">Optional</span>
+                <label className="block text-xs font-medium dark:text-slate-300 text-slate-700">Cellphone Number</label>
+                <span className="text-[10px] dark:text-slate-400 text-slate-500">Optional</span>
               </div>
               <div className="relative">
                 <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -250,25 +288,25 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   placeholder="+27 82 123 4567"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl dark:bg-slate-900/60 bg-slate-50 border dark:border-white/10 border-slate-200 dark:text-white text-slate-900 text-sm dark:placeholder-slate-500 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             {/* Privacy & Boundary Toggles */}
-            <div className="p-3.5 rounded-xl bg-slate-900/70 border border-white/10 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-white">
-                <Shield className="w-4 h-4 text-blue-400" />
+            <div className="p-3.5 rounded-xl dark:bg-slate-900/70 bg-slate-50 border dark:border-white/10 border-slate-200 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-semibold dark:text-white text-slate-900">
+                <Shield className="w-4 h-4 text-blue-500" />
                 <span>Quiet Boundaries & Privacy</span>
               </div>
 
               {/* Read Receipts Toggle */}
               <label className="flex items-center justify-between cursor-pointer text-xs">
-                <div className="flex items-center gap-2 text-slate-300">
+                <div className="flex items-center gap-2 dark:text-slate-300 text-slate-700">
                   <EyeOff className="w-3.5 h-3.5 text-slate-400" />
                   <div>
                     <div className="font-medium">Send Read Receipts</div>
-                    <div className="text-[10px] text-slate-400">Let contacts know when you have seen messages</div>
+                    <div className="text-[10px] dark:text-slate-400 text-slate-500">Let contacts know when you have seen messages</div>
                   </div>
                 </div>
                 <input
@@ -281,11 +319,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
               {/* Typing Indicators Toggle */}
               <label className="flex items-center justify-between cursor-pointer text-xs">
-                <div className="flex items-center gap-2 text-slate-300">
+                <div className="flex items-center gap-2 dark:text-slate-300 text-slate-700">
                   <Keyboard className="w-3.5 h-3.5 text-slate-400" />
                   <div>
                     <div className="font-medium">Show Typing Indicator</div>
-                    <div className="text-[10px] text-slate-400">Broadcast &ldquo;is typing...&rdquo; while composing</div>
+                    <div className="text-[10px] dark:text-slate-400 text-slate-500">Broadcast &ldquo;is typing...&rdquo; while composing</div>
                   </div>
                 </div>
                 <input
@@ -298,11 +336,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
               {/* Allow Calls Toggle */}
               <label className="flex items-center justify-between cursor-pointer text-xs">
-                <div className="flex items-center gap-2 text-slate-300">
+                <div className="flex items-center gap-2 dark:text-slate-300 text-slate-700">
                   <PhoneOff className="w-3.5 h-3.5 text-slate-400" />
                   <div>
                     <div className="font-medium">Allow Direct Calls</div>
-                    <div className="text-[10px] text-slate-400">Accept audio and video calls from contacts</div>
+                    <div className="text-[10px] dark:text-slate-400 text-slate-500">Accept audio and video calls from contacts</div>
                   </div>
                 </div>
                 <input
@@ -316,20 +354,20 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
             {/* Multi-Device Sessions Manager */}
             {activeSessions.length > 0 && (
-              <div className="p-3.5 rounded-xl bg-slate-900/70 border border-white/10 space-y-2.5">
-                <div className="flex items-center justify-between text-xs font-semibold text-white">
+              <div className="p-3.5 rounded-xl dark:bg-slate-900/70 bg-slate-50 border dark:border-white/10 border-slate-200 space-y-2.5">
+                <div className="flex items-center justify-between text-xs font-semibold dark:text-white text-slate-900">
                   <div className="flex items-center gap-2">
-                    <Laptop className="w-4 h-4 text-purple-400" />
+                    <Laptop className="w-4 h-4 text-purple-500" />
                     <span>Active Multi-Device Sessions</span>
                   </div>
-                  <span className="text-[10px] font-mono text-purple-400">{activeSessions.length} active</span>
+                  <span className="text-[10px] font-mono text-purple-600 dark:text-purple-400 font-bold">{activeSessions.length} active</span>
                 </div>
 
                 <div className="space-y-1.5 max-h-36 overflow-y-auto">
                   {activeSessions.map((session) => (
                     <div
                       key={session._id}
-                      className="flex items-center justify-between p-2 rounded-lg bg-black/20 text-xs"
+                      className="flex items-center justify-between p-2 rounded-lg dark:bg-black/20 bg-white border dark:border-transparent border-slate-200/80 text-xs shadow-xs"
                     >
                       <div className="flex items-center gap-2">
                         {session.deviceName?.toLowerCase().includes('mobile') ? (
@@ -338,8 +376,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                           <Laptop className="w-3.5 h-3.5 text-slate-400" />
                         )}
                         <div>
-                          <div className="text-white font-medium">{session.deviceName || 'Device'}</div>
-                          <div className="text-[10px] text-slate-500">
+                          <div className="dark:text-white text-slate-900 font-medium">{session.deviceName || 'Device'}</div>
+                          <div className="text-[10px] dark:text-slate-500 text-slate-400">
                             Logged in {new Date(session.createdAt).toLocaleDateString()}
                           </div>
                         </div>
@@ -349,7 +387,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                         type="button"
                         onClick={() => handleRevokeSession(session._id)}
                         title="Log out device"
-                        className="text-slate-400 hover:text-rose-400 p-1"
+                        className="text-slate-400 hover:text-rose-500 p-1 transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -363,7 +401,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               <button
                 type="button"
                 onClick={logout}
-                className="py-2.5 px-4 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                className="py-2.5 px-4 rounded-xl border border-red-500/20 text-red-500 dark:text-red-400 hover:bg-red-500/10 text-xs font-semibold flex items-center gap-1.5 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 Sign Out

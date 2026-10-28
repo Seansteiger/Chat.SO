@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile, MessageDto, MAX_FILE_SIZE_BYTES } from '@chatso/shared';
 import { useAuth } from '../hooks/useAuth.js';
+import { useTheme } from '../hooks/useTheme.js';
+import { StatusTicks } from './StatusTicks.js';
 import { uploadFileDirectly, DirectUploadResult } from '../services/uploader.js';
 import { api } from '../services/api.js';
 import { convex, api as convexApi } from '../convex.js';
@@ -12,8 +14,6 @@ import {
   Video,
   Paperclip,
   Send,
-  Check,
-  CheckCheck,
   FileText,
   Download,
   X,
@@ -34,6 +34,8 @@ import {
   PanelRight,
   ShieldAlert,
   ShieldCheck,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { MarkdownText } from './MarkdownText.js';
 import { VoiceNotePlayer } from './VoiceNotePlayer.js';
@@ -81,6 +83,7 @@ export const MainChat: React.FC<MainChatProps> = ({
   onBack,
 }) => {
   const { user: currentUser } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [inputText, setInputText] = useState('');
   const [isSilent, setIsSilent] = useState(false);
   const [replyingTo, setReplyingTo] = useState<MessageDto | null>(null);
@@ -129,7 +132,7 @@ export const MainChat: React.FC<MainChatProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isPeerTyping, activeUpload]);
 
-  // Handle typing debounce (respecting user privacy)
+  // Handle typing debounce
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputText(e.target.value);
     if (currentUser?.sendTypingIndicators !== false) {
@@ -219,7 +222,7 @@ export const MainChat: React.FC<MainChatProps> = ({
     try {
       await api.respondToHandshake(conversationId, action);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to respond to request');
+      console.error('Failed to respond to handshake:', err);
     }
   };
 
@@ -228,125 +231,119 @@ export const MainChat: React.FC<MainChatProps> = ({
     const el = messageRefs.current[messageId];
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('ring-2', 'ring-blue-400', 'bg-blue-500/10');
+      el.classList.add('ring-2', 'ring-indigo-500', 'transition-all');
       setTimeout(() => {
-        el.classList.remove('ring-2', 'ring-blue-400', 'bg-blue-500/10');
+        el.classList.remove('ring-2', 'ring-indigo-500');
       }, 2000);
     }
   };
 
-  // Search match computation
+  // Search matches
   const matchingMessageIds = searchKeyword.trim()
     ? messages
-        .filter(
-          (m) =>
-            !m.isDeleted &&
-            ((m.content && m.content.toLowerCase().includes(searchKeyword.toLowerCase())) ||
-              (m.attachmentName && m.attachmentName.toLowerCase().includes(searchKeyword.toLowerCase())))
-        )
+        .filter((m) => m.content?.toLowerCase().includes(searchKeyword.toLowerCase().trim()))
         .map((m) => m.id)
     : [];
 
   const handleNextSearchMatch = () => {
     if (matchingMessageIds.length === 0) return;
-    const next = (currentMatchIndex + 1) % matchingMessageIds.length;
-    setCurrentMatchIndex(next);
-    jumpToMessage(matchingMessageIds[next]);
+    const nextIndex = (currentMatchIndex + 1) % matchingMessageIds.length;
+    setCurrentMatchIndex(nextIndex);
+    jumpToMessage(matchingMessageIds[nextIndex]);
   };
 
   const handlePrevSearchMatch = () => {
     if (matchingMessageIds.length === 0) return;
-    const prev = (currentMatchIndex - 1 + matchingMessageIds.length) % matchingMessageIds.length;
-    setCurrentMatchIndex(prev);
-    jumpToMessage(matchingMessageIds[prev]);
+    const prevIndex = (currentMatchIndex - 1 + matchingMessageIds.length) % matchingMessageIds.length;
+    setCurrentMatchIndex(prevIndex);
+    jumpToMessage(matchingMessageIds[prevIndex]);
   };
 
-  // Direct File Select
+  // File upload handler
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    e.target.value = '';
-    setErrorMessage(null);
 
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      setErrorMessage(
-        `File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the 50MB hard ceiling.`
-      );
+      setErrorMessage(`File exceeds 50MB limit (${(file.size / (1024 * 1024)).toFixed(1)}MB)`);
       return;
     }
 
-    const abortController = new AbortController();
+    setErrorMessage(null);
+    const controller = new AbortController();
+
     setActiveUpload({
       fileName: file.name,
       progress: 0,
       loadedBytes: 0,
       totalBytes: file.size,
-      controller: abortController,
+      controller,
     });
 
     try {
-      const uploadResult: DirectUploadResult = await uploadFileDirectly(
+      const result: DirectUploadResult = await uploadFileDirectly(
         file,
-        (progress, loaded, total) => {
-          setActiveUpload({
-            fileName: file.name,
-            progress,
-            loadedBytes: loaded,
-            totalBytes: total,
-            controller: abortController,
-          });
+        (progress: number, loadedBytes: number, totalBytes: number) => {
+          setActiveUpload((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  progress,
+                  loadedBytes,
+                  totalBytes,
+                }
+              : null
+          );
         },
-        abortController.signal
+        controller.signal
       );
 
       onSendMessage({
-        content: `Shared file: ${uploadResult.fileName}`,
-        attachmentUrl: uploadResult.publicUrl,
-        attachmentName: uploadResult.fileName,
-        attachmentSize: uploadResult.fileSize,
-        attachmentMime: uploadResult.mimeType,
+        content: file.type.startsWith('image/') ? '📷 Photo' : `📎 ${file.name}`,
+        attachmentUrl: result.publicUrl,
+        attachmentName: result.fileName,
+        attachmentSize: result.fileSize,
+        attachmentMime: result.mimeType,
         replyToId: replyingTo?.id,
         isSilent,
       });
 
-      setActiveUpload(null);
       setReplyingTo(null);
     } catch (err: any) {
-      setErrorMessage(err.message || 'File upload failed');
+      if (err.name !== 'AbortError') {
+        setErrorMessage(err.message || 'File upload failed');
+      }
+    } finally {
       setActiveUpload(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  // Voice recording handlers
+  // Voice note handlers
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const preferredMime =
-        typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-          ? 'audio/webm;codecs=opus'
-          : typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/mp4')
-          ? 'audio/mp4'
-          : 'audio/ogg';
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : 'audio/ogg';
 
-      const mediaRecorder = new MediaRecorder(
-        stream,
-        preferredMime ? { mimeType: preferredMime } : undefined
-      );
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       };
 
       mediaRecorder.onstop = async () => {
-        const mimeType = preferredMime || 'audio/webm';
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        stream.getTracks().forEach((t) => t.stop());
+        stream.getTracks().forEach((track) => track.stop());
 
-        if (audioBlob.size > 0 && conversationId && currentUser) {
+        if (audioBlob.size > 0 && recordingSeconds > 0) {
           try {
             const uploadUrl = await (convex as any).mutation(convexApi.files.generateUploadUrl, {
               fileSize: audioBlob.size,
@@ -437,16 +434,16 @@ export const MainChat: React.FC<MainChatProps> = ({
   const pinnedMessage = messages.find((m) => m.isPinned || (pinnedMessageId && m.id === pinnedMessageId));
 
   return (
-    <div className="flex-1 h-full flex flex-col bg-[#090d16] relative overflow-hidden">
-      {/* Top Bar */}
-      <div className="h-16 px-3.5 md:px-6 border-b border-white/10 flex items-center justify-between bg-slate-950/70 backdrop-blur-md shrink-0 z-10">
+    <div className="flex-1 h-full flex flex-col dark:bg-[#09090b] bg-[#fbfbfa] relative overflow-hidden transition-colors">
+      {/* Top Bar (Stitch Precision Header) */}
+      <div className="h-16 px-3.5 md:px-6 border-b dark:border-white/[0.08] border-slate-200 flex items-center justify-between dark:bg-[#121215]/80 bg-white/90 backdrop-blur-md shrink-0 z-10 transition-colors">
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
           {onBack && (
             <button
               type="button"
               onClick={onBack}
               aria-label="Back to chats"
-              className="md:hidden p-2 -ml-1.5 rounded-xl text-slate-400 hover:text-white transition-colors shrink-0"
+              className="md:hidden p-2 -ml-1.5 rounded-xl dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900 transition-colors shrink-0"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -461,35 +458,35 @@ export const MainChat: React.FC<MainChatProps> = ({
               <img
                 src={peer.avatarUrl}
                 alt={peer.displayName}
-                className="w-10 h-10 rounded-xl object-cover border border-white/10"
+                className="w-10 h-10 rounded-xl object-cover ring-1 dark:ring-white/10 ring-slate-200"
               />
             ) : (
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center font-bold text-white text-sm">
+              <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white text-sm shadow-md">
                 {peer.displayName.charAt(0).toUpperCase()}
               </div>
             )}
             {!isSelfVault && (
               <span
-                className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-950 ${
+                className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 dark:border-[#121215] border-white ${
                   peer.status === 'ONLINE'
-                    ? 'bg-emerald-500'
+                    ? 'bg-emerald-500 presence-pulse'
                     : peer.status === 'LOW_BATTERY'
                     ? 'bg-amber-400'
                     : peer.status === 'DEEP_FOCUS'
                     ? 'bg-purple-500'
                     : peer.status === 'BUSY'
                     ? 'bg-rose-500'
-                    : 'bg-slate-500'
+                    : 'bg-slate-400'
                 }`}
               />
             )}
           </div>
 
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-white truncate">
+            <h2 className="text-sm font-semibold dark:text-white text-slate-900 truncate">
               {isSelfVault ? 'My Space (Personal Vault)' : peer.displayName}
             </h2>
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
+            <div className="flex items-center gap-1.5 text-[11px] dark:text-slate-400 text-slate-500 truncate">
               {isSelfVault ? (
                 <span>Notes, ideas & cross-device file transfer</span>
               ) : (
@@ -499,12 +496,12 @@ export const MainChat: React.FC<MainChatProps> = ({
                   <span
                     className={`font-medium ${
                       peer.status === 'LOW_BATTERY'
-                        ? 'text-amber-400'
+                        ? 'text-amber-500'
                         : peer.status === 'DEEP_FOCUS'
-                        ? 'text-purple-400'
+                        ? 'text-purple-500'
                         : peer.status === 'ONLINE'
-                        ? 'text-emerald-400'
-                        : 'text-slate-400'
+                        ? 'text-emerald-500'
+                        : 'dark:text-slate-400 text-slate-500'
                     }`}
                   >
                     {peer.status === 'LOW_BATTERY'
@@ -528,8 +525,8 @@ export const MainChat: React.FC<MainChatProps> = ({
             title="Search messages in chat"
             className={`p-2 rounded-xl border transition-colors ${
               isSearchOpen
-                ? 'bg-blue-600/20 border-blue-500/40 text-blue-400'
-                : 'hover:bg-white/5 border-white/5 text-slate-400 hover:text-white'
+                ? 'dark:bg-indigo-600/20 dark:border-indigo-500/40 dark:text-indigo-400 bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm'
+                : 'dark:hover:bg-white/5 dark:border-white/5 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-900'
             }`}
           >
             <Search className="w-4 h-4" />
@@ -541,11 +538,25 @@ export const MainChat: React.FC<MainChatProps> = ({
               type="button"
               onClick={() => setIsContextDrawerOpen(true)}
               title="Media, Files, Links & Context"
-              className="p-2 rounded-xl hover:bg-white/5 border border-white/5 text-slate-400 hover:text-white transition-colors"
+              className="p-2 rounded-xl dark:hover:bg-white/5 dark:border-white/5 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-900 border transition-colors"
             >
               <PanelRight className="w-4 h-4" />
             </button>
           )}
+
+          {/* Dark / Light Theme Switcher */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="p-2 rounded-xl dark:hover:bg-white/5 dark:border-white/5 dark:text-slate-400 dark:hover:text-amber-300 hover:bg-slate-100 border-slate-200 text-slate-500 hover:text-indigo-600 border transition-colors"
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-indigo-600" />
+            )}
+          </button>
 
           {/* WebRTC Calling Buttons */}
           {!isSelfVault && (
@@ -559,9 +570,9 @@ export const MainChat: React.FC<MainChatProps> = ({
                     ? `${peer.displayName} is in quiet/focus mode (calls muted)`
                     : 'Start Voice Call'
                 }
-                className="p-2.5 rounded-xl hover:bg-white/5 border border-white/5 text-slate-300 hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+                className="p-2.5 rounded-xl dark:hover:bg-white/5 dark:border-white/10 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all disabled:opacity-30 disabled:hover:bg-transparent shadow-sm"
               >
-                <Phone className="w-4 h-4 text-emerald-400" />
+                <Phone className="w-4 h-4 text-emerald-500" />
               </button>
               <button
                 type="button"
@@ -572,9 +583,10 @@ export const MainChat: React.FC<MainChatProps> = ({
                     ? `${peer.displayName} is in quiet/focus mode (calls muted)`
                     : 'Start Video Call'
                 }
-                className="p-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 hover:text-white transition-all disabled:opacity-30"
+                className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs flex items-center gap-1.5 transition-all disabled:opacity-30 shadow-sm shadow-indigo-600/30"
               >
-                <Video className="w-4 h-4 text-blue-400" />
+                <Video className="w-4 h-4" />
+                <span className="hidden sm:inline">Video Call</span>
               </button>
             </>
           )}
@@ -583,7 +595,7 @@ export const MainChat: React.FC<MainChatProps> = ({
 
       {/* In-Chat Search Bar */}
       {isSearchOpen && (
-        <div className="px-4 py-2.5 bg-slate-900 border-b border-white/10 flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2">
+        <div className="px-4 py-2.5 dark:bg-[#18181b] bg-slate-100 border-b dark:border-white/10 border-slate-200 flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2">
           <div className="flex items-center gap-2 flex-1">
             <Search className="w-4 h-4 text-slate-400 shrink-0" />
             <input
@@ -595,11 +607,11 @@ export const MainChat: React.FC<MainChatProps> = ({
                 setCurrentMatchIndex(0);
               }}
               placeholder="Search in conversation..."
-              className="w-full bg-transparent text-white placeholder-slate-500 focus:outline-none"
+              className="w-full bg-transparent dark:text-white text-slate-900 placeholder:text-slate-400 focus:outline-none"
             />
           </div>
           {searchKeyword.trim() && (
-            <div className="flex items-center gap-2 text-slate-400 font-mono text-[11px] shrink-0">
+            <div className="flex items-center gap-2 dark:text-slate-400 text-slate-500 font-mono text-[11px] shrink-0">
               <span>
                 {matchingMessageIds.length > 0 ? currentMatchIndex + 1 : 0} of {matchingMessageIds.length}
               </span>
@@ -607,7 +619,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                 type="button"
                 onClick={handlePrevSearchMatch}
                 disabled={matchingMessageIds.length === 0}
-                className="px-1.5 py-0.5 rounded hover:bg-white/10 disabled:opacity-30"
+                className="px-1.5 py-0.5 rounded dark:hover:bg-white/10 hover:bg-slate-200 disabled:opacity-30"
               >
                 ▲
               </button>
@@ -615,7 +627,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                 type="button"
                 onClick={handleNextSearchMatch}
                 disabled={matchingMessageIds.length === 0}
-                className="px-1.5 py-0.5 rounded hover:bg-white/10 disabled:opacity-30"
+                className="px-1.5 py-0.5 rounded dark:hover:bg-white/10 hover:bg-slate-200 disabled:opacity-30"
               >
                 ▼
               </button>
@@ -627,23 +639,23 @@ export const MainChat: React.FC<MainChatProps> = ({
               setIsSearchOpen(false);
               setSearchKeyword('');
             }}
-            className="p-1 hover:text-white text-slate-400"
+            className="p-1 dark:text-slate-400 text-slate-500 hover:text-slate-900"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* Pinned Message Sticky Banner */}
+      {/* Pinned Message Sticky Banner (Stitch Spec) */}
       {pinnedMessage && (
         <div
           onClick={() => jumpToMessage(pinnedMessage.id)}
-          className="px-4 py-2 bg-amber-950/20 border-b border-amber-500/20 flex items-center justify-between gap-3 text-xs cursor-pointer hover:bg-amber-950/30 transition-colors"
+          className="px-4 py-2 dark:bg-[#18181b] bg-amber-50/80 border-b dark:border-white/10 border-amber-200/80 flex items-center justify-between gap-3 text-xs cursor-pointer dark:hover:bg-[#201f22] hover:bg-amber-100/80 transition-colors shadow-xs"
         >
           <div className="flex items-center gap-2 min-w-0">
-            <Pin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="font-semibold text-amber-300 shrink-0">Pinned Message:</span>
-            <span className="text-slate-300 truncate">{pinnedMessage.content}</span>
+            <Pin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span className="font-semibold text-amber-600 dark:text-amber-400 shrink-0">Pinned Message:</span>
+            <span className="dark:text-slate-300 text-slate-700 truncate">{pinnedMessage.content}</span>
           </div>
           <button
             type="button"
@@ -652,7 +664,7 @@ export const MainChat: React.FC<MainChatProps> = ({
               handleTogglePin(pinnedMessage.id);
             }}
             title="Unpin message"
-            className="p-1 text-slate-400 hover:text-white"
+            className="p-1 dark:text-slate-400 text-slate-500 hover:text-slate-900"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -661,14 +673,14 @@ export const MainChat: React.FC<MainChatProps> = ({
 
       {/* Handshake Gatekeeper Request Banner */}
       {isPendingHandshake && (
-        <div className="m-4 p-3.5 rounded-2xl bg-gradient-to-r from-blue-950/80 to-slate-900 border border-blue-500/30 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="m-4 p-3.5 rounded-2xl dark:bg-[#18181b] bg-indigo-50/70 border dark:border-indigo-500/30 border-indigo-200 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-start gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-8 h-8 rounded-xl bg-indigo-600/20 text-indigo-500 flex items-center justify-center shrink-0 mt-0.5">
               <ShieldAlert className="w-4 h-4" />
             </div>
             <div>
-              <p className="font-semibold text-white">Quiet Handshake Gatekeeper</p>
-              <p className="text-slate-400 text-[11px] mt-0.5">
+              <p className="font-semibold dark:text-white text-slate-900">Quiet Handshake Gatekeeper</p>
+              <p className="dark:text-slate-400 text-slate-600 text-[11px] mt-0.5">
                 {peer.displayName} wants to connect with you. Until you accept, they cannot call you or view your social battery presence.
               </p>
             </div>
@@ -677,14 +689,14 @@ export const MainChat: React.FC<MainChatProps> = ({
             <button
               type="button"
               onClick={() => handleHandshake('DECLINE')}
-              className="px-3 py-1.5 rounded-xl border border-white/10 hover:bg-white/5 text-slate-300 text-xs font-semibold"
+              className="px-3 py-1.5 rounded-xl border dark:border-white/10 border-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 dark:text-slate-300 text-slate-700 text-xs font-semibold"
             >
               Decline
             </button>
             <button
               type="button"
               onClick={() => handleHandshake('ACCEPT')}
-              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-600/30 flex items-center gap-1.5"
+              className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 flex items-center gap-1.5"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Accept Handshake</span>
@@ -695,7 +707,7 @@ export const MainChat: React.FC<MainChatProps> = ({
 
       {/* Social Battery Notice for Caller */}
       {!isSelfVault && isPeerCallsMuted && (
-        <div className="mx-4 mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2 text-xs text-amber-300">
+        <div className="mx-4 mt-2 p-2.5 rounded-xl dark:bg-amber-500/10 dark:border-amber-500/20 bg-amber-50 border border-amber-200 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-300">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>
             {peer.displayName} has set their status to{' '}
@@ -707,14 +719,14 @@ export const MainChat: React.FC<MainChatProps> = ({
       {/* Message Feed */}
       <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-3">
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-slate-500">
-            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-3">
-              <Paperclip className="w-6 h-6 text-slate-400" />
+          <div className="h-full flex flex-col items-center justify-center dark:text-slate-500 text-slate-400">
+            <div className="w-12 h-12 rounded-2xl dark:bg-white/5 bg-slate-100 border dark:border-white/10 border-slate-200 flex items-center justify-center mb-3">
+              <Paperclip className="w-6 h-6 text-indigo-500" />
             </div>
-            <p className="text-sm font-medium text-slate-300">
+            <p className="text-sm font-semibold dark:text-slate-200 text-slate-800">
               {isSelfVault ? 'Your Personal Vault' : 'Start the conversation'}
             </p>
-            <p className="text-xs text-slate-500 mt-1 max-w-xs text-center">
+            <p className="text-xs dark:text-slate-500 text-slate-500 mt-1 max-w-xs text-center">
               {isSelfVault
                 ? 'Send notes, snippets, and files to yourself. Fully synced across all your devices.'
                 : 'Send a quiet message, share a file, or send a voice note.'}
@@ -739,21 +751,21 @@ export const MainChat: React.FC<MainChatProps> = ({
                 <React.Fragment key={msg.id || msg.clientMessageId}>
                   {showDateDivider && (
                     <div className="flex items-center justify-center my-4">
-                      <span className="px-3 py-1 rounded-full bg-slate-900 border border-white/10 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+                      <span className="px-3 py-1 rounded-full dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 text-[10px] font-semibold tracking-wider uppercase dark:text-slate-400 text-slate-500 shadow-xs">
                         {getDateLabel(msg.createdAt)}
                       </span>
                     </div>
                   )}
 
                   <div className={`flex flex-col my-1.5 ${isMe ? 'items-end' : 'items-start'}`}>
-                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-900/90 border border-white/10 shadow-lg max-w-[85%] sm:max-w-[75%] transition-all hover:border-white/20">
+                    <div className="flex items-center gap-3 p-3 rounded-2xl dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 shadow-md max-w-[85%] sm:max-w-[75%] transition-all">
                       <div
                         className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                           isMissed
-                            ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                            ? 'bg-rose-500/15 text-rose-500 border border-rose-500/30'
                             : isDeclined
-                            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                            : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                            ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
+                            : 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
                         }`}
                       >
                         {isVideoCall ? (
@@ -768,18 +780,18 @@ export const MainChat: React.FC<MainChatProps> = ({
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-white">
+                        <p className="text-xs font-semibold dark:text-white text-slate-900">
                           {isVideoCall ? 'Video Call' : 'Voice Call'}
                         </p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
+                        <p className="text-[11px] dark:text-slate-400 text-slate-500 mt-0.5">
                           {isMissed ? (
-                            <span className="text-rose-400 font-medium">
+                            <span className="text-rose-500 font-medium">
                               {isMe ? 'Unanswered' : 'Missed call'}
                             </span>
                           ) : isDeclined ? (
-                            <span className="text-slate-400">Declined</span>
+                            <span>Declined</span>
                           ) : (
-                            <span className="text-slate-300">
+                            <span>
                               {isMe ? 'Outgoing' : 'Incoming'}
                             </span>
                           )}
@@ -790,14 +802,14 @@ export const MainChat: React.FC<MainChatProps> = ({
                         type="button"
                         onClick={() => onStartCall(isVideoCall)}
                         title="Call back"
-                        className="p-2.5 rounded-xl bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
+                        className="p-2.5 rounded-xl dark:bg-white/5 dark:hover:bg-indigo-600 dark:text-slate-300 dark:hover:text-white bg-slate-100 hover:bg-indigo-600 text-slate-700 hover:text-white border dark:border-white/10 border-slate-200 transition-all shrink-0 active:scale-95 shadow-sm"
                       >
                         {isVideoCall ? <Video className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
                       </button>
                     </div>
 
                     <div
-                      className={`flex items-center gap-1.5 text-[10px] mt-1 text-slate-500 select-none ${
+                      className={`flex items-center gap-1.5 text-[10px] mt-1 dark:text-slate-500 text-slate-400 select-none ${
                         isMe ? 'mr-1 justify-end' : 'ml-1 justify-start'
                       }`}
                     >
@@ -818,7 +830,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                 {/* Date Divider Pill */}
                 {showDateDivider && (
                   <div className="flex items-center justify-center my-4">
-                    <span className="px-3 py-1 rounded-full bg-slate-900 border border-white/10 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+                    <span className="px-3 py-1 rounded-full dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 text-[10px] font-semibold tracking-wider uppercase dark:text-slate-400 text-slate-500 shadow-xs">
                       {getDateLabel(msg.createdAt)}
                     </span>
                   </div>
@@ -830,24 +842,28 @@ export const MainChat: React.FC<MainChatProps> = ({
                   }}
                   className={`flex flex-col group ${isMe ? 'items-end' : 'items-start'} transition-colors duration-300`}
                 >
-                  {/* Message Bubble */}
+                  {/* Message Bubble (Stitch Architecture) */}
                   <div
                     className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 sm:px-4 sm:py-3 shadow-md text-sm relative transition-all ${
                       isMe
-                        ? 'bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-600 text-white rounded-br-xs border border-blue-400/20'
-                        : 'bg-slate-800/90 border border-white/10 text-slate-100 rounded-bl-xs'
+                        ? 'bg-indigo-600 text-white rounded-br-xs shadow-md shadow-indigo-600/20'
+                        : 'dark:bg-[#18181b] bg-white border dark:border-white/[0.08] border-slate-200 dark:text-[#fafafa] text-slate-900 rounded-bl-xs'
                     }`}
                   >
                     {/* Reply Quote Banner inside bubble */}
                     {msg.replySnippet && (
                       <div
                         onClick={() => msg.replyToId && jumpToMessage(msg.replyToId)}
-                        className="mb-2 p-2 rounded-xl bg-black/25 border-l-2 border-white/60 text-xs cursor-pointer hover:bg-black/35 transition-colors"
+                        className={`mb-2 p-2 rounded-xl text-xs cursor-pointer transition-colors ${
+                          isMe
+                            ? 'bg-black/20 border-l-2 border-white/60 text-white/90'
+                            : 'dark:bg-white/5 bg-slate-100 border-l-2 border-indigo-500 dark:text-slate-300 text-slate-700'
+                        }`}
                       >
-                        <span className="font-semibold text-white/90 block text-[11px]">
+                        <span className="font-semibold block text-[11px]">
                           {msg.replySnippet.senderName}
                         </span>
-                        <p className="text-white/70 truncate text-[11px]">
+                        <p className="truncate text-[11px] opacity-80">
                           {msg.replySnippet.content}
                         </p>
                       </div>
@@ -876,7 +892,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                       <div className="mb-2">
                         <div
                           onClick={() => setPreviewImageModal(msg.attachmentUrl || null)}
-                          className="cursor-pointer rounded-xl overflow-hidden border border-white/10 max-h-72"
+                          className="cursor-pointer rounded-xl overflow-hidden border dark:border-white/10 border-slate-200 max-h-72"
                         >
                           <img
                             src={msg.attachmentUrl}
@@ -887,7 +903,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                       </div>
                     )}
 
-                    {/* Document / File Attachment */}
+                    {/* Document / Direct Cloud File Attachment (Stitch Card) */}
                     {msg.attachmentUrl && !isImage && !msg.voiceDuration && (
                       <div className="mb-2">
                         <a
@@ -895,22 +911,28 @@ export const MainChat: React.FC<MainChatProps> = ({
                           target="_blank"
                           rel="noreferrer"
                           download={msg.attachmentName || true}
-                          className="flex items-center gap-3 p-2.5 rounded-xl bg-black/20 hover:bg-black/30 border border-white/10 transition-colors"
+                          className={`flex items-center gap-3 p-2.5 rounded-xl border transition-colors ${
+                            isMe
+                              ? 'bg-black/20 hover:bg-black/30 border-white/15 text-white'
+                              : 'dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-900'
+                          }`}
                         >
-                          <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                            <FileText className="w-5 h-5 text-white" />
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                            isMe ? 'bg-white/20 text-white' : 'bg-indigo-600/10 text-indigo-600'
+                          }`}>
+                            <FileText className="w-5 h-5" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold truncate text-white">
+                            <p className="text-xs font-semibold truncate">
                               {msg.attachmentName || 'Download File'}
                             </p>
-                            <p className="text-[10px] text-white/70 tabular-numbers">
+                            <p className="text-[10px] opacity-75 tabular-numbers">
                               {(msg.attachmentSize || 0) < 1024 * 1024
                                 ? `${((msg.attachmentSize || 0) / 1024).toFixed(1)} KB`
                                 : `${((msg.attachmentSize || 0) / (1024 * 1024)).toFixed(1)} MB`}
                             </p>
                           </div>
-                          <Download className="w-4 h-4 text-white/80 shrink-0" />
+                          <Download className="w-4 h-4 opacity-80 shrink-0" />
                         </a>
                       </div>
                     )}
@@ -924,7 +946,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                     <div
                       className={`absolute -top-3.5 ${
                         isMe ? 'right-2' : 'left-2'
-                      } hidden group-hover:flex items-center gap-1 bg-slate-900 border border-white/10 rounded-xl px-1.5 py-0.5 shadow-lg z-20`}
+                      } hidden group-hover:flex items-center gap-1 dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 rounded-xl px-1.5 py-0.5 shadow-lg z-20`}
                     >
                       {/* Quiet Reactions */}
                       {quietReactions.map((emoji) => (
@@ -943,7 +965,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                         type="button"
                         onClick={() => setReplyingTo(msg)}
                         title="Reply to message"
-                        className="p-1 hover:text-blue-400 text-slate-400 transition-colors"
+                        className="p-1 dark:hover:text-indigo-400 hover:text-indigo-600 dark:text-slate-400 text-slate-500 transition-colors"
                       >
                         <Reply className="w-3.5 h-3.5" />
                       </button>
@@ -953,7 +975,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                         type="button"
                         onClick={() => handleSaveMessage(msg.id)}
                         title="Save to Personal Vault"
-                        className="p-1 hover:text-amber-400 text-slate-400 transition-colors"
+                        className="p-1 hover:text-amber-500 dark:text-slate-400 text-slate-500 transition-colors"
                       >
                         <Bookmark className="w-3.5 h-3.5" />
                       </button>
@@ -963,7 +985,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                         type="button"
                         onClick={() => handleTogglePin(msg.id)}
                         title={msg.isPinned ? 'Unpin message' : 'Pin message'}
-                        className="p-1 hover:text-amber-400 text-slate-400 transition-colors"
+                        className="p-1 hover:text-amber-500 dark:text-slate-400 text-slate-500 transition-colors"
                       >
                         <Pin className="w-3.5 h-3.5" />
                       </button>
@@ -974,7 +996,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                           type="button"
                           onClick={() => handleStartEdit(msg)}
                           title="Edit message"
-                          className="p-1 hover:text-blue-400 text-slate-400 transition-colors"
+                          className="p-1 dark:hover:text-indigo-400 hover:text-indigo-600 dark:text-slate-400 text-slate-500 transition-colors"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
@@ -986,7 +1008,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                           type="button"
                           onClick={() => handleDeleteMessage(msg.id)}
                           title="Delete message"
-                          className="p-1 hover:text-rose-400 text-slate-400 transition-colors"
+                          className="p-1 hover:text-rose-500 dark:text-slate-400 text-slate-500 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1004,8 +1026,8 @@ export const MainChat: React.FC<MainChatProps> = ({
                           onClick={() => handleReaction(msg.id, r.emoji)}
                           className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] border transition-all ${
                             r.hasReacted
-                              ? 'bg-blue-600/30 border-blue-500/50 text-white font-bold shadow-sm'
-                              : 'bg-slate-900/80 border-white/10 text-slate-300 hover:border-white/20'
+                              ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-500 font-bold shadow-sm'
+                              : 'dark:bg-[#18181b] bg-white dark:border-white/10 border-slate-200 dark:text-slate-300 text-slate-700 shadow-xs hover:border-slate-300'
                           }`}
                         >
                           <span>{r.emoji}</span>
@@ -1017,37 +1039,29 @@ export const MainChat: React.FC<MainChatProps> = ({
 
                   {/* Message Bottom Metadata */}
                   <div
-                    className={`flex items-center gap-1.5 text-[10px] mt-1 text-slate-400 select-none px-1 ${
+                    className={`flex items-center gap-1.5 text-[10px] mt-1 dark:text-slate-400 text-slate-500 select-none px-1 ${
                       isMe ? 'mr-1 justify-end' : 'ml-1 justify-start'
                     }`}
                   >
-                    <span>
+                    <span className="font-mono tabular-numbers text-[10px] tracking-tight">
                       {new Date(msg.createdAt).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
                     </span>
                     {msg.isSilent && (
-                      <span className="flex items-center gap-0.5 text-slate-400" title="Sent silently">
+                      <span className="flex items-center gap-0.5 dark:text-slate-400 text-slate-500" title="Sent silently">
                         <BellOff className="w-3 h-3" />
                       </span>
                     )}
                     {msg.isEdited && <span>(edited)</span>}
                     {msg.isPinned && (
-                      <span className="text-amber-400 flex items-center gap-0.5">
+                      <span className="text-amber-500 flex items-center gap-0.5">
                         <Pin className="w-3 h-3" />
                       </span>
                     )}
                     {isMe && (
-                      <span className="flex items-center">
-                        {msg.status === 'READ' ? (
-                          <CheckCheck className="w-3.5 h-3.5 text-sky-400" />
-                        ) : msg.status === 'DELIVERED' ? (
-                          <CheckCheck className="w-3.5 h-3.5 text-slate-400" />
-                        ) : (
-                          <Check className="w-3.5 h-3.5 text-slate-500" />
-                        )}
-                      </span>
+                      <StatusTicks status={msg.status} size="md" />
                     )}
                   </div>
                 </div>
@@ -1058,8 +1072,8 @@ export const MainChat: React.FC<MainChatProps> = ({
 
         {/* Live Typing Indicator */}
         {isPeerTyping && (
-          <div className="flex items-center gap-2 text-xs text-slate-400 pl-2 animate-pulse">
-            <span className="font-medium text-slate-300">{peer.displayName}</span>
+          <div className="flex items-center gap-2 text-xs dark:text-slate-400 text-slate-500 pl-2 animate-pulse">
+            <span className="font-medium dark:text-slate-300 text-slate-700">{peer.displayName}</span>
             <span>is typing</span>
             <span className="flex gap-0.5">
               <span className="w-1 h-1 rounded-full bg-slate-400 animate-bounce" />
@@ -1074,25 +1088,25 @@ export const MainChat: React.FC<MainChatProps> = ({
 
       {/* Editing Message Banner */}
       {editingMessage && (
-        <div className="px-4 py-2.5 bg-slate-900 border-t border-blue-500/30 flex items-center gap-2 text-xs">
-          <Edit2 className="w-4 h-4 text-blue-400 shrink-0" />
+        <div className="px-4 py-2.5 dark:bg-[#18181b] bg-slate-100 border-t dark:border-indigo-500/30 border-indigo-200 flex items-center gap-2 text-xs">
+          <Edit2 className="w-4 h-4 text-indigo-500 shrink-0" />
           <input
             type="text"
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
-            className="flex-1 px-3 py-1.5 rounded-lg bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="flex-1 px-3 py-1.5 rounded-lg dark:bg-[#121215] bg-white border dark:border-white/10 border-slate-200 dark:text-white text-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
           <button
             type="button"
             onClick={handleSaveEdit}
-            className="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-semibold"
+            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold shadow-sm"
           >
             Save
           </button>
           <button
             type="button"
             onClick={() => setEditingMessage(null)}
-            className="p-1 text-slate-400 hover:text-white"
+            className="p-1 dark:text-slate-400 text-slate-500 hover:text-slate-900"
           >
             <X className="w-4 h-4" />
           </button>
@@ -1101,17 +1115,17 @@ export const MainChat: React.FC<MainChatProps> = ({
 
       {/* In-Chat Reply Quote Banner */}
       {replyingTo && (
-        <div className="px-4 py-2 bg-slate-900/90 border-t border-blue-500/30 flex items-center justify-between text-xs">
+        <div className="px-4 py-2 dark:bg-[#18181b] bg-slate-100 border-t dark:border-indigo-500/30 border-indigo-200 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 min-w-0">
-            <Reply className="w-4 h-4 text-blue-400 shrink-0" />
+            <Reply className="w-4 h-4 text-indigo-500 shrink-0" />
             <div className="truncate">
-              <span className="font-semibold text-blue-300">
+              <span className="font-semibold text-indigo-600 dark:text-indigo-400">
                 Replying to {replyingTo.senderId === currentUser?.id ? 'yourself' : peer.displayName}:
               </span>{' '}
-              <span className="text-slate-400 truncate">{replyingTo.content}</span>
+              <span className="dark:text-slate-400 text-slate-600 truncate">{replyingTo.content}</span>
             </div>
           </div>
-          <button type="button" onClick={() => setReplyingTo(null)} className="p-1 text-slate-400 hover:text-white">
+          <button type="button" onClick={() => setReplyingTo(null)} className="p-1 dark:text-slate-400 text-slate-500 hover:text-slate-900">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -1119,12 +1133,12 @@ export const MainChat: React.FC<MainChatProps> = ({
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="mx-4 mb-2 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center justify-between">
+        <div className="mx-4 mb-2 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
             <span>{errorMessage}</span>
           </div>
-          <button type="button" onClick={() => setErrorMessage(null)} className="p-1 hover:text-white">
+          <button type="button" onClick={() => setErrorMessage(null)} className="p-1 hover:text-red-700">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -1132,22 +1146,22 @@ export const MainChat: React.FC<MainChatProps> = ({
 
       {/* Active Cloud Upload Progress Card */}
       {activeUpload && (
-        <div className="mx-4 mb-3 p-3 rounded-xl bg-slate-900 border border-blue-500/30 shadow-lg flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center shrink-0">
+        <div className="mx-4 mb-3 p-3 rounded-xl dark:bg-[#18181b] bg-white border dark:border-indigo-500/30 border-indigo-200 shadow-lg flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-500 flex items-center justify-center shrink-0">
             <FileText className="w-4 h-4" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between text-xs mb-1">
-              <span className="font-semibold text-white truncate max-w-[200px]">
+              <span className="font-semibold dark:text-white text-slate-900 truncate max-w-[200px]">
                 {activeUpload.fileName}
               </span>
-              <span className="text-blue-400 font-mono text-[11px] tabular-numbers">
+              <span className="text-indigo-500 font-mono text-[11px] tabular-numbers font-medium">
                 {activeUpload.progress}%
               </span>
             </div>
-            <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div className="w-full h-1.5 dark:bg-slate-800 bg-slate-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-150"
+                className="h-full bg-indigo-600 rounded-full transition-all duration-150"
                 style={{ width: `${activeUpload.progress}%` }}
               />
             </div>
@@ -1159,7 +1173,7 @@ export const MainChat: React.FC<MainChatProps> = ({
               setActiveUpload(null);
             }}
             title="Cancel upload"
-            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white"
+            className="p-1.5 rounded-lg dark:hover:bg-white/10 hover:bg-slate-100 dark:text-slate-400 text-slate-500"
           >
             <X className="w-4 h-4" />
           </button>
@@ -1168,8 +1182,8 @@ export const MainChat: React.FC<MainChatProps> = ({
 
       {/* Voice Recording Control Bar */}
       {isRecordingVoice ? (
-        <div className="p-3 border-t border-white/10 bg-slate-950 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-rose-400 text-xs font-semibold animate-pulse">
+        <div className="p-3 border-t dark:border-white/10 border-slate-200 dark:bg-[#121215] bg-white flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-rose-500 text-xs font-semibold animate-pulse">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
             <span>Recording voice note... ({recordingSeconds}s)</span>
           </div>
@@ -1177,14 +1191,14 @@ export const MainChat: React.FC<MainChatProps> = ({
             <button
               type="button"
               onClick={cancelRecording}
-              className="px-3 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white"
+              className="px-3 py-1.5 rounded-xl text-xs dark:text-slate-400 text-slate-500 hover:text-slate-900"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={stopRecording}
-              className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-blue-600/30"
+              className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-indigo-600/30"
             >
               <Square className="w-3.5 h-3.5 fill-current" />
               <span>Send Voice</span>
@@ -1192,80 +1206,84 @@ export const MainChat: React.FC<MainChatProps> = ({
           </div>
         </div>
       ) : (
-        /* Standard Input Bar */
-        <div className="p-3 md:p-4 border-t border-white/10 bg-slate-950/80 backdrop-blur-md pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
-          <form onSubmit={handleSend} className="flex items-center gap-2">
-            <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              title="Attach file (Max 50MB)"
-              disabled={!!activeUpload}
-              className="p-2.5 rounded-xl hover:bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-40"
-            >
-              <Paperclip className="w-4 h-4" />
-            </button>
+        /* Floating Suspended Composer Dock (Stitch Design Specification) */
+        <div className="p-3 md:p-4 bg-gradient-to-t dark:from-[#09090b] dark:via-[#09090b]/90 from-[#fbfbfa] via-[#fbfbfa]/95 to-transparent pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+          <div className="p-2 md:p-2.5 rounded-2xl dark:bg-[#121215]/90 bg-white/95 border dark:border-white/10 border-slate-200/90 shadow-xl backdrop-blur-xl">
+            <form onSubmit={handleSend} className="flex items-center gap-2">
+              <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
+              
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                title="Attach file (Max 50MB direct GCS upload)"
+                disabled={!!activeUpload}
+                className="p-2 rounded-xl dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-slate-900 transition-colors disabled:opacity-40"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
 
-            {/* Voice Note Trigger */}
-            <button
-              type="button"
-              onClick={startRecording}
-              title="Record Voice Note"
-              className="p-2.5 rounded-xl hover:bg-white/5 border border-white/10 text-slate-400 hover:text-blue-400 transition-colors"
-            >
-              <Mic className="w-4 h-4" />
-            </button>
+              {/* Voice Note Trigger */}
+              <button
+                type="button"
+                onClick={startRecording}
+                title="Record Voice Note"
+                className="p-2 rounded-xl dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-indigo-600 transition-colors"
+              >
+                <Mic className="w-4 h-4" />
+              </button>
 
-            {/* Decision Poll Trigger */}
-            <button
-              type="button"
-              onClick={() => setIsPollModalOpen(true)}
-              title="Post Group Decision Poll"
-              className="p-2.5 rounded-xl hover:bg-white/5 border border-white/10 text-slate-400 hover:text-blue-400 transition-colors"
-            >
-              <BarChart3 className="w-4 h-4" />
-            </button>
+              {/* Decision Poll Trigger */}
+              <button
+                type="button"
+                onClick={() => setIsPollModalOpen(true)}
+                title="Post Group Decision Poll"
+                className="p-2 rounded-xl dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-indigo-600 transition-colors"
+              >
+                <BarChart3 className="w-4 h-4" />
+              </button>
 
-            {/* Silent Send Toggle */}
-            <button
-              type="button"
-              onClick={() => setIsSilent(!isSilent)}
-              title={
-                isSilent
-                  ? 'Silent Send active (no sound/chime on recipient device)'
-                  : 'Toggle Silent Send (send without sound)'
-              }
-              className={`p-2.5 rounded-xl border transition-colors ${
-                isSilent
-                  ? 'bg-blue-600/25 border-blue-500/40 text-blue-400'
-                  : 'hover:bg-white/5 border-white/10 text-slate-400'
-              }`}
-            >
-              {isSilent ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-            </button>
+              {/* Silent Send Toggle */}
+              <button
+                type="button"
+                onClick={() => setIsSilent(!isSilent)}
+                title={
+                  isSilent
+                    ? 'Silent Send active (no sound/chime on recipient device)'
+                    : 'Toggle Silent Send (send without sound)'
+                }
+                className={`p-2 rounded-xl transition-colors ${
+                  isSilent
+                    ? 'dark:bg-indigo-600/25 dark:border-indigo-500/40 dark:text-indigo-400 bg-indigo-50 border border-indigo-200 text-indigo-700'
+                    : 'dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500'
+                }`}
+              >
+                {isSilent ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+              </button>
 
-            <input
-              type="text"
-              value={inputText}
-              onChange={handleInputChange}
-              placeholder={
-                isSelfVault
-                  ? 'Write a personal thought, paste code, or note to self...'
-                  : isSilent
-                  ? `Silent message to @${peer.username}...`
-                  : `Message @${peer.username}...`
-              }
-              className="flex-1 py-2.5 px-4 rounded-xl bg-slate-900/70 border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
-            />
+              <input
+                type="text"
+                value={inputText}
+                onChange={handleInputChange}
+                placeholder={
+                  isSelfVault
+                    ? 'Write a personal thought, paste code, or note to self...'
+                    : isSilent
+                    ? `Silent message to @${peer.username}...`
+                    : `Message @${peer.username} (press / for commands)...`
+                }
+                className="flex-1 py-2 px-3 rounded-xl dark:bg-[#18181b] bg-slate-50 border dark:border-white/10 border-slate-200 text-sm dark:text-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+              />
 
-            <button
-              type="submit"
-              disabled={!inputText.trim()}
-              className="p-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-40 transition-all shadow-md shadow-blue-600/20"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={!inputText.trim()}
+                className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40 transition-all shadow-sm shadow-indigo-600/30 font-medium flex items-center gap-1.5"
+                title="Send message (Enter)"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
@@ -1303,7 +1321,7 @@ export const MainChat: React.FC<MainChatProps> = ({
               target="_blank"
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="absolute top-4 right-4 p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-white border border-white/10 shadow-lg flex items-center gap-1.5 text-xs font-semibold"
+              className="absolute top-4 right-4 p-2.5 rounded-xl dark:bg-slate-900/80 bg-white hover:bg-slate-100 text-slate-900 dark:text-white border dark:border-white/10 border-slate-200 shadow-lg flex items-center gap-1.5 text-xs font-semibold"
             >
               <ExternalLink className="w-4 h-4" />
               Open Original

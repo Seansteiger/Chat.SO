@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Chat.SO / #eng-core-architecture</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts: Geist, Inter, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-fixed-dim": "#c0c1ff",
+            "primary-fixed": "#e2dfff",
+            "on-error-container": "#93000a",
+            "on-error": "#ffffff",
+            "surface-bright": "#fcf8fb",
+            "tertiary-fixed-dim": "#4edea3",
+            "inverse-on-surface": "#f3f0f2",
+            "tertiary": "#005338",
+            "on-tertiary": "#ffffff",
+            "inverse-primary": "#c3c0ff",
+            "primary-container": "#4f46e5",
+            "error-container": "#ffdad6",
+            "on-secondary-fixed": "#07006c",
+            "on-secondary-container": "#fffbff",
+            "outline-variant": "#c7c4d8",
+            "surface-dim": "#dcd9dc",
+            "primary-fixed-dim": "#c3c0ff",
+            "secondary-container": "#6063ee",
+            "background": "#fcf8fb",
+            "surface-container-highest": "#e5e1e4",
+            "surface-container": "#f0edf0",
+            "on-surface": "#1c1b1d",
+            "tertiary-fixed": "#6ffbbe",
+            "surface-tint": "#4d44e3",
+            "error": "#ba1a1a",
+            "on-tertiary-container": "#67f4b7",
+            "primary": "#3525cd",
+            "on-primary-container": "#dad7ff",
+            "surface-variant": "#e5e1e4",
+            "on-primary-fixed-variant": "#3323cc",
+            "on-primary": "#ffffff",
+            "inverse-surface": "#313032",
+            "surface-container-low": "#f6f2f5",
+            "secondary": "#4648d4",
+            "surface-container-high": "#eae7ea",
+            "on-surface-variant": "#464555",
+            "on-background": "#1c1b1d",
+            "surface": "#fcf8fb",
+            "on-secondary-fixed-variant": "#2f2ebe",
+            "on-primary-fixed": "#0f0069",
+            "on-secondary": "#ffffff",
+            "tertiary-container": "#006e4b",
+            "outline": "#777587",
+            "on-tertiary-fixed": "#002113",
+            "secondary-fixed": "#e1e0ff",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-fixed-variant": "#005236"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-2xl": "3rem",
+            "space-xl": "2rem",
+            "space-sm": "0.5rem",
+            "space-base": "1rem",
+            "space-lg": "1.5rem",
+            "margin": "1.5rem",
+            "space-md": "0.75rem",
+            "space-2xs": "0.125rem",
+            "margin-mobile": "1rem",
+            "gutter-compact": "0.75rem",
+            "gutter": "1rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "label-sm": ["Geist"],
+            "display-hero": ["Geist"],
+            "label-md": ["Geist"],
+            "body-sm": ["Inter"],
+            "headline-sm": ["Geist"],
+            "body-base": ["Inter"],
+            "headline-md": ["Geist"],
+            "headline-lg": ["Geist"],
+            "body-lg": ["Inter"],
+            "code-base": ["JetBrains Mono"]
+          },
+          "fontSize": {
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "display-hero": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.03em", "fontWeight": "600" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-sm": ["15px", { "lineHeight": "22px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-base": ["13.5px", { "lineHeight": "21px", "letterSpacing": "-0.005em", "fontWeight": "400" }],
+            "headline-md": ["18px", { "lineHeight": "26px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "body-lg": ["15px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "400" }],
+            "code-base": ["12.5px", { "lineHeight": "19px", "letterSpacing": "-0.01em", "fontWeight": "400" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #cbd5e1;
+    }
+    .tactile-card {
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 0 0 1px rgba(15, 23, 42, 0.04);
+    }
+    .tactile-floating {
+      box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+    }
+    .pulse-ring {
+      animation: pulseAnim 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulseAnim {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(1.15); }
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased h-screen overflow-hidden flex flex-row font-body-base">
+<!-- ========================================================================= -->
+<!-- 1. SLIM ICON NAVIGATION RAIL (Shared Component: SideNavBar anchor)        -->
+<!-- ========================================================================= -->
+<aside aria-label="Global Workspace Navigation" class="fixed left-0 top-0 h-screen w-16 flex flex-col justify-between items-center py-4 z-40 bg-surface-container-lowest border-r border-outline-variant shrink-0">
+<!-- Top Brand Lockup -->
+<div class="flex flex-col items-center gap-space-md w-full">
+<div class="relative group cursor-pointer" title="Chat.SO Engineering Workspace">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm ring-2 ring-primary/20 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-on-primary" data-icon="hub">hub</span>
+</div>
+<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-tertiary-fixed-dim rounded-full border-2 border-surface-container-lowest"></div>
+</div>
+<div class="w-8 h-px bg-outline-variant/60 my-1"></div>
+<!-- Navigation Tabs (Shared Components JSON mapped) -->
+<nav aria-label="Main Tabs" class="flex flex-col items-center gap-2 w-full px-2">
+<!-- 1. Circles (ACTIVE) -->
+<a class="flex flex-col items-center justify-center text-primary bg-primary-fixed rounded-lg p-2 transition-all duration-150 active:scale-95 w-12 h-12 relative group" href="#circles" title="Circles">
+<span class="material-symbols-outlined text-primary" data-icon="hub" data-weight="fill" style="font-variation-settings: 'FILL' 1;">hub</span>
+<span class="font-label-sm text-label-sm text-primary mt-0.5 font-semibold">Circles</span>
+<span class="absolute left-0 top-2.5 bottom-2.5 w-1 bg-primary rounded-r"></span>
+</a>
+<!-- 2. Direct -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container hover:text-on-surface rounded-lg transition-all duration-150 active:scale-95 w-12 h-12 relative group" href="#direct" title="Direct">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-on-surface mt-0.5">Direct</span>
+</a>
+<!-- 3. Huddles -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container hover:text-on-surface rounded-lg transition-all duration-150 active:scale-95 w-12 h-12 relative group" href="#huddles" title="Huddles">
+<div class="relative">
+<span class="material-symbols-outlined" data-icon="mic">mic</span>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full"></span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-on-surface mt-0.5">Huddles</span>
+</a>
+<!-- 4. Code -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container hover:text-on-surface rounded-lg transition-all duration-150 active:scale-95 w-12 h-12 relative group" href="#code" title="Code">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-on-surface mt-0.5">Code</span>
+</a>
+<!-- 5. Settings -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container hover:text-on-surface rounded-lg transition-all duration-150 active:scale-95 w-12 h-12 relative group" href="#settings" title="Settings">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-on-surface mt-0.5">Settings</span>
+</a>
+</nav>
+<!-- Quick Action CTA from JSON -->
+<button class="w-10 h-10 rounded-xl border border-dashed border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary hover:bg-primary-fixed/40 flex items-center justify-center transition-all duration-150 active:scale-95 mt-1" title="Create New Channel">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+<!-- Bottom Rail Icons -->
+<div class="flex flex-col items-center gap-space-sm w-full px-2">
+<!-- Status Indicator Tab -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container hover:text-on-surface rounded-lg transition-all duration-150 active:scale-95 w-12 h-12" title="Operational Status">
+<span class="material-symbols-outlined text-emerald-600" data-icon="radio_button_checked">radio_button_checked</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Status</span>
+</button>
+<!-- Account Profile Tab -->
+<div class="relative group cursor-pointer pt-1">
+<div class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant p-0.5 flex items-center justify-center overflow-hidden">
+<img alt="David K. profile picture" class="w-full h-full object-cover rounded-full" data-alt="Close-up professional headshot of David K, a senior software architect with subtle spectacles in an architectural design studio bathed in gentle morning light with minimal neutral tones and precise crisp depth." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkVUPlhZmn6i6Uh0X2o8wQAnYHLcewQE9BLHYWYOjvfTkBk6LUD7gNkgaz0W-G9y6QwCU4GtVcJRbTwn_lyMRg3HKFf9DUHYe0ic2am9iZjheZ1jhwYNmEXv8Sv1u2M1-Ruz8HO-lcnwygrS7--uOWEobtzYoTkrjeTmKPKzPzkxNWvwwdYTmHkLUPonyKEqFsD0dllOKZLXvNyug7yXXi2LuPq8fS8miQlAGJY8zeOLlt3qsVBfHthZjPHOYR4jyCWivLdcmvy5g"/>
+</div>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-surface-container-lowest rounded-full" title="Active Online"></span>
+</div>
+</div>
+</aside>
+<!-- ========================================================================= -->
+<!-- 2. DIRECTORY PANE - Circles & Channels Directory (300px width)           -->
+<!-- ========================================================================= -->
+<aside aria-label="Circles and Channels Directory" class="ml-16 w-80 h-screen bg-[#fbfbfa] border-r border-slate-200 flex flex-col shrink-0 select-none z-30">
+<!-- Header -->
+<div class="h-14 px-4 border-b border-slate-200 flex items-center justify-between bg-surface-container-lowest">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-lg bg-primary-fixed flex items-center justify-center text-primary font-headline-sm text-headline-sm">
+          #
+        </div>
+<div>
+<h1 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">Circles &amp; Workspace</h1>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-colors" title="Browse Public Circles">
+<span class="material-symbols-outlined" data-icon="language">language</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-sm hover:bg-primary-container transition-colors" title="Create Circle">
+<span class="material-symbols-outlined text-white" data-icon="add">add</span>
+</button>
+</div>
+</div>
+<!-- Quick Search Field -->
+<div class="px-4 py-3 border-b border-slate-200/80 bg-white/70">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-2.5 text-slate-400" data-icon="search">search</span>
+<input class="w-full bg-[#f4f4f6] text-on-surface text-body-sm font-body-sm rounded-lg pl-8 pr-12 py-1.5 border border-slate-200 focus:bg-white focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all placeholder:text-slate-400" placeholder="Filter channels &amp; topics... (⌘F)" type="text"/>
+<span class="absolute right-2 px-1.5 py-0.5 rounded bg-slate-200/70 text-slate-500 font-label-sm text-[10px] tracking-wider font-mono">⌘K</span>
+</div>
+</div>
+<!-- Directory Scroll Area -->
+<div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-5">
+<!-- Section: YOUR CIRCLES -->
+<div>
+<div class="flex items-center justify-between px-2 mb-1.5">
+<span class="font-label-sm text-label-sm font-semibold tracking-wider text-slate-500 uppercase">Your Circles (4)</span>
+<button class="text-slate-400 hover:text-slate-600">
+<span class="material-symbols-outlined text-xs" data-icon="expand_more">expand_more</span>
+</button>
+</div>
+<div class="space-y-1">
+<!-- Active Circle Card: #engineering-core -->
+<div class="group relative bg-white border border-slate-200/90 rounded-xl p-2.5 shadow-sm cursor-pointer transition-all hover:border-slate-300">
+<div class="absolute left-0 top-2 bottom-2 w-1 bg-primary rounded-r"></div>
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded bg-primary-fixed text-primary flex items-center justify-center font-code-base text-code-base font-semibold">
+                  #
+                </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight leading-none group-hover:text-primary transition-colors">
+                    #engineering-core
+                  </span>
+<span class="font-body-sm text-body-sm text-slate-500 truncate max-w-[170px] mt-1">
+                    Deploying v2.4 to edge nodes
+                  </span>
+</div>
+</div>
+<span class="px-1.5 py-0.5 text-xs font-semibold rounded-full bg-primary text-white font-label-sm">
+                3
+              </span>
+</div>
+<div class="mt-2 flex items-center gap-2 text-slate-500 font-label-sm text-label-sm pl-8">
+<span class="inline-flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                14 online
+              </span>
+<span>•</span>
+<span>38 members</span>
+</div>
+</div>
+<!-- Channel 2: #product-design -->
+<div class="group flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-slate-200/60 cursor-pointer transition-colors">
+<div class="flex items-center gap-2.5 min-w-0">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600" data-icon="palette">palette</span>
+<div class="truncate">
+<div class="font-label-md text-label-md font-medium text-slate-700 group-hover:text-slate-900 truncate">#product-design</div>
+<div class="font-body-sm text-body-sm text-slate-400 truncate">Figma token sync review</div>
+</div>
+</div>
+<span class="font-label-sm text-[11px] text-slate-400 shrink-0">2m</span>
+</div>
+<!-- Channel 3: #infra-mesh-webrtc -->
+<div class="group flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-slate-200/60 cursor-pointer transition-colors">
+<div class="flex items-center gap-2.5 min-w-0">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600" data-icon="hub">hub</span>
+<div class="truncate">
+<div class="font-label-md text-label-md font-medium text-slate-700 group-hover:text-slate-900 truncate">#infra-mesh-webrtc</div>
+<div class="font-body-sm text-body-sm text-slate-400 truncate">STUN/TURN NAT traversal tests</div>
+</div>
+</div>
+<span class="font-label-sm text-[11px] text-slate-400 shrink-0">12m</span>
+</div>
+<!-- Channel 4: #announcements (with lock badge) -->
+<div class="group flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-slate-200/60 cursor-pointer transition-colors">
+<div class="flex items-center gap-2.5 min-w-0">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600" data-icon="campaign">campaign</span>
+<div class="truncate flex items-center gap-1.5">
+<span class="font-label-md text-label-md font-medium text-slate-700 group-hover:text-slate-900 truncate">#announcements</span>
+<span class="material-symbols-outlined text-slate-400 text-sm" data-icon="lock">lock</span>
+</div>
+</div>
+<span class="w-2 h-2 rounded-full bg-slate-300"></span>
+</div>
+</div>
+</div>
+<!-- Section: DIRECT MESSAGES -->
+<div>
+<div class="flex items-center justify-between px-2 mb-1.5">
+<span class="font-label-sm text-label-sm font-semibold tracking-wider text-slate-500 uppercase">Direct Messages (8)</span>
+<button class="text-slate-400 hover:text-slate-600" title="Start Direct Message">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+</button>
+</div>
+<div class="space-y-1">
+<!-- DM: Sarah Chen -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-200/60 cursor-pointer group transition-colors">
+<div class="flex items-center gap-2.5">
+<div class="relative">
+<img alt="Sarah Chen profile" class="w-7 h-7 rounded-full object-cover" data-alt="High-resolution portrait of Sarah Chen, lead architect in modern minimal architectural workspace with clean background, natural daylighting and soft contrast." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBswhRXSigM6Ddca-QSId6e4D5BTxQox-yeZKKEBEu0_akWc109S9UXzvxqUMPqU0rSBzUI-KvLRrJUPjmSnGAg7qPis0YDM4TNEJ0WmLrKwn-RRc4k4xqqPyhllvPDaUh3acUvTplQu0jbI6KZ4ozD6_ecD5byplV1gGsqtv6cEEwC-zBDG2MDrTpXBuBSADZspNNZvsLjQPn8SL0kZC87fec9mkY-2TzWw-gv4U90KBTOgy84pOtWPvuOLqDC58KzGE_tc_cNLCk"/>
+<span class="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+</div>
+<div>
+<div class="font-label-md text-label-md font-medium text-slate-800 flex items-center gap-1">
+                  Sarah Chen
+                  <span class="px-1 py-0.2 rounded bg-slate-100 text-slate-500 text-[9px] font-label-sm">ARCH</span>
+</div>
+<div class="font-body-sm text-[11px] text-emerald-600">Active in Voice Huddle</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300 group-hover:text-slate-600 text-sm" data-icon="chat_bubble">chat_bubble</span>
+</div>
+<!-- DM: Alex Rivera -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-200/60 cursor-pointer group transition-colors">
+<div class="flex items-center gap-2.5">
+<div class="relative">
+<img alt="Alex Rivera profile" class="w-7 h-7 rounded-full object-cover" data-alt="Portrait of Alex Rivera, technical product manager in a luminous open-plan studio setting with subtle warm wood tones and balanced diffused lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8628p4di5oGcq3_eRp2568pzAy7YPFQ5CkAzywQHZhW4tMojggTU88yna3zQfEQOOFNcsp5g20ywM8o7X4vvDYxrDdqSK2WcfA3w6fbDnPqfl3XfR65PJ2conYDsLnEFb5hPluUZOkEpQNl4DM7xmIBiLANAYn0BfdGe7tMsIeFO1FHm7agNqfbl9sNzMU2VFDuNemvUn99RndlbpT4CrZzDAyhOK96pRu7PRH2k9b6hENezNhtZY4ZKPXk9ETMOv-ylzAxzqQ68"/>
+<span class="absolute bottom-0 right-0 w-2 h-2 bg-amber-500 rounded-full ring-2 ring-white"></span>
+</div>
+<div>
+<div class="font-label-md text-label-md font-medium text-slate-800">Alex Rivera</div>
+<div class="font-body-sm text-[11px] text-slate-400">Away • In Roadmap Sync</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300 group-hover:text-slate-600 text-sm" data-icon="chat_bubble">chat_bubble</span>
+</div>
+<!-- DM: Elena Rostova -->
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-200/60 cursor-pointer group transition-colors">
+<div class="flex items-center gap-2.5">
+<div class="relative">
+<img alt="Elena Rostova profile" class="w-7 h-7 rounded-full object-cover" data-alt="Elena Rostova smiling in a high-tech studio environment with soft architectural depth and pristine white paper aesthetics." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAR3op8k-I9_h5yPyiFsusb78qJl2ehdbwi4WPr-b9PTb3QYTnO3B8E290HAsQ8oEngoQooUSodPl4C4gCWLHHE_2NSdavcSkHQrzDyIphVzBKYdPPa9Sny7Jrfr3M8gmbf7Us0iN-4cHj-wTnYbajqShB9scSYKiimx-R34j2ye8LGZFc9q0ovD6Z4_73D9dn4vkY3j7YGl_YnGgakjVv8rETr9BHOIDz9WldPBSgPfDscKmjwhHQLoEZwburNL2qGpMeL3Ltq4gc"/>
+<span class="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+</div>
+<div>
+<div class="font-label-md text-label-md font-medium text-slate-800">Elena Rostova</div>
+<div class="font-body-sm text-[11px] text-slate-400">Ready for release validation</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300 group-hover:text-slate-600 text-sm" data-icon="chat_bubble">chat_bubble</span>
+</div>
+</div>
+</div>
+<!-- Quick Audio Huddle Status Card -->
+<div class="bg-gradient-to-br from-indigo-50/70 to-slate-100/90 border border-indigo-100 rounded-xl p-3">
+<div class="flex items-center justify-between text-xs text-primary font-semibold mb-1">
+<span class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Live Core Huddle
+          </span>
+<span class="font-mono text-[10px] text-slate-500">3 speaking</span>
+</div>
+<div class="flex items-center justify-between mt-2">
+<div class="flex -space-x-1.5">
+<span class="w-6 h-6 rounded-full bg-slate-300 border-2 border-white text-[10px] font-bold flex items-center justify-center text-slate-700">SC</span>
+<span class="w-6 h-6 rounded-full bg-slate-400 border-2 border-white text-[10px] font-bold flex items-center justify-center text-slate-700">AR</span>
+<span class="w-6 h-6 rounded-full bg-primary-container border-2 border-white text-[10px] font-bold flex items-center justify-center text-white">DK</span>
+</div>
+<button class="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-indigo-200 text-primary rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="headset_mic">headset_mic</span>
+            Join
+          </button>
+</div>
+</div>
+</div>
+</aside>
+<!-- ========================================================================= -->
+<!-- 3. MAIN CIRCLE COMMUNICATION STREAM (Fluid Central Canvas)                -->
+<!-- ========================================================================= -->
+<main aria-label="Main Conversation Canvas" class="flex-1 flex flex-col bg-white relative h-screen overflow-hidden min-w-0">
+<!-- Top Navigation App Bar (Shared Component: TopNavBar Anchor) -->
+<header class="flex justify-between items-center w-full px-6 h-14 bg-surface-container-lowest border-b border-outline-variant z-20 shrink-0">
+<!-- Left Channel Metadata & Navigation Links -->
+<div class="flex items-center gap-4 min-w-0">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-primary-fixed text-primary flex items-center justify-center font-bold font-code-base text-code-base">
+            #
+          </div>
+<div class="flex items-baseline gap-2">
+<h2 class="text-headline-sm font-headline-sm font-semibold text-on-surface tracking-tight whitespace-nowrap">
+              Chat.SO / #eng-core-architecture
+            </h2>
+<span class="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm font-medium bg-slate-100 text-slate-600 border border-slate-200">
+              Public Circle
+            </span>
+</div>
+</div>
+<div class="h-4 w-px bg-outline-variant hidden lg:block"></div>
+<!-- Shared Component Navigation Links -->
+<nav aria-label="Workspace views" class="hidden lg:flex items-center gap-4 text-label-md font-label-md">
+<a class="text-primary font-semibold border-b-2 border-primary pb-1" href="#discussion">Discussion</a>
+<a class="text-on-surface-variant hover:text-on-surface pb-1 transition-colors" href="#threads">Threads</a>
+<a class="text-on-surface-variant hover:text-on-surface pb-1 transition-colors" href="#pinned">Pinned</a>
+<a class="text-on-surface-variant hover:text-on-surface pb-1 transition-colors flex items-center gap-1" href="#huddle">
+            Huddle
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+</a>
+</nav>
+</div>
+<!-- Right Trailing Primary/Secondary Actions -->
+<div class="flex items-center gap-2 shrink-0">
+<!-- Search Workspace Search Bar -->
+<div class="hidden xl:flex items-center relative">
+<span class="material-symbols-outlined absolute left-2 text-slate-400 text-sm" data-icon="search">search</span>
+<input class="bg-surface-container-low text-xs rounded-lg pl-7 pr-3 py-1.5 w-44 border border-outline-variant/60 focus:w-60 focus:bg-white focus:border-primary transition-all outline-none" placeholder="Search Workspace" type="text"/>
+</div>
+<!-- Trailing Primary Action: Start Huddle -->
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 text-xs font-semibold shadow-2xs transition-colors">
+<span class="material-symbols-outlined text-emerald-600 text-sm" data-icon="call">call</span>
+<span>Start Huddle</span>
+<span class="w-2 h-2 rounded-full bg-emerald-500 pulse-ring"></span>
+</button>
+<!-- Trailing Icon Actions from JSON -->
+<button class="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors" title="Toggle Side Navigation">
+<span class="material-symbols-outlined" data-icon="side_navigation">side_navigation</span>
+</button>
+<button class="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors" title="More Options">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+<!-- User Avatar with Green Active Dot (From JSON Spec) -->
+<div class="relative ml-1">
+<img alt="User avatar with green active status dot" class="w-7 h-7 rounded-full object-cover border border-slate-200" data-alt="User avatar with green active status dot in minimal sleek aesthetic showcasing David K smiling subtly with crisp architectural studio lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjEae_JFWSd_cpWexJiHF7TAEvy7vcnvnQWygX5a9JhuehNAB3O7e4D9pfE6fyTg1duV3Uo9Bx4q2ndKOOEfad3rwG1FcxOrnWjAnt4ucub54vQmcEEwRfts-w-xS-BbPo2kZ56-GS3Ejc6JpHIIz9sRXYryNAbO0j21C4NRFMAE-vlh5HYi-4o0TFW3c83Y87MsmN7GOFFCXA6WmYDP8dSMaYrTqT9Sa_oBgqQNGVECoiKSa8t2JSPfPgcffxN9oAWv3cjbbMB6g"/>
+<span class="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 rounded-full border border-white"></span>
+</div>
+</div>
+</header>
+<!-- Sub-Header Topic Banner & Pinned Thread -->
+<div class="bg-surface-container-lowest/80 border-b border-slate-200 px-6 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+<div class="flex items-center gap-2 text-slate-600 min-w-0">
+<span class="font-medium text-slate-400">Topic:</span>
+<span class="text-slate-800 font-medium truncate">Deploying v2.4 to distributed edge nodes (edit ✎)</span>
+<span class="inline-flex items-center gap-1 text-[11px] text-slate-500 ml-2 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+<span class="material-symbols-outlined text-xs" data-icon="group">group</span>
+          38 members
+        </span>
+</div>
+<div class="flex items-center gap-3">
+<button class="text-slate-600 hover:text-primary flex items-center gap-1 font-medium transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="person_add">person_add</span>
+          Invite
+        </button>
+<button class="text-slate-600 hover:text-primary flex items-center gap-1 font-medium transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="poll">poll</span>
+          Poll
+        </button>
+</div>
+</div>
+<!-- Pinned Announcement Banner -->
+<div class="bg-amber-50/90 border-b border-amber-200/70 px-6 py-2 flex items-center justify-between text-xs text-amber-950">
+<div class="flex items-center gap-2 truncate">
+<span class="material-symbols-outlined text-amber-700 text-sm shrink-0" data-icon="push_pin">push_pin</span>
+<span class="font-semibold text-amber-900">Pinned by Sarah Chen:</span>
+<span class="truncate">Sprint 42 Release Candidate is live on staging clusters. Verification checklist attached.</span>
+</div>
+<a class="font-semibold text-amber-900 hover:text-amber-950 hover:underline shrink-0 ml-4 flex items-center gap-1" href="#thread-view">
+        View Thread (12 replies) →
+      </a>
+</div>
+<!-- Message Stream -->
+<div class="flex-1 overflow-y-auto custom-scrollbar px-6 lg:px-8 py-5 space-y-6 bg-[#fbfbfa]/70">
+<!-- Date Separator Pill -->
+<div class="flex items-center justify-center my-4">
+<div class="h-px bg-slate-200 flex-1"></div>
+<div class="px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-500 font-label-sm text-label-sm font-medium shadow-2xs">
+          Today, October 28
+        </div>
+<div class="h-px bg-slate-200 flex-1"></div>
+</div>
+<!-- Message Node 1: Elena Rostova (DevOps) -->
+<div class="group relative flex items-start gap-3.5 hover:bg-slate-100/60 -mx-3 px-3 py-2.5 rounded-xl transition-colors">
+<!-- Hover Micro-Action Bar -->
+<div class="absolute right-4 top-2 hidden group-hover:flex items-center bg-white border border-slate-200 rounded-lg shadow-sm py-0.5 px-1 gap-1 z-10">
+<button class="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800" title="Add reaction">
+<span class="material-symbols-outlined text-sm" data-icon="add_reaction">add_reaction</span>
+</button>
+<button class="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800" title="Reply in thread">
+<span class="material-symbols-outlined text-sm" data-icon="reply">reply</span>
+</button>
+<button class="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800" title="Bookmark message">
+<span class="material-symbols-outlined text-sm" data-icon="bookmark">bookmark</span>
+</button>
+</div>
+<img alt="Elena Rostova" class="w-9 h-9 rounded-full object-cover shrink-0 mt-0.5" data-alt="Elena Rostova avatar portrait with clear soft lighting, modern glasses, friendly demeanor against a neutral minimalist studio background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYD-JBZm_5HCiMB8zy_Tjw40UBz6XWsLC9HvzjVBCxioc6a_4FrgXsoeRsGE6WtJgCo_wdAMZVQrOe-BZ3ozUHvbFo_yBSTv415e_HSTCL_IHbMXUoJEJe9KfUTSKnDcx6gFnphUGMeSPlYeTYmGX_AyQqAwxbMk9WQ_fiANI5y8kknuGk9SQAbKQWhwU9wQjqDyTLA57c9tu8i3FQ0vWII-vILjjic0eqHtmX1hajKDRIIFF1HaQ51GZ1EYqrzUo4ANwbc7WMERk"/>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-sm text-headline-sm font-semibold text-slate-900">Elena Rostova</span>
+<span class="px-1.5 py-0.2 rounded text-[10px] font-label-sm font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">DevOps Lead</span>
+<span class="font-body-sm text-body-sm text-slate-400">10:02 AM</span>
+</div>
+<div class="mt-1 text-slate-800 font-body-base text-body-base leading-relaxed">
+            Zero-downtime database migrations completed on SQLite &amp; Convex schemas. Edge replication latency dropped from 84ms to 18ms globally. Everything is nominal.
+          </div>
+<div class="mt-2.5 flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 font-mono text-xs font-medium">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              Migrations 42/42 Passed
+            </span>
+<!-- Reaction Pills -->
+<button class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600 hover:border-indigo-400 text-xs transition-colors">
+<span>🚀</span> <span class="font-medium text-slate-800">5</span>
+</button>
+<button class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600 hover:border-indigo-400 text-xs transition-colors">
+<span>⚡</span> <span class="font-medium text-slate-800">8</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Message Node 2: Alex Rivera + Interactive Poll -->
+<div class="group relative flex items-start gap-3.5 hover:bg-slate-100/60 -mx-3 px-3 py-2.5 rounded-xl transition-colors">
+<div class="absolute right-4 top-2 hidden group-hover:flex items-center bg-white border border-slate-200 rounded-lg shadow-sm py-0.5 px-1 gap-1 z-10">
+<button class="p-1 hover:bg-slate-100 rounded text-slate-500"><span class="material-symbols-outlined text-sm" data-icon="add_reaction">add_reaction</span></button>
+<button class="p-1 hover:bg-slate-100 rounded text-slate-500"><span class="material-symbols-outlined text-sm" data-icon="reply">reply</span></button>
+<button class="p-1 hover:bg-slate-100 rounded text-slate-500"><span class="material-symbols-outlined text-sm" data-icon="bookmark">bookmark</span></button>
+</div>
+<img alt="Alex Rivera" class="w-9 h-9 rounded-full object-cover shrink-0 mt-0.5" data-alt="Portrait photo of Alex Rivera, lead product manager in bright clean tech loft with clean architectural framing and soft diffused natural lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZdK841_iBxUKbpmCngLGtAucH64KvLuuhPCdWYGp4EzM1FbYRWvl-wEcPZIUidI_C-fPVmqs8nwaES8jpc5bV25dQZH3Mb2itUiNZL8_sI9or903TdeyCA3R81Kmsyxf-xGgLGsWD8bYuaKGfjoKunWQi-Hkt-3o14F8sQgAFkW4ATOSn0M1GBADnz4w6PrX2BfyvzeZC4Y9RV1PCSJP7THXqAZ-ofOa05yz4AuK7uO8S9CPy0plTTywuA1gqGuL9Ux28Opj7YXU"/>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-sm text-headline-sm font-semibold text-slate-900">Alex Rivera</span>
+<span class="px-1.5 py-0.2 rounded text-[10px] font-label-sm font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">Product</span>
+<span class="font-body-sm text-body-sm text-slate-400">10:14 AM</span>
+</div>
+<p class="mt-1 text-slate-800 font-body-base text-body-base">
+            Great work Elena! Launching the community poll for user onboarding feedback now:
+          </p>
+<!-- Interactive Team Poll Card (Bento-style tactile element) -->
+<div class="mt-3 bg-white border border-slate-200/90 rounded-xl p-4 tactile-card max-w-xl">
+<div class="flex items-start justify-between gap-3 mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="poll">poll</span>
+<h3 class="font-headline-sm text-headline-sm text-slate-900 font-semibold">
+                  Community Feature Request: What should we prioritize for v2.5?
+                </h3>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] font-label-sm bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wider font-semibold">
+                Live Poll
+              </span>
+</div>
+<!-- Option 1 (Leading) -->
+<div class="space-y-1 mb-2.5 cursor-pointer">
+<div class="flex justify-between text-xs font-medium text-slate-800 mb-1">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="check_circle">check_circle</span>
+                  End-to-End Encrypted Group Video Calls
+                </span>
+<span class="font-semibold text-primary">64% (32 votes)</span>
+</div>
+<div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full transition-all duration-500" style="width: 64%"></div>
+</div>
+</div>
+<!-- Option 2 -->
+<div class="space-y-1 mb-2.5 cursor-pointer">
+<div class="flex justify-between text-xs font-medium text-slate-700 mb-1">
+<span>Native Desktop Screen Recording &amp; Clipping</span>
+<span class="text-slate-500 font-mono text-[11px]">24% (12 votes)</span>
+</div>
+<div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+<div class="bg-slate-400 h-full rounded-full" style="width: 24%"></div>
+</div>
+</div>
+<!-- Option 3 -->
+<div class="space-y-1 mb-3 cursor-pointer">
+<div class="flex justify-between text-xs font-medium text-slate-700 mb-1">
+<span>Voice Message Auto-Transcription (Whisper AI)</span>
+<span class="text-slate-500 font-mono text-[11px]">12% (6 votes)</span>
+</div>
+<div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+<div class="bg-slate-300 h-full rounded-full" style="width: 12%"></div>
+</div>
+</div>
+<!-- Poll Footer -->
+<div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+<div class="flex items-center gap-2">
+<span>50 total votes • Closes in 6 hours</span>
+<span>•</span>
+<div class="flex -space-x-1">
+<span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[9px] font-bold flex items-center justify-center border border-white">SC</span>
+<span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-bold flex items-center justify-center border border-white">ER</span>
+<span class="w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[9px] font-bold flex items-center justify-center border border-white">+14</span>
+</div>
+</div>
+<button class="px-3 py-1 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary-container transition-colors shadow-2xs">
+                Vote
+              </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Message Node 3: Sarah Chen (Audio Note & Waveform) -->
+<div class="group relative flex items-start gap-3.5 hover:bg-slate-100/60 -mx-3 px-3 py-2.5 rounded-xl transition-colors">
+<img alt="Sarah Chen" class="w-9 h-9 rounded-full object-cover shrink-0 mt-0.5" data-alt="Portrait photo of Sarah Chen in a calm minimalist modern design studio setting with clean lines, soft alabaster backdrop and natural morning lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGZ9KwyfCCKcjDFXY7HiON0w94ITWDees2o_90x66XvYB6d07GXbY3umzrruEe4xeBODijZ-0k9REafCWJfIoq6KpLD6mjaKbcx4sfsH7-as-3D_jjUGOYI8O94bb9ptCebmR_6gY1BHBcvEwOiq6syfGDrrSpwMKXM-BM2tRPRcU3UuUCq54qriRTS_tm9SAcLu3_ux_XdeogO8Hm5uLsHRiMT2GF8hY7_CSj-HwhmUqwSCHdEOj4w-sNWAE3TziFDvNJMCo2ffY"/>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-sm text-headline-sm font-semibold text-slate-900">Sarah Chen</span>
+<span class="px-1.5 py-0.2 rounded text-[10px] font-label-sm font-semibold bg-purple-50 text-purple-700 border border-purple-200">Lead Architect</span>
+<span class="font-body-sm text-body-sm text-slate-400">10:25 AM</span>
+</div>
+<p class="mt-1 text-slate-800 font-body-base text-body-base">
+            Quick summary of the WebRTC STUN relay fallback behavior for edge clusters:
+          </p>
+<!-- Voice Note Widget -->
+<div class="mt-2.5 bg-white border border-slate-200 rounded-xl p-3 max-w-md tactile-card flex items-center gap-3">
+<button class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary-container transition-all active:scale-95 shadow-sm shrink-0" title="Play Voice Memo">
+<span class="material-symbols-outlined text-white text-xl" data-icon="play_arrow">play_arrow</span>
+</button>
+<!-- Waveform Simulation Bars -->
+<div class="flex-1 flex items-center gap-0.5 h-8">
+<span class="w-1 h-2 bg-indigo-200 rounded-full"></span>
+<span class="w-1 h-4 bg-indigo-300 rounded-full"></span>
+<span class="w-1 h-6 bg-primary rounded-full"></span>
+<span class="w-1 h-3 bg-primary rounded-full"></span>
+<span class="w-1 h-7 bg-primary rounded-full"></span>
+<span class="w-1 h-5 bg-primary rounded-full"></span>
+<span class="w-1 h-8 bg-primary rounded-full"></span>
+<span class="w-1 h-6 bg-primary rounded-full"></span>
+<span class="w-1 h-3 bg-primary rounded-full"></span>
+<span class="w-1 h-7 bg-indigo-300 rounded-full"></span>
+<span class="w-1 h-5 bg-indigo-200 rounded-full"></span>
+<span class="w-1 h-3 bg-indigo-200 rounded-full"></span>
+<span class="w-1 h-6 bg-indigo-200 rounded-full"></span>
+<span class="w-1 h-2 bg-indigo-200 rounded-full"></span>
+<span class="w-1 h-4 bg-indigo-200 rounded-full"></span>
+<span class="w-1 h-1 bg-indigo-100 rounded-full"></span>
+</div>
+<div class="flex flex-col items-end shrink-0">
+<span class="font-mono text-xs font-semibold text-slate-800">1:12</span>
+<span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-mono font-medium">1.5x</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Message Node 4: David K. (Me) -->
+<div class="group relative flex items-start gap-3.5 bg-indigo-50/30 hover:bg-indigo-50/60 -mx-3 px-3 py-2.5 rounded-xl border-l-2 border-primary transition-colors">
+<img alt="David K." class="w-9 h-9 rounded-full object-cover shrink-0 mt-0.5" data-alt="Portrait photo of David K, staff engineer with minimal aesthetic, gentle rim lighting, clean workspace backdrop in natural neutral tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpCu4qvm7WoCrVh7u4xyEnZSSYrUk2ATk_9VyZS7L2U3SSzwN2JkBHAgaX9EhLp_423MJEBaO7TxnKd0se7t6XbR_YESjV64GvURbYmOgNy0f1W63R27L7A7GLXjIA6fHAY9OwzesULrfXo0WQZswZ-pfs36Kby3mgTpQMqvVlpvTL4RRWd6kDN6JxdM55CK6sn4VkF44vQuGNopHIlWwncofVCWB1GKPzc2P2URzXsRHUhGj_gSK-sVPfNJ2qFgmOWrtV90uvdv0"/>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-sm text-headline-sm font-semibold text-slate-900">David K.</span>
+<span class="px-1.5 py-0.2 rounded text-[10px] font-label-sm font-semibold bg-primary-fixed text-primary">Staff Engineer (You)</span>
+<span class="font-body-sm text-body-sm text-slate-400">10:31 AM</span>
+</div>
+<div class="mt-1 text-slate-800 font-body-base text-body-base leading-relaxed">
+            I verified the PWA service worker caching on Chrome &amp; Safari iOS—offline instant shell loading is working flawlessly! 🚀 Cache manifest invalidation correctly purges stale WASM chunks upon edge rollout.
+          </div>
+<!-- Thread Reply Counter Pill -->
+<div class="mt-2.5 flex items-center gap-2">
+<button class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white border border-slate-200 text-primary hover:bg-slate-50 text-xs font-semibold shadow-2xs transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="forum">forum</span>
+<span>4 replies</span>
+<span class="text-slate-400 font-normal">• Last reply from Sarah 2m ago</span>
+</button>
+<button class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600 text-xs">
+<span>🎯</span> <span class="font-medium text-slate-800">4</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Bottom Composer Dock -->
+<div class="p-4 bg-white/95 backdrop-blur-md border-t border-slate-200 sticky bottom-0 z-20">
+<div class="bg-white border border-slate-200 rounded-xl shadow-lg p-2.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<!-- Input Row -->
+<div class="flex items-center gap-2 px-1">
+<span class="text-slate-400 font-code-base text-sm select-none">/</span>
+<input class="w-full bg-transparent border-0 text-slate-800 text-body-base font-body-base placeholder:text-slate-400 focus:ring-0 p-0 outline-none" placeholder="Message #engineering-core (type / for circle commands)..." type="text"/>
+</div>
+<!-- Integrated Toolbar Row -->
+<div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+<div class="flex items-center gap-1 text-slate-500">
+<button class="p-1.5 hover:bg-slate-100 rounded-lg transition-colors hover:text-slate-800" title="Attach file">
+<span class="material-symbols-outlined text-base" data-icon="attach_file">attach_file</span>
+</button>
+<button class="p-1.5 hover:bg-slate-100 rounded-lg transition-colors hover:text-slate-800" title="Create Poll">
+<span class="material-symbols-outlined text-base" data-icon="poll">poll</span>
+</button>
+<button class="p-1.5 hover:bg-slate-100 rounded-lg transition-colors hover:text-slate-800" title="Code snippet">
+<span class="material-symbols-outlined text-base" data-icon="code">code</span>
+</button>
+<button class="p-1.5 hover:bg-slate-100 rounded-lg transition-colors hover:text-slate-800" title="Record Voice Note">
+<span class="material-symbols-outlined text-base" data-icon="mic">mic</span>
+</button>
+<button class="p-1.5 hover:bg-slate-100 rounded-lg transition-colors hover:text-slate-800" title="Emoji">
+<span class="material-symbols-outlined text-base" data-icon="sentiment_satisfied">sentiment_satisfied</span>
+</button>
+<span class="h-4 w-px bg-slate-200 mx-1"></span>
+<span class="font-label-sm text-[11px] text-slate-400 font-mono hidden sm:inline">Markdown supported</span>
+</div>
+<!-- Send Action Button -->
+<button class="bg-primary hover:bg-primary-container text-white px-3.5 py-1.5 rounded-lg font-headline-sm text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all active:scale-95">
+<span>Send</span>
+<span class="material-symbols-outlined text-sm text-white" data-icon="send">send</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- ========================================================================= -->
+<!-- 4. RIGHT CONTEXTUAL DRAWER - Circle Members & Resources (320px width)    -->
+<!-- ========================================================================= -->
+<aside aria-label="Circle Information and Resources" class="hidden xl:flex w-80 h-screen bg-[#f8fafc] border-l border-slate-200 flex-col shrink-0 overflow-y-auto custom-scrollbar p-5 z-20 select-none">
+<!-- Header -->
+<div class="flex items-center justify-between pb-3 border-b border-slate-200">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-600" data-icon="info">info</span>
+<h2 class="font-headline-sm text-headline-sm font-semibold text-slate-900">Circle Info &amp; Roster</h2>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 hover:bg-slate-200 rounded-lg text-slate-500" title="Circle Settings">
+<span class="material-symbols-outlined text-base" data-icon="settings">settings</span>
+</button>
+<button class="p-1 hover:bg-slate-200 rounded-lg text-slate-500" title="Close Panel">
+<span class="material-symbols-outlined text-base" data-icon="close">close</span>
+</button>
+</div>
+</div>
+<!-- About Box -->
+<div class="mt-4 bg-white border border-slate-200 rounded-xl p-3.5 tactile-card">
+<h3 class="font-headline-sm text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">About Circle</h3>
+<p class="font-body-sm text-body-sm text-slate-600 leading-relaxed">
+        Core engineering discussion, architecture proposals, and real-time deployment status for the Chat.SO multi-region edge mesh.
+      </p>
+<div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-label-sm">
+<span>Created Aug 14, 2024</span>
+<span class="text-primary font-medium">Public Circle</span>
+</div>
+</div>
+<!-- Active in Voice Huddle Widget -->
+<div class="mt-5">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="font-label-sm text-label-sm font-semibold tracking-wider text-slate-700 uppercase">Active in Huddle (3)</span>
+</div>
+<span class="font-mono text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">LIVE AUDIO</span>
+</div>
+<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2.5 tactile-card">
+<!-- Speaker 1: Sarah Chen (Speaking) -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="relative">
+<img alt="Sarah Chen in audio" class="w-7 h-7 rounded-full object-cover ring-2 ring-emerald-500" data-alt="Small thumbnail avatar of Sarah Chen smiling softly in natural daylight studio background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFXP9431lMQ5YyP-22gJOIV0Ytj0UeiEy94lMdvonvs1yPOiNwPocIuvonm6wb0pc27XVYkj-4jXmmpdUdDMEnrPl5d4aI4s1d9a1RHfZjpejLzqQpuT1p5yDvG3XZFgrw1zhQj-0T_eMofy4NY2MOvVO_A4lBfo7PLb8CeO8atx1nFtmlEzqYTxp4Up0IwetIR2f6hxroqPxiaUh0FRdUXHyeBby4UnRIVQpbI71pXPyG5w9VfirRwb8pGAXJKKO0PM645ciY9vw"/>
+<span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-white"></span>
+</div>
+<div>
+<div class="text-xs font-semibold text-slate-800">Sarah Chen</div>
+<div class="text-[10px] text-emerald-600 font-medium">Speaking...</div>
+</div>
+</div>
+<!-- Animated mini-visualizer -->
+<div class="flex items-end gap-0.5 h-4">
+<span class="w-1 h-3 bg-emerald-500 rounded-full animate-bounce"></span>
+<span class="w-1 h-4 bg-emerald-500 rounded-full animate-pulse"></span>
+<span class="w-1 h-2 bg-emerald-400 rounded-full animate-bounce"></span>
+</div>
+</div>
+<!-- Speaker 2: Alex Rivera -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<img alt="Alex Rivera in audio" class="w-7 h-7 rounded-full object-cover" data-alt="Alex Rivera mini circular avatar for active voice participants list." src="https://lh3.googleusercontent.com/aida-public/AB6AXuARDgW5HpxR-z9cDYF2e9DkAuKiLN6U4Tf3vm6rlbPAQtuCbYF1k1yeTksCTZLEWEeWQ_HTuXpXLT4Vc0421Zee8-ocaj3jHcN4s82K9A2icm09z4qsHtgG-Ez2BoWDY7nGKGGyFHpciHEuDIh8hIUOSTHe3N7GyptF1hzMB8ogmfEAhW_tgkWuIV6Vu0tznCc5h_tO_9Q7Tqz58dy-XU-yWlAnMr2nCiAlwZh0eILOG3WftH-j03HSY7q29dVYnvJriZHUvxG1eAA"/>
+<div>
+<div class="text-xs font-semibold text-slate-800">Alex Rivera</div>
+<div class="text-[10px] text-slate-400">Listening</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-sm" data-icon="mic_off">mic_off</span>
+</div>
+<!-- Speaker 3: David K. (You) -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<img alt="David K in audio" class="w-7 h-7 rounded-full object-cover" data-alt="David K avatar photo thumbnail for live voice session sidebar." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCd50l0yVNoSwtyEbXUsvz1CSvYUfcY2kdqhkBhvG800kuHXcfPzQAroSUUYNKCKaitHQg4LnLyjFrNSnXzz4m2E3l3LPUgiYe5cvEddHMUkcag5oWIr0QbFEs_f92QRU4AsTUa61ThCVsCDxHr8fOPyniiO7sxAob47lsv9_4-uMddyo7EoRyqstHa1wKKclOBCCbLOquYlzTL-F9vFPUfXgPPBDZzhHjk4DOTVQzTzGgpZw6oasgB_UEWy0GxdXQS80PF-dUWpNg"/>
+<div>
+<div class="text-xs font-semibold text-slate-800">David K. (You)</div>
+<div class="text-[10px] text-slate-400">Listening</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-emerald-600 text-sm" data-icon="mic">mic</span>
+</div>
+<button class="w-full mt-2 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="headset">headset</span>
+          Join Voice Huddle
+        </button>
+</div>
+</div>
+<!-- Section: MEMBERS (38) -->
+<div class="mt-5">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm font-semibold tracking-wider text-slate-500 uppercase">Members (38)</span>
+<button class="text-slate-400 hover:text-slate-600 text-xs font-medium">View all</button>
+</div>
+<div class="space-y-1.5">
+<!-- Sarah Chen (Owner) -->
+<div class="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-200/50 transition-colors">
+<div class="flex items-center gap-2">
+<div class="relative">
+<img alt="Sarah Chen" class="w-6 h-6 rounded-full object-cover" data-alt="Sarah Chen round avatar preview for channel membership sidebar." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUAKWFvylkebyoJDgcVMKt5yLVz8TgiNIs7st6huP7ZwHsmmXQh9hITNrY8QxEHWxi5nNuTKNaW_iT2JsCFODHlzA6ks5B92gDGjv8KSYg8UlH6pggFMtjNsSpwSsFztecLkg8ZoxRgaDzDrRPsR0ZmFL4JJFr1Dzl6UlIhFXoT1e-XzhZz_SIQDJIZ8AnTSVVEouTVSrelWWudGhrAbk6n-U7FYPgksowCe4oNaHFmhDvOBnUi6jrkUbe5rGuuFPOaCTEzE-GpCw"/>
+<span class="absolute bottom-0 right-0 w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+</div>
+<div class="text-xs font-medium text-slate-800">Sarah Chen</div>
+</div>
+<span class="px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 font-label-sm text-[10px] font-semibold border border-purple-200">Owner</span>
+</div>
+<!-- David K. (Admin) -->
+<div class="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-200/50 transition-colors">
+<div class="flex items-center gap-2">
+<div class="relative">
+<img alt="David K" class="w-6 h-6 rounded-full object-cover" data-alt="David K thumbnail for workspace members directory." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl1EawAQV4mXZouJy8G6_rDllSw2MspAOCLqinbDrQo_QctrtCWfd2_vLHHGbMDRvOfaelgJg0FTZDnz1lZbywfxyr3BFHJKZ8sL19reBKQ3EhuLd08HIiIvmaN-qvV576A1n03oS3wC0VB5eTnDrcNJ6xlVWrYLWRYcHpVQSG8Q25sEQqzT5bkXz7c-YEc3OnQldsiMkIh2ZgTBJSn-To7VswqmIxsolw-uvl0P4FfZ7lge972UdxobJj0ynb0F-0CboWjdfsyDk"/>
+<span class="absolute bottom-0 right-0 w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+</div>
+<div class="text-xs font-medium text-slate-800">David K.</div>
+</div>
+<span class="px-1.5 py-0.2 rounded bg-primary-fixed text-primary font-label-sm text-[10px] font-semibold">Admin</span>
+</div>
+<!-- Elena Rostova -->
+<div class="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-200/50 transition-colors">
+<div class="flex items-center gap-2">
+<div class="relative">
+<img alt="Elena Rostova" class="w-6 h-6 rounded-full object-cover" data-alt="Elena Rostova user card portrait in minimal architectural light UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9ddQQcu6Xssxu_HmmmyhizSoaqeOE-m-27iWbMGyxQNSrNswgLPwyAGUpsD9xWuKsm0zOKhQFZ8PNadCF3QC-IN04CXzI9U2evMqWeP81EHJN6k6uSe8b1x41r5xDgGalC4jxN895QfM6V1ZZhNDq86zZYUyw1Kkm4tfT4-9UFiUiXw4AogineIrLYvHGB8EHsMC3y-onP9uEmpFx8Hc2E3JEepbjn8sCbFOTYIg_uXqWUoMHWbRQhtKqbebkEqDYKNkmryuEX24"/>
+<span class="absolute bottom-0 right-0 w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+</div>
+<div class="text-xs font-medium text-slate-800">Elena Rostova</div>
+</div>
+<span class="text-[10px] text-slate-400">DevOps</span>
+</div>
+<!-- Alex Rivera -->
+<div class="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-200/50 transition-colors">
+<div class="flex items-center gap-2">
+<div class="relative">
+<img alt="Alex Rivera" class="w-6 h-6 rounded-full object-cover" data-alt="Alex Rivera avatar element in member directory listing." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbeIQv7nNJSFY7gUhQCEIiF5xZfg8qzYMMWznIArYHkWY3zBYFuVy1HEQYpktdNhzXJ2Eu4FjORoEwgF2XlLrOFoxbOWrYJvGXTg5f-sWcI_aeTigZzi30AD9QPSt6HgqIzl-FlWynSf3KKsLM2-VXVEcxGtLGXZpwnIazfDFoop2vAQOJcVUj21n0Pw0sRnfTEcWvYsn_Zyu61ytSmdkjdxqpAUkZoCbH1-9b5bpFLKFekop08J6pTkGO8zGsTpIJVyCiix0evw4"/>
+<span class="absolute bottom-0 right-0 w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+</div>
+<div class="text-xs font-medium text-slate-800">Alex Rivera</div>
+</div>
+<span class="text-[10px] text-slate-400">Product</span>
+</div>
+</div>
+</div>
+<!-- Section: SHARED FILES IN CIRCLE (84) -->
+<div class="mt-5">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm font-semibold tracking-wider text-slate-500 uppercase">Shared Files (84)</span>
+<button class="text-slate-400 hover:text-slate-600 text-xs font-medium">Browse</button>
+</div>
+<div class="space-y-2">
+<!-- File 1: release-notes -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer group">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-7 h-7 rounded bg-indigo-50 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-sm" data-icon="description">description</span>
+</div>
+<div class="truncate">
+<div class="text-xs font-medium text-slate-800 truncate group-hover:text-primary transition-colors">release-notes-v2.4.md</div>
+<div class="text-[10px] text-slate-400">34 KB • Markdown</div>
+</div>
+</div>
+<button class="p-1 hover:bg-slate-100 rounded text-slate-400 group-hover:text-slate-700">
+<span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+</button>
+</div>
+<!-- File 2: webrtc-topology -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer group">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-7 h-7 rounded bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-sm" data-icon="image">image</span>
+</div>
+<div class="truncate">
+<div class="text-xs font-medium text-slate-800 truncate group-hover:text-emerald-700 transition-colors">webrtc-topology.png</div>
+<div class="text-[10px] text-slate-400">1.8 MB • Architecture Diagram</div>
+</div>
+</div>
+<button class="p-1 hover:bg-slate-100 rounded text-slate-400 group-hover:text-slate-700">
+<span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+</button>
+</div>
+<!-- File 3: gcs-cors-policy -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer group">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-7 h-7 rounded bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-sm" data-icon="data_object">data_object</span>
+</div>
+<div class="truncate">
+<div class="text-xs font-medium text-slate-800 truncate group-hover:text-amber-700 transition-colors">gcs-cors-policy.json</div>
+<div class="text-[10px] text-slate-400">4.2 KB • JSON Schema</div>
+</div>
+</div>
+<button class="p-1 hover:bg-slate-100 rounded text-slate-400 group-hover:text-slate-700">
+<span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+</button>
+</div>
+</div>
+</div>
+</aside>
+<!-- Interactive JavaScript micro-enhancements -->
+<script>
+    // Simple state toggle feedback for poll option clicks
+    document.querySelectorAll('[data-icon]').forEach(iconEl => {
+      iconEl.setAttribute('aria-hidden', 'true');
+    });
+  </script>
+</body></html>

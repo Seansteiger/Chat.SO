@@ -21,7 +21,11 @@ import {
   Reply,
   Search,
   UserPlus,
+  Headphones,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme.js';
 import { MarkdownText } from './MarkdownText.js';
 import { VoiceNotePlayer } from './VoiceNotePlayer.js';
 import { PollCard } from './PollCard.js';
@@ -35,6 +39,7 @@ interface CircleChatProps {
 
 export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
   const { user: currentUser } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [circle, setCircle] = useState<any | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
@@ -390,50 +395,57 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
   const quietReactions = ['👍', '❤️', '🙏', '💡', '✅'];
 
   return (
-    <div className="flex-1 h-full flex flex-col bg-[#090d16] relative overflow-hidden">
+    <div className="flex-1 h-full flex flex-col dark:bg-[#09090b] bg-[#fbfbfa] relative overflow-hidden transition-colors duration-200">
       {/* Top Bar */}
-      <div className="h-16 px-4 md:px-6 border-b border-white/10 flex items-center justify-between bg-slate-950/70 backdrop-blur-md shrink-0 z-10">
+      <div className="h-16 px-4 md:px-6 border-b dark:border-white/[0.08] border-slate-200/80 flex items-center justify-between dark:bg-[#121215]/80 bg-white/90 backdrop-blur-md shrink-0 z-10 transition-colors">
         <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={onBack}
-            className="md:hidden p-2 -ml-1.5 rounded-xl text-slate-400 hover:text-white transition-colors shrink-0"
+            className="md:hidden p-2 -ml-1.5 rounded-xl dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 transition-colors shrink-0"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
 
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-white text-sm shrink-0 shadow-md">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white text-sm shrink-0 shadow-md ring-1 ring-white/10">
             <Users className="w-5 h-5" />
           </div>
 
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-white truncate">{circle?.name || 'Circle'}</h2>
+              <h2 className="text-sm font-semibold dark:text-white text-slate-900 truncate">{circle?.name || 'Circle'}</h2>
               <button
                 type="button"
                 onClick={() => setIsMembersModalOpen(true)}
                 title="View & manage members"
-                className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 shrink-0 transition-colors cursor-pointer"
+                className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full dark:bg-purple-500/20 dark:hover:bg-purple-500/30 dark:text-purple-300 dark:border-purple-500/30 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 shrink-0 transition-colors cursor-pointer"
               >
                 {circle?.memberCount || 1} / {circle?.maxMembers || 25} members
               </button>
             </div>
-            <p className="text-[11px] text-slate-400 truncate">
+            <p className="text-[11px] dark:text-slate-400 text-slate-500 truncate">
               {circle?.description || 'Intimate quiet circle'}
             </p>
           </div>
         </div>
 
-        {/* Actions: Search, Members & Decision Poll */}
+        {/* Actions: Live Huddle Indicator, Search, Members & Decision Poll */}
         <div className="flex items-center gap-1.5">
+          {/* Live Audio Huddle Pill */}
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full dark:bg-emerald-500/10 dark:border-emerald-500/20 bg-emerald-50 border border-emerald-200 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 presence-pulse" />
+            <Headphones className="w-3.5 h-3.5" />
+            <span className="text-[11px] font-medium">Huddle Active</span>
+          </div>
+
           <button
             type="button"
             onClick={() => setIsSearchOpen(!isSearchOpen)}
             title="Search messages in circle"
             className={`p-2 rounded-xl border transition-colors ${
               isSearchOpen
-                ? 'bg-purple-600/20 border-purple-500/40 text-purple-400'
-                : 'hover:bg-white/5 border-white/5 text-slate-400 hover:text-white'
+                ? 'dark:bg-purple-600/20 dark:border-purple-500/40 dark:text-purple-400 bg-purple-100 border-purple-300 text-purple-700'
+                : 'dark:hover:bg-white/5 dark:border-white/5 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-900'
             }`}
           >
             <Search className="w-4 h-4" />
@@ -443,9 +455,9 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
             type="button"
             onClick={() => setIsMembersModalOpen(true)}
             title="Circle Members & Invite"
-            className="p-2.5 rounded-xl hover:bg-white/5 border border-white/10 text-slate-300 hover:text-white transition-all text-xs flex items-center gap-1.5"
+            className="p-2.5 rounded-xl dark:hover:bg-white/5 dark:border-white/10 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all text-xs flex items-center gap-1.5"
           >
-            <UserPlus className="w-4 h-4 text-purple-400" />
+            <UserPlus className="w-4 h-4 text-purple-500" />
             <span className="hidden sm:inline">Members</span>
           </button>
 
@@ -453,19 +465,33 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
             type="button"
             onClick={() => setIsPollModalOpen(true)}
             title="Create Group Decision Poll"
-            className="p-2.5 rounded-xl hover:bg-white/5 border border-white/10 text-slate-300 hover:text-white transition-all text-xs flex items-center gap-1.5"
+            className="p-2.5 rounded-xl dark:hover:bg-white/5 dark:border-white/10 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all text-xs flex items-center gap-1.5"
           >
-            <BarChart3 className="w-4 h-4 text-blue-400" />
+            <BarChart3 className="w-4 h-4 text-blue-500" />
             <span className="hidden sm:inline">Poll</span>
+          </button>
+
+          {/* Dark / Light Theme Switcher */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="p-2.5 rounded-xl dark:hover:bg-white/5 dark:border-white/10 dark:text-slate-300 dark:hover:text-amber-300 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-indigo-600 transition-all text-xs flex items-center justify-center"
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-indigo-600" />
+            )}
           </button>
         </div>
       </div>
 
       {/* In-Chat Search Bar */}
       {isSearchOpen && (
-        <div className="px-4 py-2.5 bg-slate-900 border-b border-white/10 flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2">
+        <div className="px-4 py-2.5 dark:bg-[#121215] bg-slate-50 border-b dark:border-white/10 border-slate-200 flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2">
           <div className="flex items-center gap-2 flex-1">
-            <Search className="w-4 h-4 text-slate-400 shrink-0" />
+            <Search className="w-4 h-4 dark:text-slate-400 text-slate-500 shrink-0" />
             <input
               type="text"
               autoFocus
@@ -475,11 +501,11 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                 setCurrentMatchIndex(0);
               }}
               placeholder="Search in circle..."
-              className="w-full bg-transparent text-white placeholder-slate-500 focus:outline-none"
+              className="w-full bg-transparent dark:text-white text-slate-900 dark:placeholder-slate-500 placeholder-slate-400 focus:outline-none"
             />
           </div>
           {searchKeyword.trim() && (
-            <div className="flex items-center gap-2 text-slate-400 font-mono text-[11px] shrink-0">
+            <div className="flex items-center gap-2 dark:text-slate-400 text-slate-600 font-mono text-[11px] shrink-0">
               <span>
                 {matchingMessageIds.length > 0 ? currentMatchIndex + 1 : 0} of {matchingMessageIds.length}
               </span>
@@ -487,7 +513,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                 type="button"
                 onClick={handlePrevSearchMatch}
                 disabled={matchingMessageIds.length === 0}
-                className="px-1.5 py-0.5 rounded hover:bg-white/10 disabled:opacity-30"
+                className="px-1.5 py-0.5 rounded dark:hover:bg-white/10 hover:bg-slate-200 disabled:opacity-30"
               >
                 ▲
               </button>
@@ -495,7 +521,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                 type="button"
                 onClick={handleNextSearchMatch}
                 disabled={matchingMessageIds.length === 0}
-                className="px-1.5 py-0.5 rounded hover:bg-white/10 disabled:opacity-30"
+                className="px-1.5 py-0.5 rounded dark:hover:bg-white/10 hover:bg-slate-200 disabled:opacity-30"
               >
                 ▼
               </button>
@@ -507,7 +533,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
               setIsSearchOpen(false);
               setSearchKeyword('');
             }}
-            className="p-1 hover:text-white text-slate-400"
+            className="p-1 dark:hover:text-white hover:text-slate-900 dark:text-slate-400 text-slate-500"
           >
             <X className="w-4 h-4" />
           </button>
@@ -515,9 +541,9 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
       )}
 
       {/* Circle Pinned Topic Banner */}
-      <div className="px-4 py-2 bg-purple-950/20 border-b border-purple-500/20 flex items-center justify-between gap-3 text-xs">
+      <div className="px-4 py-2 dark:bg-purple-950/20 bg-purple-50/70 border-b dark:border-purple-500/20 border-purple-200/80 flex items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <Pin className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+          <Pin className="w-3.5 h-3.5 text-purple-500 shrink-0" />
           {isEditingTopic ? (
             <div className="flex items-center gap-2 flex-1">
               <input
@@ -525,7 +551,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                 value={topicInput}
                 onChange={(e) => setTopicInput(e.target.value)}
                 placeholder="Set current focus topic for this circle..."
-                className="flex-1 px-2.5 py-1 rounded-lg bg-slate-900 border border-purple-500/40 text-xs text-white"
+                className="flex-1 px-2.5 py-1 rounded-lg dark:bg-slate-900 bg-white border dark:border-purple-500/40 border-purple-300 text-xs dark:text-white text-slate-900"
               />
               <button
                 type="button"
@@ -537,14 +563,14 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
               <button
                 type="button"
                 onClick={() => setIsEditingTopic(false)}
-                className="text-slate-400 hover:text-white text-[11px]"
+                className="dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 text-[11px]"
               >
                 Cancel
               </button>
             </div>
           ) : (
-            <p className="text-slate-300 truncate">
-              <strong className="text-purple-300 mr-1.5 font-semibold">Circle Focus:</strong>
+            <p className="dark:text-slate-300 text-slate-700 truncate">
+              <strong className="dark:text-purple-300 text-purple-700 mr-1.5 font-semibold">Circle Focus:</strong>
               {circle?.pinnedTopic || 'No topic pinned. Set one to keep discussion focused.'}
             </p>
           )}
@@ -553,7 +579,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
           <button
             type="button"
             onClick={() => setIsEditingTopic(true)}
-            className="text-[11px] text-purple-400 hover:text-purple-300 font-semibold shrink-0"
+            className="text-[11px] text-purple-600 dark:text-purple-400 hover:underline font-semibold shrink-0"
           >
             Edit Topic
           </button>
@@ -562,9 +588,9 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
 
       {/* Error notification banner */}
       {errorMessage && (
-        <div className="mx-4 mt-2 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+        <div className="mx-4 mt-2 p-2.5 rounded-xl dark:bg-rose-500/10 bg-rose-50 border dark:border-rose-500/30 border-rose-200 text-rose-600 dark:text-rose-300 text-xs flex items-center justify-between">
           <span>{errorMessage}</span>
-          <button type="button" onClick={() => setErrorMessage(null)} className="text-slate-400 hover:text-white">
+          <button type="button" onClick={() => setErrorMessage(null)} className="dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -574,11 +600,11 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
       <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-3">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-500">
-            <div className="w-12 h-12 rounded-2xl bg-purple-600/10 border border-purple-500/20 flex items-center justify-center mb-3 text-purple-400">
+            <div className="w-12 h-12 rounded-2xl dark:bg-purple-600/10 bg-purple-50 border dark:border-purple-500/20 border-purple-200 flex items-center justify-center mb-3 text-purple-500">
               <Users className="w-6 h-6" />
             </div>
-            <p className="text-sm font-medium text-slate-200">Welcome to {circle?.name}</p>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm text-center">
+            <p className="text-sm font-semibold dark:text-slate-200 text-slate-800">Welcome to {circle?.name}</p>
+            <p className="text-xs dark:text-slate-400 text-slate-500 mt-1 max-w-sm text-center">
               An intimate circle designed for thoughtful, asynchronous exchange without notification clutter.
             </p>
           </div>
@@ -594,7 +620,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                 {/* Date Divider Pill */}
                 {showDateDivider && (
                   <div className="flex items-center justify-center my-4">
-                    <span className="px-3 py-1 rounded-full bg-slate-900 border border-white/10 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+                    <span className="px-3 py-1 rounded-full dark:bg-[#18181b] bg-slate-100 border dark:border-white/10 border-slate-200 text-[10px] font-semibold tracking-wider uppercase dark:text-slate-400 text-slate-500">
                       {getDateLabel(msg.createdAt)}
                     </span>
                   </div>
@@ -608,26 +634,30 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                 >
                   {/* Sender Display Name in Group Chat */}
                   {!isMe && (
-                    <span className="text-[11px] font-semibold text-purple-400 ml-1 mb-1">
+                    <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 ml-1 mb-1">
                       {msg.senderDisplayName}
                     </span>
                   )}
 
                   {/* Message Bubble */}
                   <div
-                    className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-3.5 shadow-md text-sm relative transition-all ${
+                    className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-3.5 shadow-sm text-sm relative transition-all ${
                       isMe
-                        ? 'bg-gradient-to-br from-purple-700 to-indigo-700 text-white rounded-br-xs border border-purple-400/20'
-                        : 'bg-slate-800/90 border border-white/10 text-slate-100 rounded-bl-xs'
+                        ? 'bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-700 text-white rounded-br-xs border border-purple-400/20 shadow-md'
+                        : 'dark:bg-[#18181b] bg-white border dark:border-white/[0.08] border-slate-200/80 dark:text-slate-100 text-slate-800 rounded-bl-xs shadow-sm'
                     }`}
                   >
                     {/* Reply Quote Banner */}
                     {msg.replySnippet && (
-                      <div className="mb-2 p-2 rounded-xl bg-black/25 border-l-2 border-purple-400 text-xs">
-                        <span className="font-semibold text-purple-300 block text-[11px]">
+                      <div className={`mb-2 p-2 rounded-xl text-xs border-l-2 ${
+                        isMe 
+                          ? 'bg-black/25 border-purple-300 text-white' 
+                          : 'dark:bg-black/25 bg-purple-50/70 border-purple-500 dark:text-slate-300 text-slate-700'
+                      }`}>
+                        <span className={`font-semibold block text-[11px] ${isMe ? 'text-purple-200' : 'text-purple-600 dark:text-purple-300'}`}>
                           {msg.replySnippet.senderName}
                         </span>
-                        <p className="text-slate-300 truncate text-[11px]">{msg.replySnippet.content}</p>
+                        <p className="truncate text-[11px] opacity-90">{msg.replySnippet.content}</p>
                       </div>
                     )}
 
@@ -665,11 +695,15 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                         href={msg.attachmentUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center gap-3 p-2.5 rounded-xl bg-black/20 border border-white/10 text-xs text-white mb-2"
+                        className={`flex items-center gap-3 p-2.5 rounded-xl text-xs mb-2 border transition-colors ${
+                          isMe
+                            ? 'bg-black/20 border-white/20 text-white hover:bg-black/30'
+                            : 'dark:bg-black/20 bg-slate-50 border-slate-200 dark:border-white/10 dark:text-white text-slate-800 hover:bg-slate-100 dark:hover:bg-black/30'
+                        }`}
                       >
-                        <FileText className="w-5 h-5 text-purple-400 shrink-0" />
+                        <FileText className="w-5 h-5 text-purple-500 shrink-0" />
                         <span className="truncate flex-1 font-semibold">{msg.attachmentName || 'Download File'}</span>
-                        <Download className="w-4 h-4 text-slate-400" />
+                        <Download className="w-4 h-4 opacity-60" />
                       </a>
                     )}
 
@@ -682,7 +716,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                     <div
                       className={`absolute -top-3.5 ${
                         isMe ? 'right-2' : 'left-2'
-                      } hidden group-hover:flex items-center gap-1 bg-slate-900 border border-white/10 rounded-xl px-1.5 py-0.5 shadow-lg z-20`}
+                      } hidden group-hover:flex items-center gap-1 dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 rounded-xl px-1.5 py-0.5 shadow-lg z-20`}
                     >
                       {quietReactions.map((emoji) => (
                         <button
@@ -698,7 +732,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                         type="button"
                         onClick={() => setReplyingTo(msg)}
                         title="Reply"
-                        className="p-1 hover:text-purple-400 text-slate-400 transition-colors"
+                        className="p-1 hover:text-purple-500 text-slate-400 transition-colors"
                       >
                         <Reply className="w-3.5 h-3.5" />
                       </button>
@@ -707,7 +741,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                           type="button"
                           onClick={() => handleDeleteMessage(msg._id)}
                           title="Delete message"
-                          className="p-1 hover:text-rose-400 text-slate-400 transition-colors"
+                          className="p-1 hover:text-rose-500 text-slate-400 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -725,8 +759,8 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                           onClick={() => handleReaction(msg._id, r.emoji)}
                           className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] border transition-all ${
                             r.hasReacted
-                              ? 'bg-purple-600/30 border-purple-500/50 text-white font-bold'
-                              : 'bg-slate-900/80 border-white/10 text-slate-300 hover:border-white/20'
+                              ? 'dark:bg-purple-600/30 dark:border-purple-500/50 bg-purple-100 border-purple-300 text-purple-700 dark:text-white font-bold'
+                              : 'dark:bg-[#18181b] bg-white dark:border-white/10 border-slate-200 dark:text-slate-300 text-slate-700 hover:border-slate-300 dark:hover:border-white/20'
                           }`}
                         >
                           <span>{r.emoji}</span>
@@ -737,8 +771,8 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                   )}
 
                   {/* Metadata: Timestamp & Indicators */}
-                  <div className="flex items-center gap-1.5 text-[10px] mt-1 text-slate-500 select-none px-1">
-                    <span>
+                  <div className="flex items-center gap-1.5 text-[10px] mt-1 dark:text-slate-400 text-slate-500 select-none px-1">
+                    <span className="font-mono tabular-numbers tracking-tight">
                       {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                     {msg.isSilent && (
@@ -758,17 +792,17 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
 
       {/* Reply Banner */}
       {replyingTo && (
-        <div className="px-4 py-2 bg-slate-900 border-t border-purple-500/30 flex items-center justify-between text-xs">
+        <div className="px-4 py-2 dark:bg-[#121215] bg-purple-50/90 border-t border-purple-500/30 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 min-w-0">
-            <Reply className="w-4 h-4 text-purple-400 shrink-0" />
+            <Reply className="w-4 h-4 text-purple-500 shrink-0" />
             <div className="truncate">
-              <span className="font-semibold text-purple-300">
+              <span className="font-semibold text-purple-600 dark:text-purple-300">
                 Replying to {replyingTo.senderDisplayName || 'message'}:
               </span>{' '}
-              <span className="text-slate-400 truncate">{replyingTo.content}</span>
+              <span className="dark:text-slate-400 text-slate-600 truncate">{replyingTo.content}</span>
             </div>
           </div>
-          <button type="button" onClick={() => setReplyingTo(null)} className="p-1 text-slate-400 hover:text-white">
+          <button type="button" onClick={() => setReplyingTo(null)} className="p-1 dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -776,8 +810,8 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
 
       {/* Voice Recording Bar */}
       {isRecordingVoice ? (
-        <div className="p-3 border-t border-white/10 bg-slate-950 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-rose-400 text-xs font-semibold animate-pulse">
+        <div className="p-3 border-t dark:border-white/[0.08] border-slate-200/80 dark:bg-[#121215] bg-white flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-rose-500 text-xs font-semibold animate-pulse">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
             <span>Recording voice note... ({recordingSeconds}s)</span>
           </div>
@@ -785,7 +819,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
             <button
               type="button"
               onClick={cancelRecording}
-              className="px-3 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white"
+              className="px-3 py-1.5 rounded-xl text-xs dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900"
             >
               Cancel
             </button>
@@ -800,15 +834,15 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
           </div>
         </div>
       ) : (
-        /* Input Bar */
-        <div className="p-3 md:p-4 border-t border-white/10 bg-slate-950/80 backdrop-blur-md pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+        /* Input Bar (Suspended Stitch Dock) */
+        <div className="p-3 md:p-4 border-t dark:border-white/[0.08] border-slate-200/80 dark:bg-[#121215]/85 bg-white/90 backdrop-blur-md pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
           <form onSubmit={handleSendMessage} className="flex items-center gap-2">
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               title="Attach File (Max 50MB)"
-              className="p-2.5 rounded-xl hover:bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors"
+              className="p-2.5 rounded-xl dark:hover:bg-white/5 hover:bg-slate-100 border dark:border-white/10 border-slate-200 dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 transition-colors"
             >
               <Paperclip className="w-4 h-4" />
             </button>
@@ -817,7 +851,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
               type="button"
               onClick={startRecording}
               title="Record Voice Note"
-              className="p-2.5 rounded-xl hover:bg-white/5 border border-white/10 text-slate-400 hover:text-purple-400 transition-colors"
+              className="p-2.5 rounded-xl dark:hover:bg-white/5 hover:bg-slate-100 border dark:border-white/10 border-slate-200 dark:text-slate-400 text-slate-600 dark:hover:text-purple-400 hover:text-purple-600 transition-colors"
             >
               <Mic className="w-4 h-4" />
             </button>
@@ -829,8 +863,8 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
               title={isSilent ? 'Silent Send enabled (no sound on recipient device)' : 'Toggle Silent Send'}
               className={`p-2.5 rounded-xl border transition-colors ${
                 isSilent
-                  ? 'bg-purple-600/20 border-purple-500/40 text-purple-400'
-                  : 'hover:bg-white/5 border-white/10 text-slate-400'
+                  ? 'dark:bg-purple-600/20 dark:border-purple-500/40 dark:text-purple-400 bg-purple-100 border-purple-300 text-purple-700'
+                  : 'dark:hover:bg-white/5 hover:bg-slate-100 border dark:border-white/10 border-slate-200 dark:text-slate-400 text-slate-600'
               }`}
             >
               {isSilent ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
@@ -841,7 +875,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={`Message ${circle?.name || 'circle'}...`}
-              className="flex-1 py-2.5 px-4 rounded-xl bg-slate-900/70 border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              className="flex-1 py-2.5 px-4 rounded-xl dark:bg-[#18181b] bg-slate-100/90 border dark:border-white/[0.08] border-slate-200/80 text-sm dark:text-white text-slate-900 dark:placeholder-slate-500 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
             />
 
             <button

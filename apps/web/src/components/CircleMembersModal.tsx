@@ -135,17 +135,17 @@ export const CircleMembersModal: React.FC<CircleMembersModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md max-h-[85vh] bg-slate-950 border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95"
+        className="w-full max-w-md max-h-[85vh] dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 transition-colors"
       >
         {/* Header */}
-        <div className="h-16 px-6 border-b border-white/10 flex items-center justify-between shrink-0">
+        <div className="h-16 px-6 border-b dark:border-white/10 border-slate-200 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-500 flex items-center justify-center shrink-0">
               <Users className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-white truncate">{circleName} Members</h3>
-              <p className="text-[11px] text-purple-400 font-mono">
+              <h3 className="text-sm font-semibold dark:text-white text-slate-900 truncate">{circleName} Members</h3>
+              <p className="text-[11px] text-purple-600 dark:text-purple-400 font-mono">
                 {members.length} / {maxMembers} members (Intimate Limit)
               </p>
             </div>
@@ -153,7 +153,7 @@ export const CircleMembersModal: React.FC<CircleMembersModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-2 rounded-xl dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -161,22 +161,22 @@ export const CircleMembersModal: React.FC<CircleMembersModalProps> = ({
 
         {/* Notices */}
         {errorMessage && (
-          <div className="mx-4 mt-3 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2">
+          <div className="mx-4 mt-3 p-2.5 rounded-xl dark:bg-rose-500/10 bg-rose-50 border dark:border-rose-500/20 border-rose-200 text-rose-600 dark:text-rose-300 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
         {successMessage && (
-          <div className="mx-4 mt-3 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
+          <div className="mx-4 mt-3 p-2.5 rounded-xl dark:bg-emerald-500/10 bg-emerald-50 border dark:border-emerald-500/20 border-emerald-200 text-emerald-600 dark:text-emerald-300 text-xs flex items-center gap-2">
             <span>{successMessage}</span>
           </div>
         )}
 
         {/* Add Member Search Input (Admins Only) */}
         {isAdmin && members.length < maxMembers && (
-          <div className="p-4 border-b border-white/5 bg-slate-900/40">
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <UserPlus className="w-3.5 h-3.5 text-purple-400" />
+          <div className="p-4 border-b dark:border-white/5 border-slate-200 dark:bg-slate-900/40 bg-slate-50">
+            <label className="block text-xs font-semibold dark:text-slate-300 text-slate-700 mb-1.5 flex items-center gap-1.5">
+              <UserPlus className="w-3.5 h-3.5 text-purple-500" />
               <span>Invite New Member</span>
             </label>
             <div className="relative">
@@ -186,21 +186,21 @@ export const CircleMembersModal: React.FC<CircleMembersModalProps> = ({
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 placeholder="Search user by username, display name..."
-                className="w-full pl-9 pr-3 py-2 bg-slate-950/70 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                className="w-full pl-9 pr-3 py-2 dark:bg-slate-950/70 bg-white border dark:border-white/10 border-slate-200 rounded-xl text-xs dark:text-white text-slate-900 dark:placeholder-slate-500 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
               />
             </div>
 
             {/* Search Results Dropdown */}
             {searchResults.length > 0 && (
-              <div className="mt-2 max-h-40 overflow-y-auto space-y-1 p-1 rounded-xl bg-slate-900 border border-white/10">
+              <div className="mt-2 max-h-40 overflow-y-auto space-y-1 p-1 rounded-xl dark:bg-slate-900 bg-white border dark:border-white/10 border-slate-200 shadow-sm">
                 {searchResults.map((u) => (
                   <div
                     key={u.id}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 text-xs"
+                    className="flex items-center justify-between p-2 rounded-lg dark:hover:bg-white/5 hover:bg-slate-100 text-xs"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-white truncate">{u.displayName}</p>
-                      <p className="text-[10px] text-slate-400 truncate">@{u.username}</p>
+                      <p className="font-semibold dark:text-white text-slate-900 truncate">{u.displayName}</p>
+                      <p className="text-[10px] dark:text-slate-400 text-slate-500 truncate">@{u.username}</p>
                     </div>
                     <button
                       type="button"
@@ -214,14 +214,14 @@ export const CircleMembersModal: React.FC<CircleMembersModalProps> = ({
               </div>
             )}
             {isSearching && (
-              <p className="text-[11px] text-slate-500 mt-1 pl-1">Searching...</p>
+              <p className="text-[11px] dark:text-slate-500 text-slate-400 mt-1 pl-1">Searching...</p>
             )}
           </div>
         )}
 
         {/* Member List */}
         <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+          <div className="text-[11px] font-semibold dark:text-slate-400 text-slate-500 uppercase tracking-wider mb-2">
             Circle Members ({members.length})
           </div>
 
@@ -232,14 +232,14 @@ export const CircleMembersModal: React.FC<CircleMembersModalProps> = ({
             return (
               <div
                 key={member.id}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-white/5 text-xs"
+                className="flex items-center justify-between p-2.5 rounded-xl dark:bg-slate-900/60 bg-slate-50 border dark:border-white/5 border-slate-200 text-xs shadow-xs"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   {member.avatarUrl ? (
                     <img
                       src={member.avatarUrl}
                       alt={member.displayName}
-                      className="w-9 h-9 rounded-xl object-cover border border-white/10"
+                      className="w-9 h-9 rounded-xl object-cover border dark:border-white/10 border-slate-200"
                     />
                   ) : (
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-xs text-white">
@@ -248,20 +248,20 @@ export const CircleMembersModal: React.FC<CircleMembersModalProps> = ({
                   )}
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-white truncate">
+                      <span className="font-semibold dark:text-white text-slate-900 truncate">
                         {member.displayName}
                       </span>
                       {isSelf && (
-                        <span className="text-[10px] text-slate-400 font-mono">(you)</span>
+                        <span className="text-[10px] dark:text-slate-400 text-slate-500 font-mono">(you)</span>
                       )}
                       {member.role === 'ADMIN' && (
-                        <span className="flex items-center gap-0.5 text-[10px] text-purple-400 font-semibold bg-purple-500/10 px-1.5 py-0.2 rounded border border-purple-500/20">
+                        <span className="flex items-center gap-0.5 text-[10px] text-purple-600 dark:text-purple-400 font-semibold bg-purple-500/10 px-1.5 py-0.2 rounded border border-purple-500/20">
                           <Shield className="w-2.5 h-2.5" />
                           Admin
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-400 truncate">@{member.username}</p>
+                    <p className="text-[11px] dark:text-slate-400 text-slate-500 truncate">@{member.username}</p>
                   </div>
                 </div>
 
@@ -270,7 +270,7 @@ export const CircleMembersModal: React.FC<CircleMembersModalProps> = ({
                     type="button"
                     onClick={() => handleRemoveMember(member.id)}
                     title="Remove from circle"
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 dark:hover:bg-rose-500/10 hover:bg-rose-50 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -281,11 +281,11 @@ export const CircleMembersModal: React.FC<CircleMembersModalProps> = ({
         </div>
 
         {/* Footer: Leave Circle */}
-        <div className="p-4 border-t border-white/5 bg-slate-900/40 flex items-center justify-between">
+        <div className="p-4 border-t dark:border-white/5 border-slate-200 dark:bg-slate-900/40 bg-slate-50 flex items-center justify-between">
           <button
             type="button"
             onClick={handleLeave}
-            className="px-3.5 py-1.5 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            className="px-3.5 py-1.5 rounded-xl border border-rose-500/30 text-rose-500 dark:text-rose-400 hover:bg-rose-500/10 text-xs font-semibold flex items-center gap-1.5 transition-colors"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Leave Circle</span>
@@ -293,7 +293,7 @@ export const CircleMembersModal: React.FC<CircleMembersModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold"
+            className="px-4 py-1.5 rounded-xl dark:bg-white/10 dark:hover:bg-white/15 bg-slate-200 hover:bg-slate-300 dark:text-white text-slate-800 text-xs font-semibold transition-colors"
           >
             Close
           </button>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth.js';
+import { useTheme } from '../hooks/useTheme.js';
 import {
   MessageSquare,
   Video,
@@ -11,6 +12,8 @@ import {
   KeyRound,
   CheckCircle2,
   RefreshCw,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 type AuthMode = 'signin' | 'register' | 'verify-signup' | 'forgot-request' | 'forgot-verify';
@@ -27,6 +30,7 @@ export const AuthScreen: React.FC = () => {
   } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>('signin');
+  const { theme, toggleTheme } = useTheme();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -268,34 +272,56 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 overflow-y-auto overflow-x-hidden bg-radial from-slate-900 via-[#0a0f1d] to-[#05070e]">
+    <div className="fixed inset-0 overflow-y-auto overflow-x-hidden dark:bg-[#09090b] bg-[#f8fafc] text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      {/* Top Floating Theme Switcher */}
+      <div className="absolute top-4 right-4 z-20">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium dark:bg-white/10 bg-white hover:bg-slate-100 dark:hover:bg-white/15 dark:text-slate-200 text-slate-700 backdrop-blur-md border dark:border-white/10 border-slate-200 shadow-sm transition-all"
+        >
+          {theme === 'dark' ? (
+            <>
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+              <span>Light Mode</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Dark Mode</span>
+            </>
+          )}
+        </button>
+      </div>
+
       <div className="min-h-full w-full flex flex-col items-center justify-start p-4 py-8 sm:py-12">
         <div className="w-full max-w-md my-auto py-2">
           {/* Brand Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 shadow-xl shadow-indigo-500/20 mb-4 border border-white/10">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 shadow-xl shadow-indigo-500/20 mb-4 border border-white/20">
               <MessageSquare className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-extrabold tracking-tight dark:from-white dark:via-slate-100 dark:to-slate-400 from-slate-900 via-slate-800 to-slate-600 bg-gradient-to-r bg-clip-text text-transparent">
               Chat.SO
             </h1>
-            <p className="text-sm text-slate-400 mt-2">
+            <p className="text-sm dark:text-slate-400 text-slate-600 mt-2">
               Real-time messaging, WebRTC calling & direct 50MB cloud file sharing.
             </p>
           </div>
 
           {/* Auth Card */}
-          <div className="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+          <div className="dark:bg-[#121316] bg-white border dark:border-white/10 border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-xl dark:shadow-2xl relative overflow-hidden transition-all duration-200">
             {/* Tabs for Sign In vs Register */}
             {(mode === 'signin' || mode === 'register') && (
-              <div className="flex border-b border-white/10 mb-6">
+              <div className="flex border-b dark:border-white/10 border-slate-200 mb-6">
                 <button
                   type="button"
                   onClick={() => { setMode('signin'); setError(null); setSuccess(null); }}
                   className={`flex-1 pb-3 text-sm font-semibold transition-colors ${
                     mode === 'signin'
-                      ? 'text-blue-400 border-b-2 border-blue-500'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'dark:text-blue-400 text-blue-600 border-b-2 border-blue-500'
+                      : 'dark:text-slate-400 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
                   Sign In
@@ -305,8 +331,8 @@ export const AuthScreen: React.FC = () => {
                   onClick={() => { setMode('register'); setError(null); setSuccess(null); }}
                   className={`flex-1 pb-3 text-sm font-semibold transition-colors ${
                     mode === 'register'
-                      ? 'text-blue-400 border-b-2 border-blue-500'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'dark:text-blue-400 text-blue-600 border-b-2 border-blue-500'
+                      : 'dark:text-slate-400 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
                   Create Account
@@ -316,70 +342,70 @@ export const AuthScreen: React.FC = () => {
 
             {/* Sub-header for Verify Signup */}
             {mode === 'verify-signup' && (
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b dark:border-white/10 border-slate-200">
                 <button
                   type="button"
                   onClick={() => { setMode('register'); setError(null); setSuccess(null); }}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  className="p-1.5 rounded-lg dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                   title="Back to registration"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <div>
-                  <h2 className="text-base font-bold text-white flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-blue-400" />
+                  <h2 className="text-base font-bold dark:text-white text-slate-900 flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-blue-500" />
                     Verify Your Email
                   </h2>
-                  <p className="text-xs text-slate-400">Step 2: Enter 6-digit confirmation code</p>
+                  <p className="text-xs dark:text-slate-400 text-slate-500">Step 2: Enter 6-digit confirmation code</p>
                 </div>
               </div>
             )}
 
             {/* Sub-header for Forgot Password Request */}
             {mode === 'forgot-request' && (
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b dark:border-white/10 border-slate-200">
                 <button
                   type="button"
                   onClick={() => { setMode('signin'); setError(null); setSuccess(null); }}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  className="p-1.5 rounded-lg dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                   title="Back to Sign In"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <div>
-                  <h2 className="text-base font-bold text-white flex items-center gap-2">
-                    <KeyRound className="w-4 h-4 text-indigo-400" />
+                  <h2 className="text-base font-bold dark:text-white text-slate-900 flex items-center gap-2">
+                    <KeyRound className="w-4 h-4 text-indigo-500" />
                     Reset Password
                   </h2>
-                  <p className="text-xs text-slate-400">Receive a 6-digit recovery code</p>
+                  <p className="text-xs dark:text-slate-400 text-slate-500">Receive a 6-digit recovery code</p>
                 </div>
               </div>
             )}
 
             {/* Sub-header for Forgot Password Verify */}
             {mode === 'forgot-verify' && (
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b dark:border-white/10 border-slate-200">
                 <button
                   type="button"
                   onClick={() => { setMode('forgot-request'); setError(null); setSuccess(null); }}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  className="p-1.5 rounded-lg dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                   title="Back"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <div>
-                  <h2 className="text-base font-bold text-white flex items-center gap-2">
-                    <KeyRound className="w-4 h-4 text-indigo-400" />
+                  <h2 className="text-base font-bold dark:text-white text-slate-900 flex items-center gap-2">
+                    <KeyRound className="w-4 h-4 text-indigo-500" />
                     Enter Reset Code
                   </h2>
-                  <p className="text-xs text-slate-400">Set a new password for your account</p>
+                  <p className="text-xs dark:text-slate-400 text-slate-500">Set a new password for your account</p>
                 </div>
               </div>
             )}
 
             {/* Error Banner */}
             {error && (
-              <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+              <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
                 <span>{error}</span>
               </div>
@@ -387,8 +413,8 @@ export const AuthScreen: React.FC = () => {
 
             {/* Success Banner */}
             {success && (
-              <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                 <span>{success}</span>
               </div>
             )}
@@ -397,7 +423,7 @@ export const AuthScreen: React.FC = () => {
             {mode === 'signin' && (
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs font-medium dark:text-slate-300 text-slate-700 mb-1.5">
                     Username or Handle
                   </label>
                   <input
@@ -406,19 +432,19 @@ export const AuthScreen: React.FC = () => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="e.g. alice"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 rounded-xl dark:bg-[#18191e] bg-slate-50 border dark:border-white/10 border-slate-300 dark:text-white text-slate-900 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
                   />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-medium text-slate-300">
+                    <label className="text-xs font-medium dark:text-slate-300 text-slate-700">
                       Password
                     </label>
                     <button
                       type="button"
                       onClick={() => { setMode('forgot-request'); setError(null); setSuccess(null); }}
-                      className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline transition-colors"
                     >
                       Forgot password?
                     </button>
@@ -429,7 +455,7 @@ export const AuthScreen: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 rounded-xl dark:bg-[#18191e] bg-slate-50 border dark:border-white/10 border-slate-300 dark:text-white text-slate-900 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
                   />
                 </div>
 
@@ -454,7 +480,7 @@ export const AuthScreen: React.FC = () => {
             {mode === 'register' && (
               <form onSubmit={handleRequestSignup} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs font-medium dark:text-slate-300 text-slate-700 mb-1.5">
                     Username or Handle
                   </label>
                   <input
@@ -463,12 +489,12 @@ export const AuthScreen: React.FC = () => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="e.g. alice"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 rounded-xl dark:bg-[#18191e] bg-slate-50 border dark:border-white/10 border-slate-300 dark:text-white text-slate-900 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs font-medium dark:text-slate-300 text-slate-700 mb-1.5">
                     Display Name
                   </label>
                   <input
@@ -477,12 +503,12 @@ export const AuthScreen: React.FC = () => {
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="e.g. Alice Vance"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 rounded-xl dark:bg-[#18191e] bg-slate-50 border dark:border-white/10 border-slate-300 dark:text-white text-slate-900 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs font-medium dark:text-slate-300 text-slate-700 mb-1.5">
                     Email Address
                   </label>
                   <input
@@ -491,15 +517,15 @@ export const AuthScreen: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="alice@example.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 rounded-xl dark:bg-[#18191e] bg-slate-50 border dark:border-white/10 border-slate-300 dark:text-white text-slate-900 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">
+                  <p className="text-[11px] dark:text-slate-500 text-slate-500 mt-1">
                     We will send a 6-digit confirmation code to verify this email.
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs font-medium dark:text-slate-300 text-slate-700 mb-1.5">
                     Password
                   </label>
                   <input
@@ -509,7 +535,7 @@ export const AuthScreen: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="•••••••• (min. 6 characters)"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                    className="w-full px-3.5 py-2.5 rounded-xl dark:bg-[#18191e] bg-slate-50 border dark:border-white/10 border-slate-300 dark:text-white text-slate-900 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
                   />
                 </div>
 
@@ -534,8 +560,8 @@ export const AuthScreen: React.FC = () => {
             {mode === 'verify-signup' && (
               <form onSubmit={handleVerifyAndRegister} className="space-y-5">
                 <div>
-                  <p className="text-xs text-slate-300 mb-2 leading-relaxed">
-                    Enter the 6-digit code sent to <strong className="text-white">{email}</strong>:
+                  <p className="text-xs dark:text-slate-300 text-slate-700 mb-2 leading-relaxed">
+                    Enter the 6-digit code sent to <strong className="dark:text-white text-slate-900">{email}</strong>:
                   </p>
                   <input
                     type="text"
@@ -544,7 +570,7 @@ export const AuthScreen: React.FC = () => {
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
                     placeholder="123456"
-                    className="w-full text-center tracking-[0.4em] text-2xl font-mono py-3 rounded-xl bg-slate-900/80 border border-blue-500/40 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full text-center tracking-[0.4em] text-2xl font-mono py-3 rounded-xl dark:bg-[#18191e] bg-slate-50 border border-blue-500/50 dark:text-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     autoFocus
                   />
                 </div>
@@ -564,13 +590,13 @@ export const AuthScreen: React.FC = () => {
                   )}
                 </button>
 
-                <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+                <div className="flex items-center justify-between text-xs dark:text-slate-400 text-slate-500 pt-1">
                   <span>Didn't receive the email?</span>
                   <button
                     type="button"
                     disabled={resending || loading}
                     onClick={handleResendSignupCode}
-                    className="text-blue-400 hover:text-blue-300 font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
+                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
                   >
                     <RefreshCw className={`w-3 h-3 ${resending ? 'animate-spin' : ''}`} />
                     <span>{resending ? 'Sending...' : 'Resend Code'}</span>
@@ -583,10 +609,10 @@ export const AuthScreen: React.FC = () => {
             {mode === 'forgot-request' && (
               <form onSubmit={handleRequestPasswordReset} className="space-y-4">
                 <div>
-                  <p className="text-xs text-slate-300 mb-3 leading-relaxed">
+                  <p className="text-xs dark:text-slate-300 text-slate-700 mb-3 leading-relaxed">
                     Enter the email address associated with your account, and we will send you a 6-digit verification code to reset your password.
                   </p>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs font-medium dark:text-slate-300 text-slate-700 mb-1.5">
                     Email Address
                   </label>
                   <input
@@ -595,7 +621,7 @@ export const AuthScreen: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                    className="w-full px-3.5 py-2.5 rounded-xl dark:bg-[#18191e] bg-slate-50 border dark:border-white/10 border-slate-300 dark:text-white text-slate-900 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
                     autoFocus
                   />
                 </div>
@@ -621,8 +647,8 @@ export const AuthScreen: React.FC = () => {
             {mode === 'forgot-verify' && (
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div>
-                  <p className="text-xs text-slate-300 mb-2 leading-relaxed">
-                    Enter the 6-digit code sent to <strong className="text-white">{email}</strong>:
+                  <p className="text-xs dark:text-slate-300 text-slate-700 mb-2 leading-relaxed">
+                    Enter the 6-digit code sent to <strong className="dark:text-white text-slate-900">{email}</strong>:
                   </p>
                   <input
                     type="text"
@@ -631,13 +657,13 @@ export const AuthScreen: React.FC = () => {
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
                     placeholder="123456"
-                    className="w-full text-center tracking-[0.4em] text-2xl font-mono py-2.5 rounded-xl bg-slate-900/80 border border-indigo-500/40 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    className="w-full text-center tracking-[0.4em] text-2xl font-mono py-2.5 rounded-xl dark:bg-[#18191e] bg-slate-50 border border-indigo-500/50 dark:text-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                     autoFocus
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs font-medium dark:text-slate-300 text-slate-700 mb-1.5">
                     New Password
                   </label>
                   <input
@@ -647,12 +673,12 @@ export const AuthScreen: React.FC = () => {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="•••••••• (min. 6 characters)"
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                    className="w-full px-3.5 py-2 rounded-xl dark:bg-[#18191e] bg-slate-50 border dark:border-white/10 border-slate-300 dark:text-white text-slate-900 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs font-medium dark:text-slate-300 text-slate-700 mb-1.5">
                     Confirm New Password
                   </label>
                   <input
@@ -662,7 +688,7 @@ export const AuthScreen: React.FC = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                    className="w-full px-3.5 py-2 rounded-xl dark:bg-[#18191e] bg-slate-50 border dark:border-white/10 border-slate-300 dark:text-white text-slate-900 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
                   />
                 </div>
 
@@ -681,13 +707,13 @@ export const AuthScreen: React.FC = () => {
                   )}
                 </button>
 
-                <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+                <div className="flex items-center justify-between text-xs dark:text-slate-400 text-slate-500 pt-1">
                   <span>Didn't receive code?</span>
                   <button
                     type="button"
                     disabled={resending || loading}
                     onClick={handleResendResetCode}
-                    className="text-indigo-400 hover:text-indigo-300 font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
+                    className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
                   >
                     <RefreshCw className={`w-3 h-3 ${resending ? 'animate-spin' : ''}`} />
                     <span>{resending ? 'Sending...' : 'Resend Code'}</span>
@@ -698,8 +724,8 @@ export const AuthScreen: React.FC = () => {
 
             {/* Quick Demo Fill Buttons (Always accessible on Sign In) */}
             {mode === 'signin' && (
-              <div className="mt-6 pt-5 border-t border-white/10">
-                <p className="text-xs text-slate-400 text-center mb-3 font-medium tracking-wide uppercase">
+              <div className="mt-6 pt-5 border-t dark:border-white/10 border-slate-200">
+                <p className="text-xs dark:text-slate-400 text-slate-500 text-center mb-3 font-medium tracking-wide uppercase">
                   Quick Demo Accounts
                 </p>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -707,18 +733,18 @@ export const AuthScreen: React.FC = () => {
                     type="button"
                     disabled={loading}
                     onClick={() => handleQuickDemo('alice')}
-                    className="py-2 px-3 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-white/5 text-xs text-slate-200 font-medium transition-all flex items-center justify-center gap-2 hover:border-blue-500/30"
+                    className="py-2 px-3 rounded-lg dark:bg-[#18191e] bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-800 border dark:border-white/5 border-slate-200 text-xs dark:text-slate-200 text-slate-700 font-medium transition-all flex items-center justify-center gap-2 hover:border-blue-500/40 shadow-xs"
                   >
-                    <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
                     Test as Alice
                   </button>
                   <button
                     type="button"
                     disabled={loading}
                     onClick={() => handleQuickDemo('bob')}
-                    className="py-2 px-3 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-white/5 text-xs text-slate-200 font-medium transition-all flex items-center justify-center gap-2 hover:border-purple-500/30"
+                    className="py-2 px-3 rounded-lg dark:bg-[#18191e] bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-800 border dark:border-white/5 border-slate-200 text-xs dark:text-slate-200 text-slate-700 font-medium transition-all flex items-center justify-center gap-2 hover:border-purple-500/40 shadow-xs"
                   >
-                    <div className="w-2 h-2 rounded-full bg-indigo-400" />
+                    <div className="w-2 h-2 rounded-full bg-indigo-500" />
                     Test as Bob
                   </button>
                 </div>
@@ -727,17 +753,17 @@ export const AuthScreen: React.FC = () => {
           </div>
 
           {/* Feature Badges */}
-          <div className="mt-6 flex items-center justify-center gap-6 text-xs text-slate-500">
+          <div className="mt-6 flex items-center justify-center gap-6 text-xs dark:text-slate-500 text-slate-600">
             <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-500/80" />
+              <ShieldCheck className="w-4 h-4 text-emerald-500" />
               <span>50MB Direct Upload</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Video className="w-4 h-4 text-blue-500/80" />
+              <Video className="w-4 h-4 text-blue-500" />
               <span>WebRTC Audio/Video</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <UserCheck className="w-4 h-4 text-purple-500/80" />
+              <UserCheck className="w-4 h-4 text-purple-500" />
               <span>PWA Installable</span>
             </div>
           </div>

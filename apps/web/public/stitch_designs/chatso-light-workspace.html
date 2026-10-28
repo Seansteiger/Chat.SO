@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Chat.SO - Precision Workspace</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Inter, Geist, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-error-container": "#93000a",
+            "on-tertiary-fixed": "#002113",
+            "inverse-surface": "#313032",
+            "on-surface-variant": "#464555",
+            "on-secondary-fixed-variant": "#2f2ebe",
+            "background": "#fcf8fb",
+            "error": "#ba1a1a",
+            "on-error": "#ffffff",
+            "primary-fixed": "#e2dfff",
+            "on-background": "#1c1b1d",
+            "tertiary-container": "#006e4b",
+            "surface-tint": "#4d44e3",
+            "secondary-fixed": "#e1e0ff",
+            "inverse-primary": "#c3c0ff",
+            "on-primary-fixed": "#0f0069",
+            "surface-container-high": "#eae7ea",
+            "surface": "#fcf8fb",
+            "primary": "#3525cd",
+            "on-primary-container": "#dad7ff",
+            "on-tertiary-container": "#67f4b7",
+            "surface-container": "#f0edf0",
+            "primary-container": "#4f46e5",
+            "surface-container-highest": "#e5e1e4",
+            "tertiary": "#005338",
+            "on-surface": "#1c1b1d",
+            "tertiary-fixed-dim": "#4edea3",
+            "tertiary-fixed": "#6ffbbe",
+            "error-container": "#ffdad6",
+            "on-primary": "#ffffff",
+            "surface-bright": "#fcf8fb",
+            "outline-variant": "#c7c4d8",
+            "on-secondary-container": "#fffbff",
+            "surface-dim": "#dcd9dc",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-fixed-variant": "#005236",
+            "on-secondary": "#ffffff",
+            "inverse-on-surface": "#f3f0f2",
+            "primary-fixed-dim": "#c3c0ff",
+            "surface-variant": "#e5e1e4",
+            "secondary-fixed-dim": "#c0c1ff",
+            "secondary-container": "#6063ee",
+            "on-tertiary": "#ffffff",
+            "on-primary-fixed-variant": "#3323cc",
+            "outline": "#777587",
+            "secondary": "#4648d4",
+            "on-secondary-fixed": "#07006c",
+            "surface-container-low": "#f6f2f5"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xl": "2rem",
+            "space-lg": "1.5rem",
+            "margin": "1.5rem",
+            "space-2xs": "0.125rem",
+            "space-base": "1rem",
+            "margin-mobile": "1rem",
+            "space-2xl": "3rem",
+            "space-md": "0.75rem",
+            "space-xs": "0.25rem",
+            "space-sm": "0.5rem",
+            "gutter": "1rem",
+            "gutter-compact": "0.75rem"
+          },
+          "fontFamily": {
+            "label-md": ["Geist"],
+            "headline-sm": ["Geist"],
+            "body-base": ["Inter"],
+            "body-sm": ["Inter"],
+            "code-base": ["JetBrains Mono"],
+            "headline-md": ["Geist"],
+            "body-lg": ["Inter"],
+            "headline-lg": ["Geist"],
+            "display-hero": ["Geist"],
+            "label-sm": ["Geist"]
+          },
+          "fontSize": {
+            "label-md": ["13px", {"lineHeight": "18px", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+            "headline-sm": ["15px", {"lineHeight": "22px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "body-base": ["13.5px", {"lineHeight": "21px", "letterSpacing": "-0.005em", "fontWeight": "400"}],
+            "body-sm": ["12px", {"lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "code-base": ["12.5px", {"lineHeight": "19px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+            "headline-md": ["18px", {"lineHeight": "26px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
+            "body-lg": ["15px", {"lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "400"}],
+            "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+            "display-hero": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.03em", "fontWeight": "600"}],
+            "label-sm": ["11px", {"lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "500"}]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #cbd5e1;
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .animate-beacon {
+      animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface antialiased h-screen w-screen overflow-hidden flex select-none font-body-base text-body-base">
+<!-- ========================================================================= -->
+<!-- 1. SLIM ICON NAVIGATION RAIL (Shared Component: SideNavBar)               -->
+<!-- ========================================================================= -->
+<aside class="fixed top-0 left-0 h-screen w-16 flex flex-col justify-between items-center py-4 bg-surface-container-lowest border-r border-outline-variant z-40 shrink-0">
+<!-- Top Brand & Core Nav Stack -->
+<div class="flex flex-col items-center gap-5 w-full">
+<!-- Chat.SO Hexagonal Workspace Mark -->
+<button class="relative group flex items-center justify-center w-10 h-10 rounded-xl bg-primary-container text-on-primary shadow-sm hover:opacity-95 transition-all">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">hexagon</span>
+<span class="absolute -bottom-0.5 right-1 w-2 h-2 rounded-full bg-tertiary-fixed-dim ring-2 ring-white"></span>
+</button>
+<!-- Nav Items Stack from SideNavBar JSON -->
+<nav aria-label="Global Workspace Navigation" class="flex flex-col items-center gap-1.5 w-full px-2">
+<!-- Direct Messages (Active) -->
+<button class="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-container text-on-primary-container transition-all shadow-xs relative" title="Direct Messages">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">forum</span>
+<span class="absolute right-1 top-1.5 w-1.5 h-1.5 rounded-full bg-white"></span>
+</button>
+<!-- Threads -->
+<button class="flex items-center justify-center w-10 h-10 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all" title="Threads">
+<span class="material-symbols-outlined">chat_bubble</span>
+</button>
+<!-- Channels -->
+<button class="flex items-center justify-center w-10 h-10 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all" title="Channels">
+<span class="material-symbols-outlined">tag</span>
+</button>
+<!-- Bookmarks -->
+<button class="flex items-center justify-center w-10 h-10 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all" title="Bookmarks">
+<span class="material-symbols-outlined">bookmark</span>
+</button>
+<!-- Settings -->
+<button class="flex items-center justify-center w-10 h-10 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all" title="Settings">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<!-- Quick Workspace CTA (add) -->
+<div class="w-8 h-px bg-outline-variant/60 my-1"></div>
+<button class="flex items-center justify-center w-9 h-9 rounded-lg border border-dashed border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary transition-colors" title="Add Workspace or Channel">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</nav>
+</div>
+<!-- Bottom Footers & Profile Presence -->
+<div class="flex flex-col items-center gap-3 w-full px-2">
+<!-- Presence Toggle -->
+<button class="flex items-center justify-center w-9 h-9 rounded-lg text-tertiary-container hover:bg-surface-container-low transition-all" title="Presence">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">radio_button_checked</span>
+</button>
+<!-- User Profile (Me, David K.) -->
+<button class="relative group p-0.5 rounded-xl transition-transform active:scale-95" title="Profile">
+<img class="w-9 h-9 rounded-lg object-cover ring-1 ring-outline-variant group-hover:ring-primary transition-all" data-alt="A refined studio photographic portrait of David K, a modern software engineer wearing a crisp obsidian knit sweater against a serene soft gray architectural background, clean high-key studio light, minimal and pristine" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSox8XEC1TPUsmgdDrxLiz_L6L7NPmlA3JVVN5s4t5pRCaQj9fKbYu3HWlPJAKcSh4I9tr86zxNrk7l97PStC3ELh94cTzR8QON8EmVXgQv8H8kbuelvhjpi0De4U-v5ZVodxTuLqvGrAHBskbnYgLw_0K0Qx4omZSOFHBt0V_4ZAC9_Ha7I1jm8O3Hc7OXioahoCAEw2qO2QjYtFV_nyb_SaQT2eKvOmsZv-dQEsdd0-0dN2Xw3p6dZoB6ldW3_VmGKBOFPF_AD0"/>
+<span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+</button>
+</div>
+</aside>
+<!-- Shell Content Offset (Accounts for the 64px SideNavBar) -->
+<div class="flex flex-1 pl-16 h-full w-full overflow-hidden">
+<!-- ========================================================================= -->
+<!-- 2. DIRECTORY PANE (Chats & Circles Directory - 320px)                     -->
+<!-- ========================================================================= -->
+<section class="w-80 h-full bg-surface-bright border-r border-outline-variant flex flex-col shrink-0">
+<!-- Directory Header -->
+<div class="h-14 px-4 flex items-center justify-between border-b border-outline-variant shrink-0 bg-surface-container-lowest">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface">Chat.SO</span>
+<span class="font-code-base text-[11px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant/60 font-medium">v2.4</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-lg border border-outline-variant hover:bg-surface-container-low text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all" title="New Direct Message">
+<span class="material-symbols-outlined text-[18px]">edit_square</span>
+</button>
+<button class="w-8 h-8 rounded-lg border border-outline-variant hover:bg-surface-container-low text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all" title="Create Circle">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+<!-- Omnibox Search -->
+<div class="p-3 border-b border-outline-variant/70 shrink-0">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-2.5 text-outline text-[18px]">search</span>
+<input class="w-full pl-8 pr-10 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm font-body-sm placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" placeholder="Search chats &amp; circles... (⌘K)" type="text"/>
+<span class="absolute right-2 px-1.5 py-0.5 rounded border border-outline-variant bg-surface-container-low font-code-base text-[10px] text-on-surface-variant">⌘K</span>
+</div>
+</div>
+<!-- Filter Pills -->
+<div class="px-3 py-2 flex items-center gap-1.5 border-b border-outline-variant/60 shrink-0 overflow-x-auto custom-scrollbar">
+<button class="flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary-container text-on-primary font-label-sm text-label-sm shadow-xs">
+<span>Direct Messages</span>
+<span class="bg-white/20 text-white rounded-full px-1 py-0.2 text-[10px] font-semibold">4</span>
+</button>
+<button class="flex items-center gap-1 px-2.5 py-1 rounded-md text-on-surface-variant hover:bg-surface-container-low font-label-sm text-label-sm transition-colors">
+<span>Circles</span>
+<span class="bg-surface-container text-on-surface-variant rounded-full px-1 text-[10px]">8</span>
+</button>
+<button class="px-2.5 py-1 rounded-md text-on-surface-variant hover:bg-surface-container-low font-label-sm text-label-sm transition-colors">Calls</button>
+<button class="px-2.5 py-1 rounded-md text-on-surface-variant hover:bg-surface-container-low font-label-sm text-label-sm transition-colors">Requests</button>
+</div>
+<!-- Conversation List Items -->
+<div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+<!-- Active Chat Item: Sarah Chen -->
+<div class="relative group p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-xs cursor-pointer transition-all">
+<div class="absolute left-0 top-2 bottom-2 w-1 bg-primary rounded-r"></div>
+<div class="flex items-start gap-3 pl-1">
+<div class="relative shrink-0">
+<img class="w-10 h-10 rounded-lg object-cover ring-2 ring-emerald-500/80" data-alt="Close-up professional portrait of Sarah Chen, an Asian female principal tech lead with sleek spectacles and architectural style attire, illuminated by soft luminous directional lighting against clean warm white canvas" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8-B2kkixSL4LaL3VSl2GKPk6HQpoMuy03LNzc4OZ-x74tYPfqWc2f9mtCUNkezBXLf43o8-QQSgg0FtxBuhzm7P37QpPsCAsiWvknz9J46INyU54mBFzrf8N1NlEk-ksEdbEznQgAZz1OpG7LYFOuEYCi-9kD2RNKU67wqUUDhuXG8Kb73a-642ClM49-QeF6uwiVoxWCaCPN6FXbHqfhhkdkWPKhMRn3o-lhCaLx90GT7rcX6p_MWqZqB-HZNorik_unG2GUoYU"/>
+<span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-0.5">
+<div class="flex items-center gap-1 truncate">
+<span class="font-headline-sm text-body-base text-on-surface truncate">Sarah Chen</span>
+<span class="material-symbols-outlined text-primary text-[15px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Just now</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Just uploaded the new WebRTC audio spec!</p>
+<div class="flex items-center justify-between mt-1.5">
+<div class="flex items-center gap-1 text-[11px] text-primary">
+<span class="material-symbols-outlined text-[14px]">done_all</span>
+<span class="font-label-sm">Audio/Video ready</span>
+</div>
+<span class="bg-primary-container text-on-primary text-[10px] font-semibold px-1.5 py-0.5 rounded-full">1</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 2: Engineering Core #general -->
+<div class="p-2.5 rounded-lg hover:bg-surface-container-lowest/80 cursor-pointer transition-all border border-transparent hover:border-outline-variant/60">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant font-code-base font-semibold border border-outline-variant/70 shrink-0">
+              #
+            </div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-0.5">
+<span class="font-headline-sm text-body-base text-on-surface truncate">Engineering Core</span>
+<span class="font-label-sm text-label-sm text-outline">4m</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">deploying v2.4 to staging cluster</p>
+<div class="flex items-center gap-2 mt-1.5 text-label-sm font-label-sm text-outline">
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 34 online</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 3: Alex Rivera -->
+<div class="p-2.5 rounded-lg hover:bg-surface-container-lowest/80 cursor-pointer transition-all border border-transparent hover:border-outline-variant/60">
+<div class="flex items-start gap-3">
+<div class="relative shrink-0">
+<img class="w-10 h-10 rounded-lg object-cover ring-1 ring-outline-variant" data-alt="Portrait photo of Alex Rivera, a Hispanic male product director in a relaxed minimal architectural studio, calm ambient day lighting, clean white room background, authentic modern professional" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuq01UEwguZVpR-CBtX7NSKQbiDQtLVmRDvuy4VR-WhaiCLI2Vqc15QY304XQRwAaIgBamyLkJMPC7_R4gZv2M0kVYd-zY0q9cbRgRcK5iNQBHu_CuEDOzZ88EhuvPsLvWBOpP2tyFIV7ap77pvTaOVntkjKIY3wHPE0ExyEs_rO5lc902d7Sjj0qUeWdTCwEMRu6cUlblQE_jb1tcW8RNsFg35HVI32l9UrIsZxsCg60BGm7r_CNPjuic9uE_Iak8-z8zKjO_RMo"/>
+<span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-0.5">
+<span class="font-headline-sm text-body-base text-on-surface truncate">Alex Rivera</span>
+<span class="font-label-sm text-label-sm text-outline">12m</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Let's review the call recordings at 3pm</p>
+<div class="flex items-center gap-1 mt-1 text-label-sm font-label-sm text-outline">
+<span class="material-symbols-outlined text-[14px]">call</span>
+<span>Voice Call • 14m</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 4: Design Systems #tokens -->
+<div class="p-2.5 rounded-lg hover:bg-surface-container-lowest/80 cursor-pointer transition-all border border-transparent hover:border-outline-variant/60">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant shrink-0 border border-outline-variant/70">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-0.5">
+<span class="font-headline-sm text-body-base text-on-surface truncate">Design Systems</span>
+<span class="font-label-sm text-label-sm text-outline">1h</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Updated shadow-elevation tokens</p>
+<div class="flex items-center justify-between mt-1">
+<span class="text-label-sm font-label-sm text-outline">#tokens</span>
+<span class="bg-surface-container text-on-surface-variant text-[10px] font-semibold px-1.5 py-0.2 rounded-full border border-outline-variant/60">4</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 5: DevOps & Infra -->
+<div class="p-2.5 rounded-lg hover:bg-surface-container-lowest/80 cursor-pointer transition-all border border-transparent hover:border-outline-variant/60">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-0.5">
+<span class="font-headline-sm text-body-base text-on-surface truncate">DevOps &amp; Infra</span>
+<span class="font-label-sm text-label-sm text-outline">2h</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">CI/CD pipeline passed in 42s</p>
+<div class="flex items-center gap-1 mt-1 text-[11px] text-emerald-700 font-label-sm">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>Healthy Build v2.4.0-rc2</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ========================================================================= -->
+<!-- 3. MAIN CONVERSATION STREAM (Master Canvas - Flex-1)                      -->
+<!-- ========================================================================= -->
+<main class="flex-1 flex flex-col bg-surface-container-lowest min-w-0 h-full relative">
+<!-- TopNavBar Implementation from Shared Components JSON -->
+<header class="sticky top-0 z-30 flex items-center justify-between w-full h-14 px-6 bg-surface-container-lowest border-b border-outline-variant shrink-0">
+<!-- Active Partner Identity & Status -->
+<div class="flex items-center gap-3">
+<div class="relative">
+<img class="w-9 h-9 rounded-lg object-cover ring-1 ring-outline-variant" data-alt="Portrait photography of Sarah Chen, Principal Architect, sharp focus with pure natural high-key daylight and architectural office background, calm clarity and precision" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5vBKcObEv9YSvxqS34BYk8WjkQvwywYCBjCurg8P1cEVxdbB88ygR8ZJDhNRoPaLPpK3kv8sP8DEKmbj5r3vUmTuKNTZ7wwEUnDVsGc65d-AIif2zPQuAo7dZ_wbeMtz3tj0fdvC3awejjtWuRXIp-H2sj2Fxc_JLEfKC1flUO57Hrf-fF2LP9c6wfUzHYL2tBg9DSLwN1cHdsFXZ-TxQ-Ne1K0iERrJwu5KKbzH7uO4u4Rl2oeEvQGWmmYDNN_tuBcB6exd8qrc"/>
+<span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Sarah Chen</h2>
+<span class="material-symbols-outlined text-primary text-[16px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="flex items-center gap-1 font-label-sm text-label-sm text-emerald-700 font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-beacon"></span>
+                Active now
+              </span>
+<span class="text-outline text-[10px]">•</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Audio/Video ready</span>
+</div>
+</div>
+</div>
+<!-- Navigation Links & Trailing Actions from TopNavBar JSON -->
+<div class="flex items-center gap-6">
+<!-- Navigation Tabs -->
+<div class="hidden lg:flex items-center gap-5 text-label-md font-label-md">
+<button class="text-primary font-semibold border-b-2 border-primary pb-1">Overview</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors pb-1">Canvas</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors pb-1 flex items-center gap-1">
+<span>Pinned</span>
+<span class="w-4 h-4 rounded-full bg-surface-container text-on-surface-variant text-[10px] flex items-center justify-center font-code-base">4</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors pb-1">Files</button>
+</div>
+<!-- Trailing Action Buttons -->
+<div class="flex items-center gap-2">
+<!-- Trailing Icon Actions: call, videocam, push_pin, info -->
+<button class="w-8 h-8 rounded-lg border border-outline-variant hover:bg-surface-container-low text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all" title="Audio Call">
+<span class="material-symbols-outlined text-[18px]">call</span>
+</button>
+<button class="w-8 h-8 rounded-lg border border-outline-variant hover:bg-surface-container-low text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all" title="Search Filters">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</button>
+<button class="w-8 h-8 rounded-lg border border-outline-variant hover:bg-surface-container-low text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all" title="Pinned Items">
+<span class="material-symbols-outlined text-[18px]">push_pin</span>
+</button>
+<!-- Trailing Primary Action: Start Huddle / Start Video Call -->
+<button class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md shadow-xs active:scale-[0.99] transition-all">
+<span class="material-symbols-outlined text-[16px]">videocam</span>
+<span>Start Huddle</span>
+</button>
+<!-- Context Drawer Toggle (info icon) -->
+<button class="w-8 h-8 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low flex items-center justify-center transition-all" title="Inspector Panel">
+<span class="material-symbols-outlined text-[18px]">info</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Pinned Message Alert Ribbon -->
+<div class="px-6 py-2 bg-amber-50/80 border-b border-amber-200/80 flex items-center justify-between text-body-sm font-body-sm text-amber-900 shrink-0">
+<div class="flex items-center gap-2 truncate">
+<span class="material-symbols-outlined text-amber-700 text-[18px]">push_pin</span>
+<span class="font-medium truncate">WebRTC signaling architecture &amp; 50MB direct GCS file uploader docs</span>
+</div>
+<button class="font-label-sm text-label-sm font-semibold text-amber-900 hover:text-amber-950 underline underline-offset-2 ml-4 shrink-0">
+          View Thread
+        </button>
+</div>
+<!-- Message Stream -->
+<div class="flex-1 overflow-y-auto custom-scrollbar px-8 py-6 space-y-6 bg-surface-bright/50">
+<!-- Date Divider -->
+<div class="flex items-center justify-center my-2">
+<span class="px-3 py-1 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant font-label-sm text-label-sm shadow-xs">
+            Today, October 28
+          </span>
+</div>
+<!-- Incoming Message Node (Sarah Chen) -->
+<div class="flex items-start gap-3.5 max-w-4xl">
+<img class="w-9 h-9 rounded-lg object-cover ring-1 ring-outline-variant mt-0.5 shrink-0" data-alt="Portrait photography of Sarah Chen, calm intellectual demeanor, clean light mode workspace setting with modern neutral walls, hyper-realistic, pristine natural highlights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBW4ykzeUdTp-Do_9ZWuZ-Qt3lZCOyMmraLlML2W2ch6RgQkhihuXRiAhEo83Zxe7DoAv92LnyPPqs6hsknmYa1L9QojQGw1sB7KR_GkWVUK4e7YVSVRe_FEea98AVLepFRjMiSM5UujZ-UvHuKHPW72AHmk4daqWnuO5WN2Dzb6BNWtUrH4esRkzj1liFKjP2tGEL4vik-jeJFAroVJzonAWz4ZonXy3JQ6ydVpdWlO_4seyNiNcuFJWbseKlRGb6YVGtmufs57Xk"/>
+<div class="flex-1 space-y-3 min-w-0">
+<!-- Header Info -->
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface">Sarah Chen</span>
+<span class="font-label-sm text-label-sm text-outline">Lead Architect • 10:11 AM</span>
+</div>
+<!-- Message Text -->
+<div class="p-3.5 rounded-xl rounded-tl-sm bg-surface-container-lowest border border-outline-variant text-on-surface shadow-xs space-y-2">
+<p class="leading-relaxed">
+                Here is the new WebRTC signaling connection handler with zero-copy packet relay and fallback ICE candidates. Latency drops to <span class="font-code-base text-[12px] bg-surface-container-high px-1.5 py-0.5 rounded text-primary font-medium">~12ms p99</span>:
+              </p>
+<!-- Formatted Syntax-Highlighted Code Block -->
+<div class="rounded-xl border border-outline-variant bg-[#f8fafc] overflow-hidden my-2">
+<div class="flex items-center justify-between px-3.5 py-2 bg-surface-container-high/60 border-b border-outline-variant">
+<div class="flex items-center gap-2 font-code-base text-label-sm text-on-surface-variant">
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+<span>signaling_client.ts</span>
+</div>
+<button class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface hover:bg-white px-2 py-0.5 rounded border border-transparent hover:border-outline-variant transition-all">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span>Copy Code</span>
+</button>
+</div>
+<div class="p-3.5 font-code-base text-code-base text-slate-800 overflow-x-auto leading-relaxed">
+<div><span class="text-indigo-600 font-medium">export async function</span> <span class="text-blue-700 font-semibold">initializePeerTunnel</span>(peerId: <span class="text-teal-700">string</span>) {</div>
+<div class="pl-4"><span class="text-slate-500">// Zero-copy datagram relay through local edge node</span></div>
+<div class="pl-4"><span class="text-indigo-600 font-medium">const</span> connection = <span class="text-indigo-600 font-medium">new</span> <span class="text-amber-700 font-medium">RTCPeerConnection</span>({</div>
+<div class="pl-8">iceServers: [{ urls: <span class="text-emerald-700">'stun:edge-turn.chat.so:3478'</span> }],</div>
+<div class="pl-8">bundlePolicy: <span class="text-emerald-700">'max-bundle'</span>,</div>
+<div class="pl-4">});</div>
+<div class="pl-4">connection.ondatachannel = (e) =&gt; relayZeroCopyBuffer(e.channel);</div>
+<div class="pl-4"><span class="text-indigo-600 font-medium">return</span> connection.createOffer();</div>
+<div>}</div>
+</div>
+</div>
+<!-- File Attachment Card -->
+<div class="flex items-center justify-between p-3 rounded-lg border border-outline-variant bg-surface-container-low hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-pink-100 text-pink-700 border border-pink-200 flex items-center justify-center shrink-0">
+<span class="font-code-base font-bold text-xs">FIG</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface font-semibold">ChatSO-Architecture-v3.fig</h4>
+<p class="font-label-sm text-label-sm text-outline">48.2 MB • sha256: 7f8a9...b2</p>
+</div>
+</div>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-all shadow-2xs">
+<span class="material-symbols-outlined text-[16px]">download</span>
+<span>Download</span>
+</button>
+</div>
+<!-- Interactive Architecture Poll Widget Card -->
+<div class="p-4 rounded-xl border border-outline-variant bg-surface-container-lowest space-y-3 shadow-xs">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-sm text-body-base text-on-surface font-semibold">Architecture Voting: Signaling Gateway Protocol</h4>
+<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-semibold border border-emerald-200">Active Poll</span>
+</div>
+<div class="space-y-2">
+<!-- Option 1 (Leading) -->
+<div class="space-y-1">
+<div class="flex justify-between font-label-md text-label-sm text-on-surface">
+<span class="font-semibold text-primary">WebSockets + Convex Gateway</span>
+<span class="font-code-base font-semibold">72% (40)</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-primary-container rounded-full" style="width: 72%;"></div>
+</div>
+</div>
+<!-- Option 2 -->
+<div class="space-y-1">
+<div class="flex justify-between font-label-md text-label-sm text-on-surface-variant">
+<span>WebRTC DataChannels Direct</span>
+<span class="font-code-base">21% (12)</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-outline rounded-full" style="width: 21%;"></div>
+</div>
+</div>
+<!-- Option 3 -->
+<div class="space-y-1">
+<div class="flex justify-between font-label-md text-label-sm text-on-surface-variant">
+<span>Server-Sent Events (SSE) Fallback</span>
+<span class="font-code-base">7% (4)</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-outline rounded-full" style="width: 7%;"></div>
+</div>
+</div>
+</div>
+<div class="pt-2 border-t border-outline-variant/60 flex items-center justify-between text-label-sm font-label-sm text-outline">
+<span>56 team members voted • Closes in 4h</span>
+<button class="text-primary hover:underline font-medium">Change vote</button>
+</div>
+</div>
+<!-- Voice Note Player Widget Card -->
+<div class="p-3 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center gap-3">
+<button class="w-9 h-9 rounded-full bg-primary-container text-on-primary flex items-center justify-center shrink-0 shadow-xs hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<div class="flex-1 space-y-1">
+<!-- Simulated Audio Waveform -->
+<div class="flex items-center gap-1 h-6">
+<div class="w-1 bg-primary h-3 rounded-full"></div>
+<div class="w-1 bg-primary h-5 rounded-full"></div>
+<div class="w-1 bg-primary h-2 rounded-full"></div>
+<div class="w-1 bg-primary h-6 rounded-full"></div>
+<div class="w-1 bg-primary h-4 rounded-full"></div>
+<div class="w-1 bg-primary h-5 rounded-full"></div>
+<div class="w-1 bg-primary/40 h-3 rounded-full"></div>
+<div class="w-1 bg-primary/40 h-4 rounded-full"></div>
+<div class="w-1 bg-primary/40 h-2 rounded-full"></div>
+<div class="w-1 bg-primary/40 h-5 rounded-full"></div>
+<div class="w-1 bg-primary/40 h-3 rounded-full"></div>
+<div class="w-1 bg-primary/40 h-6 rounded-full"></div>
+<div class="w-1 bg-primary/40 h-2 rounded-full"></div>
+<div class="w-1 bg-primary/40 h-4 rounded-full"></div>
+<div class="w-1 bg-primary/40 h-3 rounded-full"></div>
+<div class="w-1 bg-primary/40 h-5 rounded-full"></div>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-outline">
+<span>0:48 / 1:30</span>
+<button class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface font-code-base text-[10px] font-semibold">1.5x</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Reactions Bar -->
+<div class="flex items-center gap-1.5">
+<button class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-lowest border border-outline-variant hover:border-primary text-label-sm font-label-sm text-on-surface shadow-2xs transition-all">
+<span>🚀</span>
+<span class="font-code-base font-semibold">9</span>
+</button>
+<button class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-lowest border border-outline-variant hover:border-primary text-label-sm font-label-sm text-on-surface shadow-2xs transition-all">
+<span>💡</span>
+<span class="font-code-base font-semibold">4</span>
+</button>
+<button class="w-6 h-6 rounded-full bg-surface-container-lowest border border-dashed border-outline-variant hover:border-primary text-outline hover:text-primary flex items-center justify-center transition-all text-xs">
+                +
+              </button>
+</div>
+</div>
+</div>
+<!-- Outgoing Message Node (Me, David K.) -->
+<div class="flex flex-col items-end space-y-1.5 ml-auto max-w-xl">
+<div class="bg-primary-container text-on-primary rounded-2xl rounded-tr-sm p-4 shadow-sm space-y-2.5">
+<!-- Quoted Context Header -->
+<div class="pl-2 border-l-2 border-white/60 bg-white/10 p-1.5 rounded text-white/90 text-body-sm">
+<span class="font-semibold text-white">Sarah Chen:</span> "Latency drops to ~12ms p99"
+            </div>
+<p class="leading-relaxed">
+              Looks fantastic! Deploying the signaling server updates to staging now. The ICE fallback candidates cover all corporate firewall scenarios seamlessly.
+            </p>
+<div class="flex items-center justify-end gap-1.5 text-white/80 font-label-sm text-[11px]">
+<span>10:14 AM</span>
+<span class="material-symbols-outlined text-[15px] text-white">done_all</span>
+</div>
+</div>
+<!-- Attached Reaction Chips -->
+<div class="flex items-center gap-1.5 pr-1">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-lowest border border-outline-variant text-[11px] font-label-sm shadow-2xs">🚀 5</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-lowest border border-outline-variant text-[11px] font-label-sm shadow-2xs">🔥 8</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-lowest border border-outline-variant text-[11px] font-label-sm shadow-2xs">❤️ 3</span>
+</div>
+</div>
+<!-- Live Typing Indicator -->
+<div class="flex items-center gap-2 text-label-sm font-label-sm text-outline pl-1">
+<span class="italic">Sarah Chen is typing</span>
+<div class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-bounce"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style="animation-delay: 0.15s;"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style="animation-delay: 0.3s;"></span>
+</div>
+</div>
+</div>
+<!-- Bottom Composer Dock -->
+<footer class="px-8 pb-5 pt-2 bg-gradient-to-t from-white via-white/95 to-transparent shrink-0">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-2.5 shadow-md flex items-center gap-3">
+<!-- Left Action Icons -->
+<div class="flex items-center gap-0.5 text-on-surface-variant">
+<button class="w-8 h-8 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all" title="Attach File">
+<span class="material-symbols-outlined text-[20px]">attach_file</span>
+</button>
+<button class="w-8 h-8 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all" title="Create Poll">
+<span class="material-symbols-outlined text-[20px]">poll</span>
+</button>
+<button class="w-8 h-8 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all" title="Add Emoji">
+<span class="material-symbols-outlined text-[20px]">mood</span>
+</button>
+</div>
+<!-- Central Text Input Area -->
+<div class="flex-1 flex items-center gap-2 px-1">
+<input class="w-full bg-transparent border-0 text-on-surface text-body-base placeholder:text-outline focus:outline-none focus:ring-0 p-0" placeholder="Type a message to Sarah Chen, or press / for slash commands..." type="text"/>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-outline font-code-base text-[10px]">/</span>
+</div>
+<!-- Right Action Tools & Send Button -->
+<div class="flex items-center gap-2">
+<button class="w-8 h-8 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all" title="Voice Message">
+<span class="material-symbols-outlined text-[20px]">mic</span>
+</button>
+<button class="w-8 h-8 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all" title="Silent Delivery">
+<span class="material-symbols-outlined text-[20px]">notifications_off</span>
+</button>
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md shadow-sm active:scale-[0.98] transition-all">
+<span>Send</span>
+<span class="material-symbols-outlined text-[16px]">send</span>
+<span class="text-white/60 font-code-base text-[10px] ml-0.5">↵ Enter</span>
+</button>
+</div>
+</div>
+</footer>
+</main>
+<!-- ========================================================================= -->
+<!-- 4. RIGHT CONTEXT DRAWER (Inspect & Member Details - 320px)                -->
+<!-- ========================================================================= -->
+<aside class="w-80 h-full bg-[#f8fafc] border-l border-outline-variant flex flex-col shrink-0 overflow-y-auto custom-scrollbar p-5 space-y-6">
+<!-- Drawer Header -->
+<div class="flex items-center justify-between shrink-0">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Member Details</h3>
+<button class="w-7 h-7 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<!-- Profile Hero Card -->
+<div class="flex flex-col items-center text-center space-y-3 pt-2">
+<div class="relative">
+<img class="w-20 h-20 rounded-2xl object-cover ring-2 ring-emerald-500 shadow-xs" data-alt="High-resolution close-up studio portrait of Sarah Chen against an ivory architectural backdrop, calm confident expression, wearing modern minimal frames, precision lighting with soft gentle fill" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdp0IfGrqlY5y0DklbtAi1tZlN27KjSpNXvSeNBau8uuEi2RXgzf6g4mVeJbVQDKjETfHz3ju1Ykd7AfqUs080xn-eYwJVYAr1gFtHImi59ZNlYzk0hpJfV1FLXAPi-SzmqLCL6wDgNFWDpK2qwp_3SV9uwaj7tsZsyJc1sxzGxf0-OTv_1u3CNRBmPNqoONKDimeAFr0rasLNwhf76CCJ141Ho-J1kch7jVg71CSjGHxH0dRniI_lLFQxnA34kUg_GWX4759hYaQ"/>
+<span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+</div>
+<div>
+<div class="flex items-center justify-center gap-1">
+<h4 class="font-headline-md text-headline-md text-on-surface">Sarah Chen</h4>
+<span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<p class="font-label-md text-label-md text-primary font-semibold">@sarah • Principal Architect</p>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed px-2">
+          Building low-latency real-time communications &amp; PWA mesh networking protocols.
+        </p>
+<div class="flex items-center gap-1 text-label-sm font-label-sm text-outline">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span>San Francisco, CA</span>
+</div>
+</div>
+<!-- Quick Action Row -->
+<div class="grid grid-cols-3 gap-2">
+<button class="flex flex-col items-center justify-center p-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-on-surface transition-all shadow-2xs">
+<span class="material-symbols-outlined text-primary mb-1">call</span>
+<span class="font-label-sm text-[11px]">Audio</span>
+</button>
+<button class="flex flex-col items-center justify-center p-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-on-surface transition-all shadow-2xs">
+<span class="material-symbols-outlined text-primary mb-1">videocam</span>
+<span class="font-label-sm text-[11px]">Video</span>
+</button>
+<button class="flex flex-col items-center justify-center p-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-on-surface transition-all shadow-2xs">
+<span class="material-symbols-outlined text-outline mb-1">volume_off</span>
+<span class="font-label-sm text-[11px]">Mute</span>
+</button>
+</div>
+<!-- Shared Media & Files Section -->
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Shared Media &amp; Files</span>
+<span class="font-code-base text-[11px] text-outline">128</span>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<div class="aspect-square rounded-lg border border-outline-variant bg-surface-container-high overflow-hidden group relative">
+<img class="w-full h-full object-cover" data-alt="Technical schematic diagram of a WebRTC real-time signaling mesh pipeline on clean white canvas with indigo node connections and slate vectors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVQVcZm2A-vwlMO3RnLWoYwu1sXEr13rRfN3f1RIb7jArIjxY1t_IYvEWyd4yokBK9VQvcBl6ovPDmVAqvgTg7IH3F_civkjMjInd1ArxixjWXS7owH9kHUFvIPp3FkjPofNc2yEui0IbBNqncIrC1AWySiVN_oIkwd_SRlf2YMs4o-8CNIAWxzej9QQN_4Q24Cag_KlXI4p130P8ZUD3DGR7nVLBn3tFxAYbzV0ht3xs1b8ytcsFCgdbVg5YhsaWd6ZNstrJTKJA"/>
+</div>
+<div class="aspect-square rounded-lg border border-outline-variant bg-surface-container-high overflow-hidden group relative">
+<img class="w-full h-full object-cover" data-alt="UI design blueprint displaying responsive glassmorphic cards and architectural grid wireframes in minimal light gray aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAH6TL3ICyhMn_Q0mT7MNEZinNX0Z77uNNgyQkHD3COcVf9cXrngYavaeDGmPn_frKW8i8ROpifn9yWRzumo2K_FQIFmyxyWiCZ9MyQiylCgYLFQrw1UTfuZBMY03oDotkZvfmnesG-R1Lf3E23uS3iSJLUhFYnMjtmSeNYhg0xZWxaWCjnC1mkIA0KWUUF_z2XLiSWie5VMUCvrFb6chqkVzePE5UVguSMwmF20fsYS7dy-rePegyTD4EHic4SXI6QZS-C-CZknbA"/>
+</div>
+<div class="aspect-square rounded-lg border border-outline-variant bg-surface-container-lowest flex items-center justify-center font-label-md text-label-md text-on-surface-variant font-semibold hover:bg-surface-container transition-colors cursor-pointer">
+            +126
+          </div>
+</div>
+</div>
+<!-- Mutual Circles Section -->
+<div class="space-y-3">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Mutual Circles</span>
+<div class="space-y-2">
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-lowest border border-outline-variant">
+<div class="flex items-center gap-2 truncate">
+<span class="font-code-base text-primary font-bold">#</span>
+<span class="font-label-md text-label-sm text-on-surface truncate">frontend-core</span>
+</div>
+<span class="text-outline text-[11px] font-label-sm shrink-0">24 members</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-lowest border border-outline-variant">
+<div class="flex items-center gap-2 truncate">
+<span class="font-code-base text-primary font-bold">#</span>
+<span class="font-label-md text-label-sm text-on-surface truncate">infra-edge-mesh</span>
+</div>
+<span class="text-outline text-[11px] font-label-sm shrink-0">12 members</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-lowest border border-outline-variant">
+<div class="flex items-center gap-2 truncate">
+<span class="font-code-base text-primary font-bold">#</span>
+<span class="font-label-md text-label-sm text-on-surface truncate">product-architecture</span>
+</div>
+<span class="text-outline text-[11px] font-label-sm shrink-0">8 members</span>
+</div>
+</div>
+</div>
+<!-- Security & Encryption Badge -->
+<div class="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/60 space-y-1.5">
+<div class="flex items-center gap-2 text-emerald-900 font-label-md text-label-sm font-semibold">
+<span class="material-symbols-outlined text-emerald-700 text-[18px]">verified_user</span>
+<span>End-to-End Encrypted</span>
+</div>
+<p class="font-body-sm text-[11.5px] text-emerald-900/80 leading-normal">
+          WebRTC DTLS-SRTP v1.3 • Verified Identity Fingerprint:
+        </p>
+<span class="block font-code-base text-[10.5px] text-emerald-800 font-medium">0x4B92..71E98F</span>
+</div>
+</aside>
+</div>
+</body></html>

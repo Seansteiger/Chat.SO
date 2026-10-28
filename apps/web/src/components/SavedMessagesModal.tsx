@@ -79,30 +79,30 @@ export const SavedMessagesModal: React.FC<SavedMessagesModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl max-h-[85vh] bg-slate-950 border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95"
+        className="w-full max-w-xl max-h-[85vh] dark:bg-slate-950 bg-white border dark:border-white/10 border-slate-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 transition-colors"
       >
         {/* Header */}
-        <div className="h-16 px-6 border-b border-white/10 flex items-center justify-between shrink-0">
+        <div className="h-16 px-6 border-b dark:border-white/10 border-slate-200 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center">
               <Bookmark className="w-4 h-4 fill-current" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white">Personal Vault & Bookmarks</h3>
-              <p className="text-[11px] text-slate-400">Saved thoughts, notes and important messages</p>
+              <h3 className="text-sm font-semibold dark:text-white text-slate-900">Personal Vault & Bookmarks</h3>
+              <p className="text-[11px] dark:text-slate-400 text-slate-500">Saved thoughts, notes and important messages</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-2 rounded-xl dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Search */}
-        <div className="p-3 border-b border-white/5">
+        <div className="p-3 border-b dark:border-white/5 border-slate-200">
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
@@ -110,7 +110,7 @@ export const SavedMessagesModal: React.FC<SavedMessagesModalProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search bookmarks..."
-              className="w-full pl-9 pr-4 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+              className="w-full pl-9 pr-4 py-2 dark:bg-slate-900/60 bg-slate-50 border dark:border-white/10 border-slate-200 rounded-xl text-xs dark:text-white text-slate-900 dark:placeholder-slate-500 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
             />
           </div>
         </div>
@@ -118,10 +118,10 @@ export const SavedMessagesModal: React.FC<SavedMessagesModalProps> = ({
         {/* List */}
         <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
           {filtered.length === 0 ? (
-            <div className="text-center py-16 text-slate-500 text-xs">
-              <Bookmark className="w-8 h-8 mx-auto mb-2 opacity-30 text-amber-400" />
-              <p className="font-medium text-slate-300">No saved messages</p>
-              <p className="text-[11px] text-slate-500 mt-1 max-w-xs mx-auto">
+            <div className="text-center py-16 dark:text-slate-500 text-slate-400 text-xs">
+              <Bookmark className="w-8 h-8 mx-auto mb-2 opacity-30 text-amber-500" />
+              <p className="font-medium dark:text-slate-300 text-slate-700">No saved messages</p>
+              <p className="text-[11px] dark:text-slate-500 text-slate-400 mt-1 max-w-xs mx-auto">
                 Hover any message in chat and click the bookmark icon to save it here quietly for future reference.
               </p>
             </div>
@@ -129,12 +129,12 @@ export const SavedMessagesModal: React.FC<SavedMessagesModalProps> = ({
             filtered.map((item) => (
               <div
                 key={item._id}
-                className="p-3.5 rounded-xl bg-slate-900/60 border border-white/10 space-y-2 group"
+                className="p-3.5 rounded-xl dark:bg-slate-900/60 bg-slate-50 border dark:border-white/10 border-slate-200 space-y-2 group shadow-xs"
               >
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-white">{item.senderName}</span>
+                  <span className="font-semibold dark:text-white text-slate-900">{item.senderName}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-500">
+                    <span className="text-[10px] dark:text-slate-500 text-slate-400">
                       {new Date(item.createdAt).toLocaleDateString([], {
                         month: 'short',
                         day: 'numeric',
@@ -146,7 +146,7 @@ export const SavedMessagesModal: React.FC<SavedMessagesModalProps> = ({
                       type="button"
                       onClick={() => handleUnsave(item.messageId)}
                       title="Remove from vault"
-                      className="text-slate-400 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition-colors"
+                      className="text-slate-400 hover:text-rose-500 p-1 rounded-lg hover:bg-rose-500/10 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
