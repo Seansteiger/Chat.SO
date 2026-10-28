@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile, MessageDto, MAX_FILE_SIZE_BYTES } from '@chatso/shared';
 import { useAuth } from '../hooks/useAuth.js';
-import { useTheme } from '../hooks/useTheme.js';
 import { StatusTicks } from './StatusTicks.js';
 import { uploadFileDirectly, DirectUploadResult } from '../services/uploader.js';
 import { api } from '../services/api.js';
@@ -34,8 +33,6 @@ import {
   PanelRight,
   ShieldAlert,
   ShieldCheck,
-  Sun,
-  Moon,
 } from 'lucide-react';
 import { MarkdownText } from './MarkdownText.js';
 import { VoiceNotePlayer } from './VoiceNotePlayer.js';
@@ -83,7 +80,6 @@ export const MainChat: React.FC<MainChatProps> = ({
   onBack,
 }) => {
   const { user: currentUser } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const [inputText, setInputText] = useState('');
   const [isSilent, setIsSilent] = useState(false);
   const [replyingTo, setReplyingTo] = useState<MessageDto | null>(null);
@@ -543,20 +539,6 @@ export const MainChat: React.FC<MainChatProps> = ({
               <PanelRight className="w-4 h-4" />
             </button>
           )}
-
-          {/* Dark / Light Theme Switcher */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="p-2 rounded-xl dark:hover:bg-white/5 dark:border-white/5 dark:text-slate-400 dark:hover:text-amber-300 hover:bg-slate-100 border-slate-200 text-slate-500 hover:text-indigo-600 border transition-colors"
-          >
-            {theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-400" />
-            ) : (
-              <Moon className="w-4 h-4 text-indigo-600" />
-            )}
-          </button>
 
           {/* WebRTC Calling Buttons */}
           {!isSelfVault && (

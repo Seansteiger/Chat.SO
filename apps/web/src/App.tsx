@@ -11,7 +11,6 @@ import { MainChat } from './components/MainChat.js';
 import { CircleChat } from './components/CircleChat.js';
 import { VideoCallOverlay } from './components/VideoCallOverlay.js';
 import { IncomingCallDialog } from './components/IncomingCallDialog.js';
-import { ProfileModal } from './components/ProfileModal.js';
 import { MessageSquare } from 'lucide-react';
 import { convex, api as convexApi } from './convex.js';
 import { NotificationService, sound } from './services/notifications.js';
@@ -37,14 +36,13 @@ export const AppContent: React.FC = () => {
 
   const [messages, setMessages] = useState<MessageDto[]>([]);
   const [peerTypingMap, setPeerTypingMap] = useState<Record<string, boolean>>({});
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
   const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
   const [lastMessageMap, setLastMessageMap] = useState<
     Record<string, { content?: string; attachmentName?: string; createdAt: number; senderId?: string; status?: any }>
   >({});
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
-  const [activeTab, setActiveTab] = useState<'chats' | 'circles' | 'requests' | 'calls'>('chats');
+  const [activeTab, setActiveTab] = useState<'chats' | 'circles' | 'requests' | 'calls' | 'settings'>('chats');
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   // Watch pending handshake requests count for notification badge
@@ -112,18 +110,6 @@ export const AppContent: React.FC = () => {
     }
   }, []);
 
-  const handleOpenProfileModal = useCallback(() => {
-    window.history.pushState({ view: 'modal', modal: 'profile' }, '', '#profile');
-    setIsProfileModalOpen(true);
-  }, []);
-
-  const handleCloseProfileModal = useCallback(() => {
-    setIsProfileModalOpen(false);
-    if (window.location.hash === '#profile') {
-      window.history.back();
-    }
-  }, []);
-
   const handleOpenNotificationsPanel = useCallback(() => {
     window.history.pushState({ view: 'modal', modal: 'notifications' }, '', '#notifications');
     setIsNotificationsPanelOpen(true);
@@ -143,8 +129,8 @@ export const AppContent: React.FC = () => {
     }
 
     const handlePopState = (event: PopStateEvent) => {
-      if (isProfileModalOpen) {
-        setIsProfileModalOpen(false);
+      if (isNotificationsPanelOpen) {
+        setIsNotificationsPanelOpen(false);
         return;
       }
 
@@ -171,7 +157,7 @@ export const AppContent: React.FC = () => {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [isProfileModalOpen, isNotificationsPanelOpen, users]);
+  }, [isNotificationsPanelOpen, users]);
 
   // Sync in-app notification center unread count
   useEffect(() => {
@@ -692,16 +678,18 @@ export const AppContent: React.FC = () => {
       {/* Desktop Navigation Rail (Stitch 64px Slim Bar) */}
       <NavigationRail
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={(tab) => {
+          setActiveTab(tab);
+          if (tab === 'settings' || tab === 'calls' || tab === 'requests') {
+            setSelectedUser(null);
+            setSelectedCircleId(null);
+          }
+        }}
         unreadChatsCount={totalUnreadChats}
         pendingRequestsCount={pendingRequestsCount}
-        unreadNotificationsCount={unreadNotificationsCount}
-        onOpenNotifications={handleOpenNotificationsPanel}
-        onOpenSavedMessages={() => currentUser && handleSelectUser(currentUser)}
-        onOpenProfile={handleOpenProfileModal}
       />
 
-      {/* Left Sidebar (Contacts, Circles, Vault, Calls) */}
+      {/* Left Sidebar (Contacts, Circles, Vault, Calls, Settings) */}
       <div className={`h-full ${selectedUser || selectedCircleId ? 'hidden md:flex' : 'flex w-full'} md:w-80 shrink-0`}>
         <Sidebar
           users={users}
@@ -709,14 +697,19 @@ export const AppContent: React.FC = () => {
           onSelectUser={handleSelectUser}
           selectedCircleId={selectedCircleId}
           onSelectCircle={handleSelectCircle}
-          onOpenProfile={handleOpenProfileModal}
           unreadMap={unreadMap}
           lastMessageMap={lastMessageMap}
           onOpenNotificationsPanel={handleOpenNotificationsPanel}
           unreadNotificationsCount={unreadNotificationsCount}
           onStartCall={(user, isVideo) => webrtc.startCall(user.id, user.displayName, isVideo)}
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab);
+            if (tab === 'settings' || tab === 'calls' || tab === 'requests') {
+              setSelectedUser(null);
+              setSelectedCircleId(null);
+            }
+          }}
         />
       </div>
 
@@ -789,12 +782,6 @@ export const AppContent: React.FC = () => {
         incomingCall={webrtc.incomingCall}
         onAccept={webrtc.acceptCall}
         onReject={webrtc.rejectCall}
-      />
-
-      {/* Profile & Boundaries Settings Modal */}
-      <ProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={handleCloseProfileModal}
       />
     </div>
   );

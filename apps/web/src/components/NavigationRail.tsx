@@ -4,27 +4,18 @@ import {
   Users,
   ShieldAlert,
   Phone,
-  Bookmark,
-  Bell,
-  Sun,
-  Moon,
   Download,
   Plus,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.js';
-import { useTheme } from '../hooks/useTheme.js';
 import { usePWAInstall } from '../hooks/usePWAInstall.js';
 
 interface NavigationRailProps {
-  activeTab: 'chats' | 'circles' | 'requests' | 'calls';
-  onSelectTab: (tab: 'chats' | 'circles' | 'requests' | 'calls') => void;
+  activeTab: 'chats' | 'circles' | 'requests' | 'calls' | 'settings';
+  onSelectTab: (tab: 'chats' | 'circles' | 'requests' | 'calls' | 'settings') => void;
   unreadChatsCount?: number;
   pendingRequestsCount?: number;
-  unreadNotificationsCount?: number;
   circlesCount?: number;
-  onOpenNotifications: () => void;
-  onOpenSavedMessages: () => void;
-  onOpenProfile: () => void;
   onQuickCompose?: () => void;
 }
 
@@ -33,15 +24,10 @@ export const NavigationRail: React.FC<NavigationRailProps> = ({
   onSelectTab,
   unreadChatsCount = 0,
   pendingRequestsCount = 0,
-  unreadNotificationsCount = 0,
   circlesCount = 0,
-  onOpenNotifications,
-  onOpenSavedMessages,
-  onOpenProfile,
   onQuickCompose,
 }) => {
   const { user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const { isInstallable, promptInstall } = usePWAInstall();
 
   return (
@@ -150,48 +136,11 @@ export const NavigationRail: React.FC<NavigationRailProps> = ({
           >
             <Phone className="w-5 h-5" />
           </button>
-
-          {/* Saved Messages Vault */}
-          <button
-            type="button"
-            onClick={onOpenSavedMessages}
-            className="w-10 h-10 rounded-xl flex items-center justify-center relative transition-all dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/60"
-            title="Personal Vault (Saved Messages)"
-          >
-            <Bookmark className="w-5 h-5" />
-          </button>
-
-          {/* In-app Notifications */}
-          <button
-            type="button"
-            onClick={onOpenNotifications}
-            className="w-10 h-10 rounded-xl flex items-center justify-center relative transition-all dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/60"
-            title="Notifications"
-          >
-            <Bell className="w-5 h-5" />
-            {unreadNotificationsCount > 0 && (
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 dark:ring-[#09090b] ring-[#f4f4f6]" />
-            )}
-          </button>
         </nav>
       </div>
 
-      {/* Bottom Rail Actions: Theme Toggle, PWA Install & Profile Avatar */}
+      {/* Bottom Rail Actions: PWA Install & Settings Profile Avatar */}
       <div className="flex flex-col items-center gap-3">
-        {/* Dark/Light Theme Toggle */}
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5 text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-          title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Theme`}
-        >
-          {theme === 'dark' ? (
-            <Sun className="w-4 h-4 text-amber-400" />
-          ) : (
-            <Moon className="w-4 h-4 text-indigo-600" />
-          )}
-        </button>
-
         {/* PWA Install Button */}
         {isInstallable && (
           <button
@@ -204,13 +153,21 @@ export const NavigationRail: React.FC<NavigationRailProps> = ({
           </button>
         )}
 
-        {/* User Profile Avatar with Presence Badge */}
+        {/* User Profile Avatar with Presence Badge -> Switches to Settings */}
         <div
-          onClick={onOpenProfile}
-          className="pt-2 border-t dark:border-white/10 border-slate-200 flex flex-col items-center cursor-pointer group"
-          title={`Profile Settings (${user?.displayName || 'User'})`}
+          onClick={() => onSelectTab('settings')}
+          className={`pt-2 border-t dark:border-white/10 border-slate-200 flex flex-col items-center cursor-pointer group transition-transform ${
+            activeTab === 'settings' ? 'scale-105' : ''
+          }`}
+          title={`Settings (${user?.displayName || 'User'})`}
         >
-          <div className="relative w-9 h-9 rounded-xl overflow-hidden ring-1 dark:ring-white/10 ring-slate-300 group-hover:ring-indigo-500 transition-all">
+          <div
+            className={`relative w-9 h-9 rounded-xl overflow-hidden ring-2 transition-all ${
+              activeTab === 'settings'
+                ? 'ring-indigo-500 shadow-md shadow-indigo-500/30'
+                : 'dark:ring-white/10 ring-slate-300 group-hover:ring-indigo-500'
+            }`}
+          >
             {user?.avatarUrl ? (
               <img
                 src={user.avatarUrl}

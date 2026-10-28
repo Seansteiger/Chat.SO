@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { UserProfile, UserStatus } from '@chatso/shared';
+import React, { useState, useEffect, useRef } from 'react';
+import { UserProfile, UserStatus, MAX_FILE_SIZE_BYTES } from '@chatso/shared';
 import { useAuth } from '../hooks/useAuth.js';
 import { useTheme } from '../hooks/useTheme.js';
 import { StatusTicks } from './StatusTicks.js';
+import { uploadFileDirectly } from '../services/uploader.js';
 import {
   Search,
   Settings,
@@ -28,6 +29,15 @@ import {
   ShieldCheck,
   Plus,
   X,
+  ChevronRight,
+  Camera,
+  Edit3,
+  LogOut,
+  Laptop,
+  Smartphone,
+  Trash2,
+  Eye,
+  Keyboard,
 } from 'lucide-react';
 import { convex, api as convexApi } from '../convex.js';
 import { api } from '../services/api.js';
@@ -41,8 +51,6 @@ interface SidebarProps {
   onSelectUser: (user: UserProfile) => void;
   selectedCircleId?: string | null;
   onSelectCircle?: (circleId: string | null) => void;
-  onOpenProfile: () => void;
-  onOpenSavedMessages?: () => void;
   unreadMap?: Record<string, number>;
   lastMessageMap?: Record<
     string,
@@ -51,8 +59,8 @@ interface SidebarProps {
   onOpenNotificationsPanel?: () => void;
   unreadNotificationsCount?: number;
   onStartCall?: (user: UserProfile, isVideo: boolean) => void;
-  activeTab?: 'chats' | 'circles' | 'requests' | 'calls';
-  onTabChange?: (tab: 'chats' | 'circles' | 'requests' | 'calls') => void;
+  activeTab?: 'chats' | 'circles' | 'requests' | 'calls' | 'settings';
+  onTabChange?: (tab: 'chats' | 'circles' | 'requests' | 'calls' | 'settings') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -61,8 +69,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectUser,
   selectedCircleId,
   onSelectCircle,
-  onOpenProfile,
-  onOpenSavedMessages,
   unreadMap = {},
   lastMessageMap = {},
   onOpenNotificationsPanel,
@@ -71,14 +77,92 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab: controlledActiveTab,
   onTabChange,
 }) => {
-  const { user: currentUser, updateProfile } = useAuth();
+  const { user: currentUser, updateProfile, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [internalTab, setInternalTab] = useState<'chats' | 'circles' | 'requests' | 'calls'>('chats');
+  const [internalTab, setInternalTab] = useState<'chats' | 'circles' | 'requests' | 'calls' | 'settings'>('chats');
   
   const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalTab;
-  const setActiveTab = (tab: 'chats' | 'circles' | 'requests' | 'calls') => {
+  const setActiveTab = (tab: 'chats' | 'circles' | 'requests' | 'calls' | 'settings') => {
     setInternalTab(tab);
     onTabChange?.(tab);
+  };
+
+  // Telegram Settings State
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editDisplayName, setEditDisplayName] = useState(currentUser?.displayName || '');
+  const [editBio, setEditBio] = useState(currentUser?.bio || '');
+  const [editPhone, setEditPhone] = useState(currentUser?.phoneNumber || '');
+  const [activeSessions, setActiveSessions] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (currentUser) {
+      setEditDisplayName(currentUser.displayName || '');
+      setEditBio(currentUser.bio || '');
+      setEditPhone(currentUser.phoneNumber || '');
+    }
+  }, [currentUser]);
+
+  // Watch Active Multi-Device Sessions for Settings
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    let unsub: (() => void) | null = null;
+    try {
+      const watch = (convex as any).watchQuery(convexApi.users.listActiveSessions, {
+        userId: currentUser.id as any,
+      });
+      unsub = watch.onUpdate(() => {
+        const res = watch.localQueryResult();
+        if (Array.isArray(res)) setActiveSessions(res);
+      });
+    } catch (err) {
+      console.warn('Sessions watch error:', err);
+    }
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [currentUser?.id]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      alert('Avatar image exceeds 50MB limit.');
+      return;
+    }
+    setIsUploadingAvatar(true);
+    try {
+      const res = await uploadFileDirectly(file);
+      await updateProfile({ avatarUrl: res.publicUrl });
+    } catch (err: any) {
+      alert(err.message || 'Avatar upload failed');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleSaveProfileInfo = async () => {
+    try {
+      await updateProfile({
+        displayName: editDisplayName.trim() || currentUser?.displayName,
+        bio: editBio.trim(),
+        phoneNumber: editPhone.trim() || null,
+      });
+      setIsEditingProfile(false);
+    } catch (err: any) {
+      alert(err.message || 'Failed to update profile info');
+    }
+  };
+
+  const handleRevokeSession = async (sessionId: string) => {
+    try {
+      await (convex as any).mutation(convexApi.users.revokeSession, {
+        sessionId: sessionId as any,
+      });
+    } catch (err) {
+      console.error('Failed to revoke session:', err);
+    }
   };
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -405,305 +489,104 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className="w-full md:w-80 h-full flex flex-col dark:bg-[#121215] bg-[#fbfbfa] border-r dark:border-white/[0.08] border-slate-200 shrink-0 select-none transition-colors">
-      {/* Current User Header & Social Battery Presence */}
-      <div className="p-4 border-b dark:border-white/[0.08] border-slate-200 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="relative shrink-0">
-            {currentUser?.avatarUrl ? (
-              <img
-                src={currentUser.avatarUrl}
-                alt={currentUser.displayName}
-                className="w-10 h-10 rounded-xl object-cover ring-1 dark:ring-white/10 ring-slate-200"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
-                {currentUser?.displayName?.charAt(0).toUpperCase() || 'U'}
-              </div>
-            )}
-            <span
-              className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 dark:border-[#121215] border-white ${getStatusColor(
-                (currentUser?.status as UserStatus) || 'ONLINE'
-              )}`}
-            />
-          </div>
-
-          <div className="min-w-0">
-            <h3 className="font-semibold text-sm dark:text-white text-slate-900 truncate">
-              {currentUser?.displayName}
-            </h3>
-
-            {/* Social Battery Presence Picker */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsStatusMenuOpen(!isStatusMenuOpen)}
-                className="text-xs dark:text-slate-400 text-slate-500 hover:dark:text-slate-200 hover:text-slate-800 flex items-center gap-1 transition-colors"
-              >
-                <span className="capitalize">{getStatusLabel((currentUser?.status as UserStatus) || 'ONLINE')}</span>
-                <span className="text-[10px]">▼</span>
-              </button>
-
-              {isStatusMenuOpen && (
-                <div className="absolute top-full left-0 mt-1.5 w-56 py-1 dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 rounded-xl shadow-2xl z-50 animate-in zoom-in-95">
-                  <button
-                    type="button"
-                    onClick={() => handleStatusChange('ONLINE')}
-                    className="w-full px-3 py-2 text-xs text-left dark:hover:bg-white/5 hover:bg-slate-100 flex items-center gap-2.5 dark:text-slate-200 text-slate-800"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                    <div>
-                      <div className="font-semibold">Open to Chat</div>
-                      <div className="text-[10px] dark:text-slate-400 text-slate-500">Available for text & calls</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleStatusChange('LOW_BATTERY')}
-                    className="w-full px-3 py-2 text-xs text-left dark:hover:bg-white/5 hover:bg-slate-100 flex items-center gap-2.5 dark:text-slate-200 text-slate-800"
-                  >
-                    <BatteryCharging className="w-3.5 h-3.5 text-amber-400" />
-                    <div>
-                      <div className="font-semibold text-amber-500">Low Battery (Async Only)</div>
-                      <div className="text-[10px] dark:text-slate-400 text-slate-500">Mutes calls; async messages only</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleStatusChange('DEEP_FOCUS')}
-                    className="w-full px-3 py-2 text-xs text-left dark:hover:bg-white/5 hover:bg-slate-100 flex items-center gap-2.5 dark:text-slate-200 text-slate-800"
-                  >
-                    <Moon className="w-3.5 h-3.5 text-purple-400" />
-                    <div>
-                      <div className="font-semibold text-purple-500">Deep Focus (Quiet Hours)</div>
-                      <div className="text-[10px] dark:text-slate-400 text-slate-500">Silences calls & alerts completely</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleStatusChange('BUSY')}
-                    className="w-full px-3 py-2 text-xs text-left dark:hover:bg-white/5 hover:bg-slate-100 flex items-center gap-2.5 dark:text-slate-200 text-slate-800"
-                  >
-                    <Clock className="w-3.5 h-3.5 text-rose-500" />
-                    <div>
-                      <div className="font-semibold">Busy</div>
-                      <div className="text-[10px] dark:text-slate-400 text-slate-500">In a meeting or task</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleStatusChange('OFFLINE')}
-                    className="w-full px-3 py-2 text-xs text-left dark:hover:bg-white/5 hover:bg-slate-100 flex items-center gap-2.5 dark:text-slate-200 text-slate-800"
-                  >
-                    <CircleOff className="w-3.5 h-3.5 text-slate-400" />
-                    <div>
-                      <div className="font-semibold">Invisible</div>
-                      <div className="text-[10px] dark:text-slate-400 text-slate-500">Appear offline</div>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+      {/* Clean Telegram-style Header */}
+      <div className="px-4 py-3 flex items-center justify-between border-b dark:border-white/[0.08] border-slate-200 shrink-0">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight dark:text-white text-slate-900 capitalize">
+            {activeTab === 'chats' ? 'Chats' : activeTab === 'circles' ? 'Circles' : activeTab === 'requests' ? 'Requests' : activeTab === 'calls' ? 'Calls' : 'Settings'}
+          </h1>
         </div>
 
-        {/* Quick Actions Header Bar */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Saved Messages / Vault */}
-          <button
-            type="button"
-            onClick={() => (onOpenSavedMessages ? onOpenSavedMessages() : setIsSavedMessagesOpen(true))}
-            title="Personal Vault & Bookmarks"
-            className="p-2 rounded-xl dark:bg-amber-500/10 dark:hover:bg-amber-500/20 dark:border-amber-500/20 dark:text-amber-400 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 transition-colors"
-          >
-            <Bookmark className="w-4 h-4 fill-current" />
-          </button>
-
-          {/* Notifications Panel */}
-          {onOpenNotificationsPanel && (
-            <button
-              type="button"
-              onClick={onOpenNotificationsPanel}
-              title="Notifications"
-              className="relative p-2 rounded-xl dark:hover:bg-white/5 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
-            >
-              <Bell className="w-4 h-4" />
-              {unreadNotificationsCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500" />
-              )}
-            </button>
-          )}
-
-          {/* Start New Chat */}
+        {activeTab === 'chats' && (
           <button
             type="button"
             onClick={() => setIsNewChatModalOpen(true)}
             title="Start New Chat"
-            className="p-2 rounded-xl dark:bg-indigo-600/15 dark:hover:bg-indigo-600/30 dark:border-indigo-500/30 dark:text-indigo-400 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-600 transition-all text-xs"
+            className="p-2 rounded-xl dark:bg-indigo-600/15 dark:hover:bg-indigo-600/30 dark:border-indigo-500/30 dark:text-indigo-400 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-600 transition-all text-xs flex items-center gap-1.5 shadow-xs"
           >
             <MessageSquarePlus className="w-4 h-4" />
+            <span className="font-semibold text-xs hidden sm:inline">New Chat</span>
           </button>
+        )}
 
-          {/* Dark / Light Theme Switcher */}
+        {activeTab === 'circles' && (
           <button
             type="button"
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="p-2 rounded-xl dark:hover:bg-white/5 dark:text-slate-400 dark:hover:text-amber-300 hover:bg-slate-100 text-slate-500 hover:text-indigo-600 transition-colors"
+            onClick={() => setIsCreateCircleOpen(true)}
+            title="Create Circle"
+            className="p-2 rounded-xl dark:bg-purple-600/15 dark:hover:bg-purple-600/30 dark:border-purple-500/30 dark:text-purple-400 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-600 transition-all text-xs flex items-center gap-1.5 shadow-xs"
           >
-            {theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-400" />
-            ) : (
-              <Moon className="w-4 h-4 text-indigo-600" />
-            )}
+            <Plus className="w-4 h-4" />
+            <span className="font-semibold text-xs hidden sm:inline">New Circle</span>
           </button>
-
-          {/* Profile settings */}
-          <button
-            type="button"
-            onClick={onOpenProfile}
-            title="Profile & Privacy Settings"
-            className="p-2 rounded-xl dark:hover:bg-white/5 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-        </div>
+        )}
       </div>
 
-      {/* Omnibox Search Input */}
-      <div className="p-3 border-b dark:border-white/[0.08] border-slate-200">
-        <div className="relative flex items-center">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={
-              activeTab === 'chats'
-                ? 'Search chats or find by @user, email... (⌘K)'
-                : activeTab === 'circles'
-                ? 'Search circles...'
-                : 'Search...'
-            }
-            className="w-full pl-9 pr-12 py-2 dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 rounded-xl text-xs dark:text-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm"
-          />
-          {searchQuery ? (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 text-slate-400 hover:text-slate-600 p-0.5"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          ) : (
-            <kbd className="absolute right-2.5 font-mono text-[10px] dark:bg-white/5 bg-slate-100 border dark:border-white/10 border-slate-200 dark:text-slate-400 text-slate-500 px-1.5 py-0.5 rounded pointer-events-none">
-              ⌘K
-            </kbd>
-          )}
-        </div>
-
-        {/* Segmented Filter Pills (Stitch UI Specification) */}
-        <div className="flex items-center gap-1.5 mt-2.5 pt-1 overflow-x-auto text-[11px] font-medium">
-          <button
-            type="button"
-            onClick={() => setActiveTab('chats')}
-            className={`px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all ${
-              activeTab === 'chats'
-                ? 'dark:bg-indigo-600/20 dark:text-indigo-400 dark:border-indigo-500/40 bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold shadow-sm'
-                : 'dark:text-slate-400 text-slate-600 hover:dark:bg-white/5 hover:bg-slate-100'
-            }`}
-          >
-            <span>Chats</span>
-            {totalUnreadChats > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-indigo-600 text-white text-[9px] font-bold">
-                {totalUnreadChats}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('circles')}
-            className={`px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all ${
-              activeTab === 'circles'
-                ? 'dark:bg-indigo-600/20 dark:text-indigo-400 dark:border-indigo-500/40 bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold shadow-sm'
-                : 'dark:text-slate-400 text-slate-600 hover:dark:bg-white/5 hover:bg-slate-100'
-            }`}
-          >
-            <span>Circles</span>
-            {myCircles.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full dark:bg-purple-600/30 dark:text-purple-300 bg-purple-100 text-purple-700 text-[9px]">
-                {myCircles.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('requests')}
-            className={`px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all ${
-              activeTab === 'requests'
-                ? 'dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/40 bg-amber-50 text-amber-700 border border-amber-200 font-semibold shadow-sm'
-                : 'dark:text-slate-400 text-slate-600 hover:dark:bg-white/5 hover:bg-slate-100'
-            }`}
-          >
-            <span>Requests</span>
-            {pendingRequests.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 text-[9px] font-bold">
-                {pendingRequests.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('calls')}
-            className={`px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all ${
-              activeTab === 'calls'
-                ? 'dark:bg-indigo-600/20 dark:text-indigo-400 dark:border-indigo-500/40 bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold shadow-sm'
-                : 'dark:text-slate-400 text-slate-600 hover:dark:bg-white/5 hover:bg-slate-100'
-            }`}
-          >
-            <span>Calls</span>
-          </button>
-        </div>
-
-        {/* Notification Permission Banner */}
-        {showNotifPrompt && (
-          <div className="mt-2.5 p-2.5 rounded-xl dark:bg-indigo-950/60 dark:border-indigo-500/30 bg-indigo-50 border border-indigo-200 flex items-center justify-between gap-2 text-xs dark:text-indigo-200 text-indigo-900 shadow-sm">
-            <div className="flex items-center gap-2 min-w-0">
-              <Bell className="w-4 h-4 text-indigo-500 shrink-0" />
-              <span className="truncate text-[11px] font-medium">Enable notifications for calls & messages</span>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+      {/* Omnibox Search Input (Only for Chats & Circles) */}
+      {(activeTab === 'chats' || activeTab === 'circles') && (
+        <div className="p-3 border-b dark:border-white/[0.08] border-slate-200">
+          <div className="relative flex items-center">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={
+                activeTab === 'chats'
+                  ? 'Search chats or find by @user, email... (⌘K)'
+                  : 'Search circles...'
+              }
+              className="w-full pl-9 pr-12 py-2 dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 rounded-xl text-xs dark:text-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm"
+            />
+            {searchQuery ? (
               <button
                 type="button"
-                onClick={async () => {
-                  const res = await NotificationService.requestPermission();
-                  if (res !== 'default') setShowNotifPrompt(false);
-                }}
-                className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-[11px] transition-colors shadow-sm"
-              >
-                Enable
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowNotifPrompt(false);
-                  sessionStorage.setItem('chatso_notif_banner_dismissed', '1');
-                }}
-                className="p-1 dark:text-slate-400 text-slate-500 hover:text-slate-900"
-                title="Dismiss"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 text-slate-400 hover:text-slate-600 p-0.5"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
-            </div>
+            ) : (
+              <kbd className="absolute right-2.5 font-mono text-[10px] dark:bg-white/5 bg-slate-100 border dark:border-white/10 border-slate-200 dark:text-slate-400 text-slate-500 px-1.5 py-0.5 rounded pointer-events-none">
+                ⌘K
+              </kbd>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Notification Permission Banner */}
+      {showNotifPrompt && (
+        <div className="mx-3 my-2 p-2.5 rounded-xl dark:bg-indigo-950/60 dark:border-indigo-500/30 bg-indigo-50 border border-indigo-200 flex items-center justify-between gap-2 text-xs dark:text-indigo-200 text-indigo-900 shadow-sm">
+          <div className="flex items-center gap-2 min-w-0">
+            <Bell className="w-4 h-4 text-indigo-500 shrink-0" />
+            <span className="truncate text-[11px] font-medium">Enable notifications for calls & messages</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={async () => {
+                const res = await NotificationService.requestPermission();
+                if (res !== 'default') setShowNotifPrompt(false);
+              }}
+              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-[11px] transition-colors shadow-sm"
+            >
+              Enable
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowNotifPrompt(false);
+                sessionStorage.setItem('chatso_notif_banner_dismissed', '1');
+              }}
+              className="p-1 dark:text-slate-400 text-slate-500 hover:text-slate-900"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Tab Content */}
       {activeTab === 'chats' && (
@@ -955,6 +838,412 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
+      {/* Settings Tab (Telegram-Grade Experience) */}
+      {activeTab === 'settings' && (
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3.5 select-none">
+          {/* User Profile Card */}
+          <div className="dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200/90 rounded-2xl p-4 flex flex-col items-center text-center shadow-xs relative">
+            {/* Avatar with Camera Overlay */}
+            <div className="relative group mb-2.5">
+              {currentUser?.avatarUrl ? (
+                <img
+                  src={currentUser.avatarUrl}
+                  alt={currentUser.displayName}
+                  className="w-18 h-18 rounded-2xl object-cover ring-2 dark:ring-white/20 ring-slate-300 shadow-md"
+                />
+              ) : (
+                <div className="w-18 h-18 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 flex items-center justify-center font-bold text-2xl text-white shadow-md">
+                  {currentUser?.displayName?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              )}
+
+              <input
+                type="file"
+                ref={avatarInputRef}
+                onChange={handleAvatarUpload}
+                accept="image/*"
+                className="hidden"
+              />
+
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={isUploadingAvatar}
+                title="Change Profile Photo"
+                className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-transform group-hover:scale-110 ring-2 dark:ring-[#18181b] ring-white"
+              >
+                {isUploadingAvatar ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Camera className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
+
+            {/* Display Name & Handle */}
+            {isEditingProfile ? (
+              <div className="w-full space-y-2 mt-1">
+                <input
+                  type="text"
+                  value={editDisplayName}
+                  onChange={(e) => setEditDisplayName(e.target.value)}
+                  placeholder="Display Name"
+                  className="w-full px-3 py-1.5 rounded-xl dark:bg-[#121215] bg-slate-50 border dark:border-white/15 border-slate-300 text-center text-xs font-semibold dark:text-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <input
+                  type="text"
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value)}
+                  placeholder="Bio / Quiet Intro"
+                  className="w-full px-3 py-1.5 rounded-xl dark:bg-[#121215] bg-slate-50 border dark:border-white/15 border-slate-300 text-center text-xs dark:text-slate-300 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <input
+                  type="tel"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  placeholder="Cellphone (+27...)"
+                  className="w-full px-3 py-1.5 rounded-xl dark:bg-[#121215] bg-slate-50 border dark:border-white/15 border-slate-300 text-center text-xs dark:text-slate-300 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <div className="flex items-center justify-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingProfile(false)}
+                    className="px-3 py-1 rounded-lg text-xs dark:text-slate-400 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveProfileInfo}
+                    className="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-center gap-1.5">
+                  <h2 className="text-sm font-bold dark:text-white text-slate-900">
+                    {currentUser?.displayName || 'User'}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingProfile(true)}
+                    title="Edit profile"
+                    className="p-1 rounded-md text-slate-400 hover:text-indigo-500 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-[11px] dark:text-slate-400 text-slate-500">@{currentUser?.username}</p>
+                {currentUser?.phoneNumber && (
+                  <p className="text-[11px] dark:text-slate-500 text-slate-400 mt-0.5">{currentUser.phoneNumber}</p>
+                )}
+                {currentUser?.bio && (
+                  <p className="text-xs dark:text-slate-300 text-slate-600 mt-1.5 line-clamp-2 px-2">
+                    &ldquo;{currentUser.bio}&rdquo;
+                  </p>
+                )}
+              </>
+            )}
+
+            {/* Social Battery / Status Pill Picker */}
+            <div className="relative mt-3">
+              <button
+                type="button"
+                onClick={() => setIsStatusMenuOpen(!isStatusMenuOpen)}
+                className="px-3 py-1 rounded-full text-xs font-medium dark:bg-white/5 bg-slate-100 hover:bg-slate-200 dark:hover:bg-white/10 border dark:border-white/10 border-slate-200 flex items-center gap-1.5 transition-all"
+              >
+                <span className={`w-2 h-2 rounded-full ${getStatusColor((currentUser?.status as UserStatus) || 'ONLINE')}`} />
+                <span className="capitalize dark:text-slate-200 text-slate-700">{getStatusLabel((currentUser?.status as UserStatus) || 'ONLINE')}</span>
+                <span className="text-[9px] opacity-60">▼</span>
+              </button>
+
+              {isStatusMenuOpen && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-60 py-1.5 dark:bg-[#18181b] bg-white border dark:border-white/15 border-slate-200 rounded-2xl shadow-2xl z-50 animate-in zoom-in-95 text-left divide-y dark:divide-white/5 divide-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange('ONLINE')}
+                    className="w-full px-3 py-2 text-xs hover:dark:bg-white/5 hover:bg-slate-50 flex items-center gap-2.5 dark:text-slate-200 text-slate-800"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <div>
+                      <div className="font-semibold">Open to Chat</div>
+                      <div className="text-[10px] dark:text-slate-400 text-slate-500">Available for text & calls</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange('LOW_BATTERY')}
+                    className="w-full px-3 py-2 text-xs hover:dark:bg-white/5 hover:bg-slate-50 flex items-center gap-2.5 dark:text-slate-200 text-slate-800"
+                  >
+                    <BatteryCharging className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold text-amber-500">Low Battery (Async Only)</div>
+                      <div className="text-[10px] dark:text-slate-400 text-slate-500">Mutes calls; async messages only</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange('DEEP_FOCUS')}
+                    className="w-full px-3 py-2 text-xs hover:dark:bg-white/5 hover:bg-slate-50 flex items-center gap-2.5 dark:text-slate-200 text-slate-800"
+                  >
+                    <Moon className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold text-purple-500">Deep Focus (Quiet Hours)</div>
+                      <div className="text-[10px] dark:text-slate-400 text-slate-500">Silences calls & alerts completely</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange('BUSY')}
+                    className="w-full px-3 py-2 text-xs hover:dark:bg-white/5 hover:bg-slate-50 flex items-center gap-2.5 dark:text-slate-200 text-slate-800"
+                  >
+                    <Clock className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                    <div>
+                      <div className="font-semibold">Busy</div>
+                      <div className="text-[10px] dark:text-slate-400 text-slate-500">In a meeting or task</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange('OFFLINE')}
+                    className="w-full px-3 py-2 text-xs hover:dark:bg-white/5 hover:bg-slate-50 flex items-center gap-2.5 dark:text-slate-200 text-slate-800"
+                  >
+                    <CircleOff className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold">Invisible</div>
+                      <div className="text-[10px] dark:text-slate-400 text-slate-500">Appear offline to all contacts</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Group 1: Cloud & Notifications */}
+          <div className="dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200/90 rounded-2xl overflow-hidden shadow-xs divide-y dark:divide-white/5 divide-slate-100">
+            {/* Saved Messages */}
+            <button
+              type="button"
+              onClick={handleOpenPersonalVault}
+              className="w-full p-3 flex items-center justify-between text-left dark:hover:bg-white/5 hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-blue-500 text-white flex items-center justify-center shadow-xs">
+                  <Bookmark className="w-4 h-4 fill-current" />
+                </div>
+                <div>
+                  <div className="text-xs font-semibold dark:text-white text-slate-900">Saved Messages</div>
+                  <div className="text-[10px] dark:text-slate-400 text-slate-500">Personal cloud vault & notes</div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+
+            {/* Notifications */}
+            <button
+              type="button"
+              onClick={onOpenNotificationsPanel}
+              className="w-full p-3 flex items-center justify-between text-left dark:hover:bg-white/5 hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-xs">
+                  <Bell className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-semibold dark:text-white text-slate-900">Notifications</div>
+                  <div className="text-[10px] dark:text-slate-400 text-slate-500">In-app alerts & badges</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {unreadNotificationsCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white">
+                    {unreadNotificationsCount} new
+                  </span>
+                )}
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </div>
+            </button>
+          </div>
+
+          {/* Group 2: Appearance (Telegram Night Mode) */}
+          <div className="space-y-1">
+            <p className="px-1 text-[10px] font-bold tracking-wider uppercase dark:text-slate-500 text-slate-400">
+              Appearance
+            </p>
+            <div className="dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200/90 rounded-2xl p-3 flex items-center justify-between shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                  {theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4 text-amber-300" />}
+                </div>
+                <div>
+                  <div className="text-xs font-semibold dark:text-white text-slate-900">Night Mode</div>
+                  <div className="text-[10px] dark:text-slate-400 text-slate-500">
+                    {theme === 'dark' ? 'Obsidian Dark' : 'Architect Light'}
+                  </div>
+                </div>
+              </div>
+
+              {/* iOS Switch */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label="Toggle Night Mode"
+                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out ${
+                  theme === 'dark' ? 'bg-indigo-600 justify-end' : 'bg-slate-300 justify-start'
+                }`}
+              >
+                <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+              </button>
+            </div>
+          </div>
+
+          {/* Group 3: Privacy & Introvert Boundaries */}
+          <div className="space-y-1">
+            <p className="px-1 text-[10px] font-bold tracking-wider uppercase dark:text-slate-500 text-slate-400">
+              Privacy & Permissions
+            </p>
+            <div className="dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200/90 rounded-2xl overflow-hidden shadow-xs divide-y dark:divide-white/5 divide-slate-100">
+              {/* Read Receipts */}
+              <div className="p-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                    <Eye className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold dark:text-white text-slate-900">Read Receipts</div>
+                    <div className="text-[10px] dark:text-slate-400 text-slate-500">Let contacts see when you read messages</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateProfile({ sendReadReceipts: currentUser?.sendReadReceipts === false ? true : false })}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out ${
+                    currentUser?.sendReadReceipts !== false ? 'bg-emerald-500 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
+                  }`}
+                >
+                  <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                </button>
+              </div>
+
+              {/* Typing Indicator */}
+              <div className="p-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                    <Keyboard className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold dark:text-white text-slate-900">Typing Status</div>
+                    <div className="text-[10px] dark:text-slate-400 text-slate-500">Broadcast typing status while composing</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateProfile({ sendTypingIndicators: currentUser?.sendTypingIndicators === false ? true : false })}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out ${
+                    currentUser?.sendTypingIndicators !== false ? 'bg-amber-500 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
+                  }`}
+                >
+                  <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                </button>
+              </div>
+
+              {/* Direct Calls */}
+              <div className="p-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-sky-500 text-white flex items-center justify-center shadow-xs">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold dark:text-white text-slate-900">Direct Calls</div>
+                    <div className="text-[10px] dark:text-slate-400 text-slate-500">Accept incoming voice & video calls</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateProfile({ allowCalls: currentUser?.allowCalls === false ? true : false })}
+                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out ${
+                    currentUser?.allowCalls !== false ? 'bg-sky-500 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
+                  }`}
+                >
+                  <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Group 4: Active Devices / Sessions */}
+          <div className="space-y-1">
+            <p className="px-1 text-[10px] font-bold tracking-wider uppercase dark:text-slate-500 text-slate-400">
+              Active Devices ({activeSessions.length || 1})
+            </p>
+            <div className="dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200/90 rounded-2xl p-3 shadow-xs space-y-2">
+              {activeSessions.length === 0 ? (
+                <div className="flex items-center gap-2.5 text-xs">
+                  <Laptop className="w-4 h-4 text-purple-500" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold dark:text-white text-slate-900">Current Web Session</p>
+                    <p className="text-[10px] dark:text-slate-400 text-slate-500">Active now</p>
+                  </div>
+                </div>
+              ) : (
+                activeSessions.map((session) => (
+                  <div key={session._id} className="flex items-center justify-between text-xs py-1 border-b dark:border-white/5 border-slate-100 last:border-0">
+                    <div className="flex items-center gap-2.5">
+                      {session.deviceName?.toLowerCase().includes('mobile') ? (
+                        <Smartphone className="w-4 h-4 text-purple-500" />
+                      ) : (
+                        <Laptop className="w-4 h-4 text-purple-500" />
+                      )}
+                      <div>
+                        <p className="font-semibold dark:text-white text-slate-900">{session.deviceName || 'Web Device'}</p>
+                        <p className="text-[10px] dark:text-slate-400 text-slate-500">
+                          {new Date(session.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRevokeSession(session._id)}
+                      title="Log out device"
+                      className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Group 5: Account & Sign Out */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={logout}
+              className="w-full p-3 rounded-2xl dark:bg-rose-500/10 bg-rose-50 hover:bg-rose-100 dark:hover:bg-rose-500/15 border dark:border-rose-500/20 border-rose-200 flex items-center justify-between transition-colors shadow-xs"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-xs">
+                  <LogOut className="w-4 h-4" />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-bold text-rose-600 dark:text-rose-400">Log Out</div>
+                  <div className="text-[10px] dark:text-slate-400 text-slate-500">Sign out of Chat.SO on this device</div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-rose-400" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Floating Glassy Bottom Navigation Dock for Mobile/Compact screens */}
       <div className="lg:hidden shrink-0 p-3 pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] bg-gradient-to-t dark:from-[#09090b] dark:via-[#09090b]/80 from-[#fbfbfa] via-[#fbfbfa]/90 to-transparent z-20 select-none">
         <nav className="flex items-center justify-around px-1.5 py-1.5 rounded-2xl dark:bg-[#121215]/85 dark:border-white/10 dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] bg-white/95 border-slate-200/90 shadow-xl backdrop-blur-2xl border ring-1 dark:ring-white/5 ring-black/5">
@@ -1048,13 +1337,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Settings Tab */}
           <button
             type="button"
-            onClick={onOpenProfile}
-            className="flex-1 py-1 px-1 rounded-xl flex flex-col items-center justify-center relative dark:text-slate-400 text-slate-600 hover:dark:bg-white/5 hover:bg-slate-100 border border-transparent transition-all duration-200 group"
+            onClick={() => setActiveTab('settings')}
+            className={`flex-1 py-1 px-1 rounded-xl flex flex-col items-center justify-center relative transition-all duration-200 group ${
+              activeTab === 'settings'
+                ? 'dark:bg-indigo-600/20 dark:text-indigo-400 bg-indigo-50 text-indigo-700 border dark:border-indigo-500/30 border-indigo-200'
+                : 'dark:text-slate-400 text-slate-600 hover:dark:bg-white/5 hover:bg-slate-100 border border-transparent'
+            }`}
           >
             <div className="relative p-0.5">
               <Settings className="w-5 h-5 transition-transform group-active:scale-90" />
             </div>
-            <span className="text-[10px] font-medium tracking-tight mt-0.5">
+            <span className={`text-[10px] tracking-tight mt-0.5 ${activeTab === 'settings' ? 'font-bold' : 'font-medium'}`}>
               Settings
             </span>
           </button>

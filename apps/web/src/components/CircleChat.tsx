@@ -22,10 +22,7 @@ import {
   Search,
   UserPlus,
   Headphones,
-  Sun,
-  Moon,
 } from 'lucide-react';
-import { useTheme } from '../hooks/useTheme.js';
 import { MarkdownText } from './MarkdownText.js';
 import { VoiceNotePlayer } from './VoiceNotePlayer.js';
 import { PollCard } from './PollCard.js';
@@ -39,7 +36,6 @@ interface CircleChatProps {
 
 export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
   const { user: currentUser } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const [circle, setCircle] = useState<any | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
@@ -469,20 +465,6 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
           >
             <BarChart3 className="w-4 h-4 text-blue-500" />
             <span className="hidden sm:inline">Poll</span>
-          </button>
-
-          {/* Dark / Light Theme Switcher */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="p-2.5 rounded-xl dark:hover:bg-white/5 dark:border-white/10 dark:text-slate-300 dark:hover:text-amber-300 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-indigo-600 transition-all text-xs flex items-center justify-center"
-          >
-            {theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-400" />
-            ) : (
-              <Moon className="w-4 h-4 text-indigo-600" />
-            )}
           </button>
         </div>
       </div>
