@@ -360,6 +360,16 @@ export const api = {
     });
   },
 
+  markMessagesDelivered: async (userId: string) => {
+    try {
+      await convex.mutation(convexApi.messages.markMessagesDelivered, {
+        userId: userId as any,
+      });
+    } catch (err) {
+      console.warn('[API] markMessagesDelivered failed:', err);
+    }
+  },
+
   signUploadUrl: async (data: SignUploadUrlInput): Promise<SignUploadUrlResponse> => {
     const uploadUrl = await convex.mutation(convexApi.files.generateUploadUrl, {
       fileSize: data.fileSize,

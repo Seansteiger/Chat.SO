@@ -322,8 +322,13 @@ export const AppContent: React.FC = () => {
       const st = currentUserStatusRef.current;
       if (document.visibilityState === 'visible' && uid) {
         api.heartbeat(st as any, uid);
+        api.markMessagesDelivered(uid);
       }
     };
+
+    if (currentUser?.id) {
+      api.markMessagesDelivered(currentUser.id);
+    }
 
     window.addEventListener('beforeunload', handleClose);
     window.addEventListener('pagehide', handleClose);
@@ -385,6 +390,9 @@ export const AppContent: React.FC = () => {
 
     const loadHistory = async () => {
       try {
+        if (currentUser?.id) {
+          api.markMessagesDelivered(currentUser.id);
+        }
         const res = await api.getMessages(selectedUser.id);
         setActiveConvInfo({
           conversationId: res.conversationId,
@@ -403,18 +411,34 @@ export const AppContent: React.FC = () => {
           unsubWatch = watch.onUpdate(() => {
             const currentMsgs = watch.localQueryResult();
             if (Array.isArray(currentMsgs)) {
-              setMessages(currentMsgs.map(formatConvexMessage));
+              const formatted = currentMsgs.map(formatConvexMessage);
+              setMessages((prev) => {
+                const pendingOptimistic = prev.filter(
+                  (m) =>
+                    m.clientMessageId &&
+                    !formatted.some(
+                      (f) =>
+                        (f.clientMessageId && f.clientMessageId === m.clientMessageId) ||
+                        f.id === m.id
+                    )
+                );
+                return [...formatted, ...pendingOptimistic];
+              });
+              if (currentUser?.sendReadReceipts !== false && currentUser?.id) {
+                (convex as any).mutation(convexApi.messages.markAsRead, {
+                  conversationId: res.conversationId,
+                  currentUserId: currentUser.id,
+                }).catch(() => {});
+              }
             }
           });
         }
 
-        if (socket && res.messages.length > 0 && currentUser?.sendReadReceipts !== false) {
-          const lastMsg = res.messages[res.messages.length - 1];
-          socket.emit(SOCKET_EVENTS.CHAT_READ, {
-            peerId: selectedUser.id,
+        if (res.conversationId && currentUser?.id && currentUser?.sendReadReceipts !== false) {
+          (convex as any).mutation(convexApi.messages.markAsRead, {
             conversationId: res.conversationId,
-            lastReadMessageId: lastMsg.id,
-          });
+            currentUserId: currentUser.id,
+          }).catch(() => {});
         }
       } catch (err) {
         console.error('[App] Failed to load messages:', err);
@@ -587,7 +611,12 @@ export const AppContent: React.FC = () => {
       createdAt: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, optimisticMessage]);
+    setMessages((prev) => {
+      if (prev.some((m) => m.clientMessageId === clientMessageId || m.id === clientMessageId)) {
+        return prev;
+      }
+      return [...prev, optimisticMessage];
+    });
 
     // Send via Convex backend directly for instant multi-device sync
     let targetConvId = activeConvInfo.conversationId;
@@ -611,7 +640,7 @@ export const AppContent: React.FC = () => {
 
     if (targetConvId) {
       try {
-        await api.sendMessage({
+        const sent: any = await api.sendMessage({
           conversationId: targetConvId,
           senderId: currentUser.id,
           clientMessageId,
@@ -625,26 +654,18 @@ export const AppContent: React.FC = () => {
           voiceDuration: params.voiceDuration,
           pollId: params.pollId,
         });
+        if (sent) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.clientMessageId === clientMessageId || m.id === clientMessageId
+                ? { ...m, id: sent._id || m.id, status: sent.status || m.status }
+                : m
+            )
+          );
+        }
       } catch (err) {
         console.error('Failed to send via Convex:', err);
       }
-    }
-
-    // Socket.IO emission fallback
-    if (socket && selectedUser.id !== currentUser.id) {
-      socket.emit(SOCKET_EVENTS.CHAT_SEND, {
-        clientMessageId,
-        recipientId: selectedUser.id,
-        content: params.content,
-        attachmentUrl: params.attachmentUrl,
-        attachmentName: params.attachmentName,
-        attachmentSize: params.attachmentSize,
-        attachmentMime: params.attachmentMime,
-        replyToId: params.replyToId,
-        isSilent: params.isSilent,
-        voiceDuration: params.voiceDuration,
-        pollId: params.pollId,
-      });
     }
   };
 

@@ -49,12 +49,12 @@ export const getOrCreateConversation = mutation({
 
     if (conv2) return conv2;
 
-    // Create new conversation with PENDING handshake status
+    // Create new conversation with ACCEPTED status for immediate direct messaging
     const convId = await ctx.db.insert("conversations", {
       participant1: args.userId1,
       participant2: args.userId2,
       initiatorId: args.userId1,
-      status: "PENDING",
+      status: "ACCEPTED",
       lastMessageAt: Date.now(),
     });
 
@@ -170,9 +170,38 @@ export const sendMessage = mutation({
     pollId: v.optional(v.id("polls")),
   },
   handler: async (ctx, args) => {
-    // Strict 50MB check if attachment is provided
+    // 1. Strict 50MB check if attachment is provided
     if (args.attachmentSize && args.attachmentSize > 52428800) {
       throw new Error("File attachment exceeds the strict 50MB limit");
+    }
+
+    // 2. Strict deduplication: if message with this clientMessageId already exists, return existing record
+    if (args.clientMessageId) {
+      const existing = await ctx.db
+        .query("messages")
+        .withIndex("by_client_id", (q) => q.eq("clientMessageId", args.clientMessageId))
+        .first();
+
+      if (existing) {
+        return existing;
+      }
+    }
+
+    // 3. Determine real delivery status:
+    // If recipient is active (online within 60s), status = "DELIVERED"; otherwise "SENT"
+    const conv = await ctx.db.get(args.conversationId);
+    let initialStatus: "SENT" | "DELIVERED" = "SENT";
+    if (conv) {
+      const recipientId = conv.participant1 === args.senderId ? conv.participant2 : conv.participant1;
+      if (recipientId === args.senderId) {
+        // Self-vault
+        initialStatus = "DELIVERED";
+      } else {
+        const recipient = await ctx.db.get(recipientId);
+        const now = Date.now();
+        const isOnline = recipient && recipient.status !== "OFFLINE" && (now - (recipient.lastSeenAt || 0) <= 60000);
+        initialStatus = isOnline ? "DELIVERED" : "SENT";
+      }
     }
 
     const messageId = await ctx.db.insert("messages", {
@@ -188,7 +217,7 @@ export const sendMessage = mutation({
       isSilent: args.isSilent || false,
       voiceDuration: args.voiceDuration,
       pollId: args.pollId,
-      status: "DELIVERED",
+      status: initialStatus,
       createdAt: Date.now(),
     });
 
@@ -599,7 +628,15 @@ export const getUserChatSummaries = query({
       .withIndex("by_p2", (q) => q.eq("participant2", args.userId!))
       .collect();
 
-    const allConvs = [...p1, ...p2];
+    // Deduplicate conversations (e.g. self-vault where participant1 == participant2 == userId)
+    const seenConvIds = new Set<string>();
+    const allConvs = [];
+    for (const c of [...p1, ...p2]) {
+      if (!seenConvIds.has(c._id)) {
+        seenConvIds.add(c._id);
+        allConvs.push(c);
+      }
+    }
     if (allConvs.length === 0) return [];
 
     allConvs.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
@@ -816,5 +853,53 @@ export const getMessagesForUserConversations = query({
     }
 
     return messages.sort((a, b) => a.createdAt - b.createdAt);
+  },
+});
+
+export const markMessagesDelivered = mutation({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // When recipient opens app or comes online, update any pending "SENT" messages to "DELIVERED"
+    const p1 = await ctx.db
+      .query("conversations")
+      .withIndex("by_p1", (q) => q.eq("participant1", args.userId))
+      .collect();
+
+    const p2 = await ctx.db
+      .query("conversations")
+      .withIndex("by_p2", (q) => q.eq("participant2", args.userId))
+      .collect();
+
+    const seenConvIds = new Set<string>();
+    const convIds: any[] = [];
+    for (const c of [...p1, ...p2]) {
+      if (!seenConvIds.has(c._id)) {
+        seenConvIds.add(c._id);
+        convIds.push(c._id);
+      }
+    }
+
+    let updatedCount = 0;
+    for (const cid of convIds) {
+      const pendingMsgs = await ctx.db
+        .query("messages")
+        .withIndex("by_conversation", (q) => q.eq("conversationId", cid))
+        .filter((q) =>
+          q.and(
+            q.neq(q.field("senderId"), args.userId),
+            q.eq(q.field("status"), "SENT")
+          )
+        )
+        .collect();
+
+      for (const m of pendingMsgs) {
+        await ctx.db.patch(m._id, { status: "DELIVERED" });
+        updatedCount++;
+      }
+    }
+
+    return { updatedCount };
   },
 });

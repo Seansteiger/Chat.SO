@@ -63,51 +63,8 @@ export class ConvexSocketBridge {
 
     switch (event) {
       case SOCKET_EVENTS.CHAT_SEND: {
-        const targetUserId = payload.recipientId || payload.peerId;
-        const { content, clientMessageId, attachmentUrl, attachmentName, attachmentSize, attachmentMime } = payload;
-
-        if (!targetUserId) {
-          console.error('[ConvexSocket] CHAT_SEND missing target user id in payload:', payload);
-          if (ack) ack({ success: false, error: 'Recipient ID is required' });
-          return;
-        }
-
-        const conv: any = await convex.mutation(convexApi.messages.getOrCreateConversation, {
-          userId1: this.currentUserId as any,
-          userId2: targetUserId as any,
-        });
-
-        if (!conv) {
-          if (ack) ack({ success: false, error: 'Failed to create conversation' });
-          return;
-        }
-
-        const msg: any = await convex.mutation(convexApi.messages.sendMessage, {
-          conversationId: conv._id,
-          senderId: this.currentUserId as any,
-          clientMessageId: clientMessageId || crypto.randomUUID(),
-          content: content || '',
-          attachmentUrl,
-          attachmentName,
-          attachmentSize,
-          attachmentMime,
-        });
-
-        const dto: MessageDto = {
-          id: msg._id,
-          conversationId: msg.conversationId,
-          senderId: msg.senderId,
-          clientMessageId: msg.clientMessageId,
-          content: msg.content,
-          attachmentUrl: msg.attachmentUrl,
-          attachmentName: msg.attachmentName,
-          attachmentSize: msg.attachmentSize,
-          attachmentMime: msg.attachmentMime,
-          status: msg.status,
-          createdAt: new Date(msg.createdAt).toISOString(),
-        };
-
-        if (ack) ack({ success: true, message: dto });
+        // Message sending is handled via api.sendMessage to prevent dual-mutation duplication
+        if (ack) ack({ success: true });
         break;
       }
 

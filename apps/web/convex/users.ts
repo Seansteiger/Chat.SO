@@ -271,16 +271,11 @@ export const listContactedUsers = query({
 
     const users = [];
     for (const id of contactedUserIds) {
+      if (args.currentUserId && id === args.currentUserId) continue;
       const u = await ctx.db.get(id);
       if (u) {
-        const conv = convMap.get(id);
         const resolved = resolveUserPresence(u);
-        if (conv && conv.status === "PENDING" && conv.initiatorId === args.currentUserId) {
-          // Handshake gatekeeper: hide presence until approved
-          users.push({ ...resolved, status: "OFFLINE" });
-        } else {
-          users.push(resolved);
-        }
+        users.push(resolved);
       }
     }
 
@@ -366,28 +361,7 @@ export const searchUsers = query({
       }
 
       if (matched) {
-        let userResult = user;
-        if (args.currentUserId) {
-          const conv1 = await ctx.db
-            .query("conversations")
-            .withIndex("by_participants", (q) =>
-              q.eq("participant1", args.currentUserId!).eq("participant2", user._id)
-            )
-            .first();
-          const conv2 = !conv1
-            ? await ctx.db
-                .query("conversations")
-                .withIndex("by_participants", (q) =>
-                  q.eq("participant1", user._id).eq("participant2", args.currentUserId!)
-                )
-                .first()
-            : null;
-          const conv = conv1 || conv2;
-          if (!conv || (conv.status === "PENDING" && conv.initiatorId === args.currentUserId)) {
-            userResult = { ...user, status: "OFFLINE" };
-          }
-        }
-        matches.push({ user: userResult, score });
+        matches.push({ user, score });
       }
     }
 
