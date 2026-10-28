@@ -18,9 +18,10 @@ import {
   EyeOff,
   Keyboard,
   PhoneOff,
-  Sun,
-  Moon,
+  Smile,
 } from 'lucide-react';
+import { useEmojiSet } from '../hooks/useEmojiSet.js';
+import { Emoji } from './Emoji.js';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -29,7 +30,7 @@ interface ProfileModalProps {
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const { user, updateProfile, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, themesList, themeMeta } = useTheme();
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
   const [bio, setBio] = useState(user?.bio || '');
@@ -43,6 +44,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
   // Active sessions
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
+
+  // Emoji preferences
+  const { setId, currentSet, changeSet, availableSets } = useEmojiSet();
 
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -161,37 +165,40 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
           )}
 
           <form onSubmit={handleSave} className="space-y-4">
-            {/* Visual Appearance & Theme Selection */}
+            {/* Visual Appearance & Theme Selection (All 10 Visual Themes) */}
             <div>
-              <label className="block text-xs font-medium dark:text-slate-300 text-slate-700 mb-1.5">
-                Visual Experience
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => theme !== 'dark' && toggleTheme()}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all ${
-                    theme === 'dark'
-                      ? 'bg-blue-600/20 border-blue-500/50 text-blue-400 shadow-sm'
-                      : 'dark:bg-slate-900/50 bg-slate-100 dark:border-white/10 border-slate-200 dark:text-slate-400 text-slate-600 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Moon className="w-4 h-4 text-blue-400" />
-                  <span>Obsidian Dark</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => theme !== 'light' && toggleTheme()}
-                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all ${
-                    theme === 'light'
-                      ? 'bg-amber-500/20 border-amber-500/50 text-amber-700 dark:text-amber-400 shadow-sm'
-                      : 'dark:bg-slate-900/50 bg-slate-100 dark:border-white/10 border-slate-200 dark:text-slate-400 text-slate-600 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Sun className="w-4 h-4 text-amber-500" />
-                  <span>Architect Light</span>
-                </button>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-medium dark:text-slate-300 text-slate-700">
+                  Visual Theme ({themeMeta.number}. {themeMeta.name})
+                </label>
+                <span className="text-[10px] text-indigo-500 font-semibold font-mono">
+                  {themeMeta.isDark ? 'Dark Mode' : 'Light Mode'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1">
+                {themesList.map((t) => {
+                  const isActive = theme === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTheme(t.id)}
+                      className={`flex items-center gap-2 p-2 rounded-xl border text-xs font-semibold transition-all text-left ${
+                        isActive
+                          ? 'ring-2 ring-indigo-500 border-indigo-500 bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 shadow-sm'
+                          : 'dark:bg-slate-900/40 bg-slate-100 dark:border-white/10 border-slate-200 dark:text-slate-400 text-slate-600 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <span
+                        className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs ring-1 ring-black/10"
+                        style={{ background: t.previewAccent }}
+                      />
+                      <span className="truncate text-[11px] font-medium">
+                        {t.number}. {t.name.replace(/^\d+\.\s*/, '')}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -350,6 +357,71 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                   className="w-4 h-4 rounded accent-blue-500 cursor-pointer"
                 />
               </label>
+            </div>
+
+            {/* Emoji & Reaction Set Selection */}
+            <div className="p-3.5 rounded-xl dark:bg-slate-900/70 bg-slate-50 border dark:border-white/10 border-slate-200 space-y-3">
+              <div className="flex items-center justify-between text-xs font-semibold dark:text-white text-slate-900">
+                <div className="flex items-center gap-2">
+                  <Smile className="w-4 h-4 text-amber-500" />
+                  <span>Emoji & Reaction Artwork</span>
+                </div>
+                <span className="text-[10px] font-medium text-slate-400">
+                  {currentSet.badge}
+                </span>
+              </div>
+              <p className="text-[11px] dark:text-slate-400 text-slate-500">
+                Choose the design style for in-chat message reactions and floating quick bars.
+              </p>
+
+              <div className="space-y-2">
+                {availableSets.map((s) => {
+                  const isSelected = setId === s.id;
+                  return (
+                    <div
+                      key={s.id}
+                      onClick={() => changeSet(s.id)}
+                      className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-blue-500/80 bg-blue-500/10 shadow-sm ring-1 ring-blue-500/30'
+                          : 'dark:border-white/5 border-slate-200/80 hover:border-slate-300 dark:hover:border-white/15 dark:bg-black/20 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold dark:text-white text-slate-900">
+                            {s.name}
+                          </span>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                            isSelected
+                              ? 'bg-blue-500/20 text-blue-300 font-semibold'
+                              : 'bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400'
+                          }`}>
+                            {s.badge}
+                          </span>
+                        </div>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-blue-500" />}
+                      </div>
+
+                      <p className="text-[10px] dark:text-slate-400 text-slate-500 mb-2">
+                        {s.description}
+                      </p>
+
+                      {/* Emojis Preview Row */}
+                      <div className="flex items-center gap-1.5 overflow-x-auto py-1 px-1 rounded-lg bg-black/10 dark:bg-black/30">
+                        {s.emojis.map((emoji) => (
+                          <div
+                            key={emoji}
+                            className="p-1 rounded-md hover:bg-white/10 transition-transform hover:scale-125 shrink-0"
+                          >
+                            <Emoji emoji={emoji} setId={s.id} className="w-4 h-4" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Multi-Device Sessions Manager */}

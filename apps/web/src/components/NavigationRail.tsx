@@ -31,7 +31,7 @@ export const NavigationRail: React.FC<NavigationRailProps> = ({
   const { isInstallable, promptInstall } = usePWAInstall();
 
   return (
-    <aside className="hidden lg:flex w-16 h-full flex-col justify-between items-center py-4 z-40 shrink-0 select-none transition-colors border-r dark:bg-[#09090b] dark:border-white/[0.08] bg-[#f4f4f6] border-slate-200">
+    <aside className="chatso-nav-rail hidden lg:flex w-16 h-full flex-col justify-between items-center py-4 z-40 shrink-0 select-none transition-colors border-r dark:bg-[#09090b] dark:border-white/[0.08] bg-[#f4f4f6] border-slate-200">
       {/* Top Brand Logo & Quick Action */}
       <div className="flex flex-col items-center gap-4">
         {/* Glowing Hexagon Logo */}

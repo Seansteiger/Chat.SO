@@ -138,3 +138,794 @@
   backdrop-filter: blur(12px);
   border: 1px solid #e2e8f0;
 }
+
+/* ==========================================================================
+   THEME STUDIO: 10 ICONIC DESIGN SYSTEM THEMES
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   01. DULL & MINIMALIST (minimalist)
+   -------------------------------------------------------------------------- */
+[data-theme="minimalist"] {
+  --bg-canvas: #ebebeb;
+  --bg-surface: #e5e5e5;
+  --bg-surface-elevated: #dfdfdf;
+  --border-subtle: #d4d4d2;
+  --text-primary: #1c1917;
+  --text-secondary: #44403c;
+  --text-muted: #78716c;
+}
+
+[data-theme="minimalist"] .chatso-app-root,
+[data-theme="minimalist"] .chatso-main-chat {
+  background-color: #ebebeb !important;
+}
+
+[data-theme="minimalist"] .chatso-sidebar,
+[data-theme="minimalist"] .chatso-header,
+[data-theme="minimalist"] .chatso-nav-rail {
+  background-color: #e5e5e5 !important;
+  border-color: #d4d4d2 !important;
+}
+
+[data-theme="minimalist"] .chatso-search-input {
+  background-color: #dedede !important;
+  border-color: #d0d0d0 !important;
+  color: #1c1917 !important;
+}
+
+[data-theme="minimalist"] .chatso-vault-card {
+  background-color: #dfdfdf !important;
+  border-color: #d4d4d2 !important;
+}
+
+[data-theme="minimalist"] .chatso-contact-item {
+  border-radius: 14px;
+}
+[data-theme="minimalist"] .chatso-contact-item:hover {
+  background-color: #dfdfdf !important;
+}
+
+[data-theme="minimalist"] .chatso-bubble-sent {
+  background-color: #262626 !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06) !important;
+}
+
+[data-theme="minimalist"] .chatso-bubble-received {
+  background-color: #dfdfdf !important;
+  color: #1c1917 !important;
+  border: 1px solid #d4d4d2 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="minimalist"] .chatso-input-dock {
+  background-color: #e5e5e5 !important;
+  border-color: #d4d4d2 !important;
+}
+
+[data-theme="minimalist"] .chatso-bottom-nav {
+  background-color: #e5e5e5 !important;
+  border-color: #d4d4d2 !important;
+}
+
+/* --------------------------------------------------------------------------
+   02. MONOCHROMATIC DARK (monochrome-dark)
+   -------------------------------------------------------------------------- */
+[data-theme="monochrome-dark"] {
+  --bg-canvas: #09090b;
+  --bg-surface: #121215;
+  --bg-surface-elevated: #18181b;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --text-primary: #fafafa;
+  --text-secondary: #e4e4e7;
+  --text-muted: #a1a1aa;
+}
+
+[data-theme="monochrome-dark"] .chatso-app-root,
+[data-theme="monochrome-dark"] .chatso-main-chat {
+  background-color: #09090b !important;
+}
+
+[data-theme="monochrome-dark"] .chatso-sidebar,
+[data-theme="monochrome-dark"] .chatso-nav-rail {
+  background-color: #121215 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="monochrome-dark"] .chatso-bubble-sent {
+  background-color: #27272a !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #fafafa !important;
+}
+
+[data-theme="monochrome-dark"] .chatso-bubble-received {
+  background-color: #18181b !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #fafafa !important;
+}
+
+/* --------------------------------------------------------------------------
+   03. EARTHY & NATURAL (earthy)
+   -------------------------------------------------------------------------- */
+[data-theme="earthy"] {
+  --bg-canvas: #c7d2c3;
+  --bg-surface: #dce3d8;
+  --bg-surface-elevated: #f4f0e8;
+  --border-subtle: #b8c4b4;
+  --text-primary: #283324;
+  --text-secondary: #3d4a39;
+  --text-muted: #647060;
+  --accent-indigo: #4a5848;
+}
+
+[data-theme="earthy"] .chatso-app-root,
+[data-theme="earthy"] .chatso-main-chat {
+  background-color: #c7d2c3 !important;
+  background-image: 
+    radial-gradient(#b2c0ae 1px, transparent 1px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120' opacity='0.08'%3E%3Cpath d='M60 20 Q75 40 90 60 Q75 80 60 100 Q45 80 30 60 Q45 40 60 20 Z' fill='%23283324'/%3E%3Cpath d='M20 50 Q40 65 60 50 Q40 35 20 50 Z' fill='%23283324'/%3E%3C/svg%3E") !important;
+  background-repeat: repeat, repeat;
+  background-position: 0 0, 0 0;
+}
+
+[data-theme="earthy"] .chatso-sidebar,
+[data-theme="earthy"] .chatso-header,
+[data-theme="earthy"] .chatso-nav-rail {
+  background-color: #dce3d8 !important;
+  border-color: #b8c4b4 !important;
+  color: #283324 !important;
+}
+
+[data-theme="earthy"] .chatso-search-input {
+  background-color: #f4f0e8 !important;
+  border-color: #b8c4b4 !important;
+  color: #283324 !important;
+}
+
+[data-theme="earthy"] .chatso-vault-card {
+  background-color: #f4f0e8 !important;
+  border-color: #d2c8b8 !important;
+}
+
+[data-theme="earthy"] .chatso-vault-card > div:first-child {
+  background: #ea7317 !important;
+}
+
+[data-theme="earthy"] .chatso-contact-item {
+  border-color: transparent !important;
+}
+[data-theme="earthy"] .chatso-contact-item:hover {
+  background-color: #f4f0e8 !important;
+}
+
+[data-theme="earthy"] .chatso-bubble-sent {
+  background-color: #4a5848 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(74, 88, 72, 0.25) !important;
+}
+
+[data-theme="earthy"] .chatso-bubble-received {
+  background-color: #f4f0e8 !important;
+  color: #283324 !important;
+  border: 1px solid #b8c4b4 !important;
+}
+
+[data-theme="earthy"] .chatso-input-dock {
+  background-color: #dce3d8 !important;
+  border-color: #b8c4b4 !important;
+}
+
+[data-theme="earthy"] .chatso-bottom-nav {
+  background-color: #dce3d8 !important;
+  border-color: #b8c4b4 !important;
+}
+
+/* --------------------------------------------------------------------------
+   04. GLASSMORPHISM (glassmorphism)
+   -------------------------------------------------------------------------- */
+[data-theme="glassmorphism"] {
+  --bg-canvas: #0f172a;
+  --bg-surface: rgba(15, 23, 42, 0.55);
+  --bg-surface-elevated: rgba(255, 255, 255, 0.12);
+  --border-subtle: rgba(255, 255, 255, 0.2);
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --accent-indigo: #818cf8;
+}
+
+[data-theme="glassmorphism"] .chatso-app-root,
+[data-theme="glassmorphism"] .chatso-main-chat {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 25%, #4338ca 45%, #ec4899 70%, #3b82f6 90%, #0f172a 100%) fixed !important;
+  background-size: cover !important;
+}
+
+[data-theme="glassmorphism"] .chatso-sidebar,
+[data-theme="glassmorphism"] .chatso-nav-rail {
+  background: rgba(15, 23, 42, 0.6) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+[data-theme="glassmorphism"] .chatso-header {
+  background: rgba(15, 23, 42, 0.5) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+[data-theme="glassmorphism"] .chatso-search-input {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+[data-theme="glassmorphism"] .chatso-vault-card {
+  background: rgba(255, 255, 255, 0.14) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="glassmorphism"] .chatso-contact-item {
+  backdrop-filter: blur(12px) !important;
+}
+[data-theme="glassmorphism"] .chatso-contact-item:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="glassmorphism"] .chatso-bubble-sent {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.85), rgba(168, 85, 247, 0.85)) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35) !important;
+}
+
+[data-theme="glassmorphism"] .chatso-bubble-received {
+  background: rgba(255, 255, 255, 0.14) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="glassmorphism"] .chatso-input-dock {
+  background: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="glassmorphism"] .chatso-bottom-nav {
+  background: rgba(15, 23, 42, 0.7) !important;
+  backdrop-filter: blur(28px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+}
+
+/* --------------------------------------------------------------------------
+   05. CYBERPUNK NEON (cyberpunk)
+   -------------------------------------------------------------------------- */
+[data-theme="cyberpunk"] {
+  --bg-canvas: #050713;
+  --bg-surface: #080c1e;
+  --bg-surface-elevated: #0d132b;
+  --border-subtle: #00f0ff;
+  --text-primary: #f0f9ff;
+  --text-secondary: #bae6fd;
+  --text-muted: #7dd3fc;
+  --accent-indigo: #00f0ff;
+}
+
+[data-theme="cyberpunk"] .chatso-app-root,
+[data-theme="cyberpunk"] .chatso-main-chat {
+  background-color: #050713 !important;
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 0, 127, 0.05) 1px, transparent 1px) !important;
+  background-size: 30px 30px !important;
+}
+
+[data-theme="cyberpunk"] .chatso-sidebar,
+[data-theme="cyberpunk"] .chatso-nav-rail {
+  background-color: #080c1e !important;
+  border-color: rgba(0, 240, 255, 0.25) !important;
+}
+
+[data-theme="cyberpunk"] .chatso-header {
+  background-color: #080c1e !important;
+  border-bottom: 1px solid #00f0ff !important;
+  box-shadow: 0 2px 14px rgba(0, 240, 255, 0.2) !important;
+}
+
+[data-theme="cyberpunk"] .chatso-search-input {
+  background-color: #0d132b !important;
+  border: 1px solid rgba(0, 240, 255, 0.6) !important;
+  color: #f0f9ff !important;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2) !important;
+}
+
+[data-theme="cyberpunk"] .chatso-vault-card {
+  background-color: #0d132b !important;
+  border: 1px solid #ff007f !important;
+  box-shadow: 0 0 12px rgba(255, 0, 127, 0.35) !important;
+}
+
+[data-theme="cyberpunk"] .chatso-vault-card > div:first-child {
+  background: #ff007f !important;
+  box-shadow: 0 0 10px rgba(255, 0, 127, 0.6) !important;
+}
+
+[data-theme="cyberpunk"] .chatso-contact-item {
+  border-radius: 10px;
+}
+[data-theme="cyberpunk"] .chatso-contact-item:hover {
+  background-color: #0d132b !important;
+  border: 1px solid rgba(0, 240, 255, 0.4) !important;
+}
+
+[data-theme="cyberpunk"] .chatso-bubble-sent {
+  background-color: #ff007f !important;
+  color: #ffffff !important;
+  border: 1px solid #ff66b2 !important;
+  box-shadow: 0 0 16px rgba(255, 0, 127, 0.5) !important;
+}
+
+[data-theme="cyberpunk"] .chatso-bubble-received {
+  background-color: #0d132b !important;
+  color: #e0f2fe !important;
+  border: 1px solid #00f0ff !important;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.3) !important;
+}
+
+[data-theme="cyberpunk"] .chatso-input-dock {
+  background-color: #080c1e !important;
+  border: 1px solid #00f0ff !important;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.25) !important;
+}
+
+[data-theme="cyberpunk"] .chatso-bottom-nav {
+  background-color: #050713 !important;
+  border: 1px solid #ff007f !important;
+  box-shadow: 0 0 14px rgba(255, 0, 127, 0.3) !important;
+}
+
+/* --------------------------------------------------------------------------
+   06. RETRO 90s PIXEL (retro-pixel)
+   -------------------------------------------------------------------------- */
+[data-theme="retro-pixel"] {
+  --bg-canvas: #c0c0c0;
+  --bg-surface: #c0c0c0;
+  --bg-surface-elevated: #dfdfdf;
+  --border-subtle: #808080;
+  --text-primary: #000000;
+  --text-secondary: #222222;
+  --text-muted: #555555;
+  --accent-indigo: #000080;
+  font-family: ui-monospace, 'Courier New', 'MS Sans Serif', monospace, sans-serif !important;
+}
+
+[data-theme="retro-pixel"] .chatso-app-root,
+[data-theme="retro-pixel"] .chatso-main-chat {
+  background-color: #c0c0c0 !important;
+}
+
+[data-theme="retro-pixel"] .chatso-sidebar,
+[data-theme="retro-pixel"] .chatso-nav-rail {
+  background-color: #c0c0c0 !important;
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff !important;
+}
+
+[data-theme="retro-pixel"] .chatso-header {
+  background-color: #000080 !important;
+  color: #ffffff !important;
+  border: 2px solid;
+  border-color: #ffffff #404040 #404040 #ffffff !important;
+}
+[data-theme="retro-pixel"] .chatso-header h1,
+[data-theme="retro-pixel"] .chatso-header span {
+  color: #ffffff !important;
+}
+
+[data-theme="retro-pixel"] .chatso-search-input {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid;
+  border-color: #404040 #ffffff #ffffff #404040 !important;
+  border-radius: 2px !important;
+}
+
+[data-theme="retro-pixel"] .chatso-vault-card {
+  background-color: #dfdfdf !important;
+  border: 2px solid;
+  border-color: #ffffff #404040 #404040 #ffffff !important;
+  border-radius: 2px !important;
+}
+
+[data-theme="retro-pixel"] .chatso-contact-item {
+  border: 1px solid transparent !important;
+  border-radius: 2px !important;
+}
+[data-theme="retro-pixel"] .chatso-contact-item:hover {
+  background-color: #dfdfdf !important;
+  border: 1px solid;
+  border-color: #ffffff #404040 #404040 #ffffff !important;
+}
+
+[data-theme="retro-pixel"] .chatso-bubble-sent {
+  background-color: #000080 !important;
+  color: #ffffff !important;
+  border: 2px solid;
+  border-color: #ffffff #404040 #404040 #ffffff !important;
+  border-radius: 4px !important;
+}
+
+[data-theme="retro-pixel"] .chatso-bubble-received {
+  background-color: #dfdfdf !important;
+  color: #000000 !important;
+  border: 2px solid;
+  border-color: #ffffff #404040 #404040 #ffffff !important;
+  border-radius: 4px !important;
+}
+
+[data-theme="retro-pixel"] .chatso-input-dock {
+  background-color: #c0c0c0 !important;
+  border: 2px solid;
+  border-color: #ffffff #404040 #404040 #ffffff !important;
+  border-radius: 2px !important;
+}
+
+[data-theme="retro-pixel"] .chatso-bottom-nav {
+  background-color: #c0c0c0 !important;
+  border: 2px solid;
+  border-color: #ffffff #404040 #404040 #ffffff !important;
+  border-radius: 2px !important;
+}
+
+/* --------------------------------------------------------------------------
+   07. NEOBRUTALISM (neobrutalism)
+   -------------------------------------------------------------------------- */
+[data-theme="neobrutalism"] {
+  --bg-canvas: #ffe500;
+  --bg-surface: #ffe500;
+  --bg-surface-elevated: #ffffff;
+  --border-subtle: #000000;
+  --text-primary: #000000;
+  --text-secondary: #111111;
+  --text-muted: #333333;
+  --accent-indigo: #000000;
+  font-weight: 600;
+}
+
+[data-theme="neobrutalism"] .chatso-app-root,
+[data-theme="neobrutalism"] .chatso-main-chat {
+  background-color: #ffe500 !important;
+}
+
+[data-theme="neobrutalism"] .chatso-sidebar,
+[data-theme="neobrutalism"] .chatso-nav-rail {
+  background-color: #ffe500 !important;
+  border-right: 3px solid #000000 !important;
+}
+
+[data-theme="neobrutalism"] .chatso-header {
+  background-color: #ffe500 !important;
+  border-bottom: 3px solid #000000 !important;
+}
+
+[data-theme="neobrutalism"] .chatso-search-input {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2.5px solid #000000 !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="neobrutalism"] .chatso-vault-card {
+  background-color: #ff5722 !important;
+  color: #ffffff !important;
+  border: 2.5px solid #000000 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  border-radius: 12px !important;
+}
+[data-theme="neobrutalism"] .chatso-vault-card span,
+[data-theme="neobrutalism"] .chatso-vault-card p {
+  color: #ffffff !important;
+}
+
+[data-theme="neobrutalism"] .chatso-contact-item {
+  border: 2px solid transparent !important;
+  border-radius: 12px !important;
+}
+[data-theme="neobrutalism"] .chatso-contact-item:hover {
+  background-color: #ffffff !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+}
+
+[data-theme="neobrutalism"] .chatso-bubble-sent {
+  background-color: #00ff66 !important;
+  color: #000000 !important;
+  border: 2.5px solid #000000 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  border-radius: 14px !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="neobrutalism"] .chatso-bubble-received {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2.5px solid #000000 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  border-radius: 14px !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="neobrutalism"] .chatso-input-dock {
+  background-color: #ffffff !important;
+  border: 3px solid #000000 !important;
+  box-shadow: 5px 5px 0px #000000 !important;
+  border-radius: 14px !important;
+}
+
+[data-theme="neobrutalism"] .chatso-bottom-nav {
+  background-color: #ff6d00 !important;
+  border: 2.5px solid #000000 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  border-radius: 14px !important;
+}
+[data-theme="neobrutalism"] .chatso-bottom-nav span {
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+
+/* --------------------------------------------------------------------------
+   08. VAPORWAVE DREAM (vaporwave)
+   -------------------------------------------------------------------------- */
+[data-theme="vaporwave"] {
+  --bg-canvas: #fbcfe8;
+  --bg-surface: rgba(255, 255, 255, 0.75);
+  --bg-surface-elevated: #ffffff;
+  --border-subtle: rgba(236, 72, 153, 0.35);
+  --text-primary: #4a044e;
+  --text-secondary: #701a75;
+  --text-muted: #a21caf;
+  --accent-indigo: #ec4899;
+}
+
+[data-theme="vaporwave"] .chatso-app-root,
+[data-theme="vaporwave"] .chatso-main-chat {
+  background: linear-gradient(180deg, #d8b4e2 0%, #fbcfe8 45%, #fed7aa 80%, #c4b5fd 100%) fixed !important;
+}
+
+[data-theme="vaporwave"] .chatso-sidebar,
+[data-theme="vaporwave"] .chatso-header,
+[data-theme="vaporwave"] .chatso-nav-rail {
+  background: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(16px) !important;
+  border-color: rgba(236, 72, 153, 0.25) !important;
+  color: #4a044e !important;
+}
+
+[data-theme="vaporwave"] .chatso-search-input {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid rgba(236, 72, 153, 0.4) !important;
+  color: #4a044e !important;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.15) !important;
+}
+
+[data-theme="vaporwave"] .chatso-vault-card {
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.25), rgba(244, 63, 94, 0.25)) !important;
+  border: 1px solid rgba(236, 72, 153, 0.4) !important;
+}
+
+[data-theme="vaporwave"] .chatso-contact-item:hover {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+[data-theme="vaporwave"] .chatso-bubble-sent {
+  background: linear-gradient(135deg, #ec4899, #f43f5e) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(236, 72, 153, 0.35) !important;
+}
+
+[data-theme="vaporwave"] .chatso-bubble-received {
+  background: rgba(255, 255, 255, 0.85) !important;
+  color: #4a044e !important;
+  border: 1px solid rgba(34, 211, 238, 0.45) !important;
+  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.15) !important;
+}
+
+[data-theme="vaporwave"] .chatso-input-dock {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(18px) !important;
+  border: 1px solid rgba(236, 72, 153, 0.35) !important;
+  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.2) !important;
+}
+
+[data-theme="vaporwave"] .chatso-bottom-nav {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(236, 72, 153, 0.3) !important;
+}
+
+/* --------------------------------------------------------------------------
+   09. FRUTIGER AERO (frutiger-aero)
+   -------------------------------------------------------------------------- */
+[data-theme="frutiger-aero"] {
+  --bg-canvas: #38bdf8;
+  --bg-surface: rgba(255, 255, 255, 0.8);
+  --bg-surface-elevated: #ffffff;
+  --border-subtle: rgba(255, 255, 255, 0.8);
+  --text-primary: #0c4a6e;
+  --text-secondary: #0369a1;
+  --text-muted: #0284c7;
+  --accent-indigo: #0284c7;
+}
+
+[data-theme="frutiger-aero"] .chatso-app-root,
+[data-theme="frutiger-aero"] .chatso-main-chat {
+  background: linear-gradient(180deg, #38bdf8 0%, #60a5fa 35%, #34d399 75%, #86efac 100%) fixed !important;
+}
+
+[data-theme="frutiger-aero"] .chatso-sidebar,
+[data-theme="frutiger-aero"] .chatso-header,
+[data-theme="frutiger-aero"] .chatso-nav-rail {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px) !important;
+  border-color: rgba(255, 255, 255, 0.85) !important;
+  color: #0c4a6e !important;
+}
+
+[data-theme="frutiger-aero"] .chatso-search-input {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  color: #0c4a6e !important;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2), inset 0 1px 1px #fff !important;
+}
+
+[data-theme="frutiger-aero"] .chatso-vault-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.7) 100%) !important;
+  border: 1px solid #ffffff !important;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.25) !important;
+}
+
+[data-theme="frutiger-aero"] .chatso-contact-item:hover {
+  background: rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15) !important;
+}
+
+[data-theme="frutiger-aero"] .chatso-bubble-sent {
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 50%, #0369a1 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-theme="frutiger-aero"] .chatso-bubble-received {
+  background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%) !important;
+  color: #0c4a6e !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.2), inset 0 1px 1px #fff !important;
+}
+
+[data-theme="frutiger-aero"] .chatso-input-dock {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(24px) !important;
+  border: 1px solid #ffffff !important;
+  box-shadow: 0 8px 28px rgba(14, 165, 233, 0.3) !important;
+}
+
+[data-theme="frutiger-aero"] .chatso-bottom-nav {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(24px) !important;
+  border: 1px solid #ffffff !important;
+  box-shadow: 0 8px 32px rgba(14, 165, 233, 0.35) !important;
+}
+
+/* --------------------------------------------------------------------------
+   10. NOISY CARTOON (noisy-cartoon)
+   -------------------------------------------------------------------------- */
+[data-theme="noisy-cartoon"] {
+  --bg-canvas: #ff2a85;
+  --bg-surface: #ff2a85;
+  --bg-surface-elevated: #facc15;
+  --border-subtle: #000000;
+  --text-primary: #000000;
+  --text-secondary: #1f2937;
+  --text-muted: #374151;
+  --accent-indigo: #000000;
+  font-weight: 600;
+}
+
+[data-theme="noisy-cartoon"] .chatso-app-root,
+[data-theme="noisy-cartoon"] .chatso-main-chat {
+  background-color: #ff2a85 !important;
+  background-image: radial-gradient(#000000 1.2px, transparent 1.2px) !important;
+  background-size: 14px 14px !important;
+}
+
+[data-theme="noisy-cartoon"] .chatso-sidebar,
+[data-theme="noisy-cartoon"] .chatso-nav-rail {
+  background-color: #ff2a85 !important;
+  border-right: 3px solid #000000 !important;
+}
+
+[data-theme="noisy-cartoon"] .chatso-header {
+  background-color: #facc15 !important;
+  color: #000000 !important;
+  border-bottom: 3px solid #000000 !important;
+  box-shadow: 0 3px 0px #000000 !important;
+}
+
+[data-theme="noisy-cartoon"] .chatso-search-input {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2.5px solid #000000 !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+  border-radius: 12px !important;
+}
+
+[data-theme="noisy-cartoon"] .chatso-vault-card {
+  background-color: #4ade80 !important;
+  border: 2.5px solid #000000 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  border-radius: 14px !important;
+}
+[data-theme="noisy-cartoon"] .chatso-vault-card span,
+[data-theme="noisy-cartoon"] .chatso-vault-card p {
+  color: #000000 !important;
+}
+
+[data-theme="noisy-cartoon"] .chatso-contact-item {
+  border-radius: 14px !important;
+}
+[data-theme="noisy-cartoon"] .chatso-contact-item:hover {
+  background-color: #facc15 !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+}
+
+[data-theme="noisy-cartoon"] .chatso-bubble-sent {
+  background-color: #facc15 !important;
+  color: #000000 !important;
+  border: 2.5px solid #000000 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  border-radius: 16px !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="noisy-cartoon"] .chatso-bubble-received {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2.5px solid #000000 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  border-radius: 16px !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="noisy-cartoon"] .chatso-input-dock {
+  background-color: #ffffff !important;
+  border: 3px solid #000000 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  border-radius: 16px !important;
+}
+
+[data-theme="noisy-cartoon"] .chatso-bottom-nav {
+  background-color: #ff2a85 !important;
+  border: 2.5px solid #000000 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  border-radius: 16px !important;
+}
+[data-theme="noisy-cartoon"] .chatso-bottom-nav span {
+  color: #000000 !important;
+  font-weight: 800 !important;
+}

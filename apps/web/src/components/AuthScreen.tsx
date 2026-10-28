@@ -30,7 +30,7 @@ export const AuthScreen: React.FC = () => {
   } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>('signin');
-  const { theme, toggleTheme } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -278,10 +278,10 @@ export const AuthScreen: React.FC = () => {
         <button
           type="button"
           onClick={toggleTheme}
-          aria-label={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          aria-label={isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
           className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium dark:bg-white/10 bg-white hover:bg-slate-100 dark:hover:bg-white/15 dark:text-slate-200 text-slate-700 backdrop-blur-md border dark:border-white/10 border-slate-200 shadow-sm transition-all"
         >
-          {theme === 'dark' ? (
+          {isDark ? (
             <>
               <Sun className="w-3.5 h-3.5 text-amber-400" />
               <span>Light Mode</span>

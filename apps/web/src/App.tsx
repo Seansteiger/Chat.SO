@@ -717,7 +717,7 @@ export const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="h-[100dvh] w-screen flex dark:bg-[#09090b] bg-[#fbfbfa] dark:text-slate-100 text-slate-900 overflow-hidden font-sans transition-colors duration-200">
+    <div className="chatso-app-root h-[100dvh] w-screen flex dark:bg-[#09090b] bg-[#fbfbfa] dark:text-slate-100 text-slate-900 overflow-hidden font-sans transition-colors duration-200">
       {/* Desktop Navigation Rail (Stitch 64px Slim Bar) */}
       <NavigationRail
         activeTab={activeTab}

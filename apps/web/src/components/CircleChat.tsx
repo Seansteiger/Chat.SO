@@ -28,6 +28,8 @@ import { VoiceNotePlayer } from './VoiceNotePlayer.js';
 import { PollCard } from './PollCard.js';
 import { CreatePollModal } from './CreatePollModal.js';
 import { CircleMembersModal } from './CircleMembersModal.js';
+import { Emoji } from './Emoji.js';
+import { useEmojiSet } from '../hooks/useEmojiSet.js';
 
 interface CircleChatProps {
   circleId: string;
@@ -388,7 +390,8 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
     return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const quietReactions = ['👍', '❤️', '🙏', '💡', '✅'];
+  const { currentSet } = useEmojiSet();
+  const activeReactions = currentSet.emojis;
 
   return (
     <div className="flex-1 h-full flex flex-col dark:bg-[#09090b] bg-[#fbfbfa] relative overflow-hidden transition-colors duration-200">
@@ -694,27 +697,32 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                       <MarkdownText content={msg.content} />
                     )}
 
-                    {/* Quiet Hover Actions Bar */}
+                    {/* WhatsApp + Telegram Floating Glassy Reaction Capsule */}
                     <div
-                      className={`absolute -top-3.5 ${
+                      className={`absolute -top-5 ${
                         isMe ? 'right-2' : 'left-2'
-                      } hidden group-hover:flex items-center gap-1 dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 rounded-xl px-1.5 py-0.5 shadow-lg z-20`}
+                      } hidden group-hover:flex items-center gap-1 bg-slate-900/90 dark:bg-[#0f172a]/95 backdrop-blur-xl border border-white/20 rounded-full px-2 py-1 shadow-[0_8px_30px_rgba(0,0,0,0.5)] ring-1 ring-white/10 z-30 transition-all animate-in fade-in zoom-in-95 duration-150`}
                     >
-                      {quietReactions.map((emoji) => (
+                      {activeReactions.map((emoji) => (
                         <button
                           key={emoji}
                           type="button"
                           onClick={() => handleReaction(msg._id, emoji)}
-                          className="hover:scale-125 transition-transform text-xs p-1"
+                          title={`React with ${emoji}`}
+                          className="p-1 rounded-full hover:bg-white/15 hover:scale-135 active:scale-95 transition-all duration-150 flex items-center justify-center -translate-y-0 hover:-translate-y-1"
                         >
-                          {emoji}
+                          <Emoji emoji={emoji} className="w-5 h-5 drop-shadow-sm" />
                         </button>
                       ))}
+
+                      {/* Divider */}
+                      <div className="h-4 w-px bg-white/15 mx-0.5" />
+
                       <button
                         type="button"
                         onClick={() => setReplyingTo(msg)}
                         title="Reply"
-                        className="p-1 hover:text-purple-500 text-slate-400 transition-colors"
+                        className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-purple-400 transition-colors"
                       >
                         <Reply className="w-3.5 h-3.5" />
                       </button>
@@ -723,7 +731,7 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                           type="button"
                           onClick={() => handleDeleteMessage(msg._id)}
                           title="Delete message"
-                          className="p-1 hover:text-rose-500 text-slate-400 transition-colors"
+                          className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-rose-400 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -739,14 +747,14 @@ export const CircleChat: React.FC<CircleChatProps> = ({ circleId, onBack }) => {
                           key={r.emoji}
                           type="button"
                           onClick={() => handleReaction(msg._id, r.emoji)}
-                          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] border transition-all ${
+                          className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] border transition-all duration-150 ${
                             r.hasReacted
-                              ? 'dark:bg-purple-600/30 dark:border-purple-500/50 bg-purple-100 border-purple-300 text-purple-700 dark:text-white font-bold'
+                              ? 'dark:bg-purple-600/30 dark:border-purple-500/50 bg-purple-100 border-purple-300 text-purple-700 dark:text-white font-bold shadow-sm shadow-purple-500/20'
                               : 'dark:bg-[#18181b] bg-white dark:border-white/10 border-slate-200 dark:text-slate-300 text-slate-700 hover:border-slate-300 dark:hover:border-white/20'
                           }`}
                         >
-                          <span>{r.emoji}</span>
-                          <span className="font-mono text-[10px]">{r.count}</span>
+                          <Emoji emoji={r.emoji} className="w-3.5 h-3.5" />
+                          <span className="font-mono text-[10px] font-semibold">{r.count}</span>
                         </button>
                       ))}
                     </div>

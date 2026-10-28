@@ -12,7 +12,8 @@ import {
   CircleOff,
   BatteryCharging,
   Moon,
-  Sun,
+  Palette,
+  Sparkles,
   Bookmark,
   Bell,
   MessageSquare,
@@ -78,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onTabChange,
 }) => {
   const { user: currentUser, updateProfile, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, themesList, themeMeta, toggleTheme } = useTheme();
   const [internalTab, setInternalTab] = useState<'chats' | 'circles' | 'requests' | 'calls' | 'settings'>('chats');
   
   const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalTab;
@@ -408,7 +409,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onSelectUser(u);
           if (searchQuery) setSearchQuery('');
         }}
-        className={`w-full p-2.5 rounded-xl flex items-center gap-3 text-left transition-all ${
+        className={`chatso-contact-item w-full p-2.5 rounded-xl flex items-center gap-3 text-left transition-all ${
           isSelected
             ? 'dark:bg-indigo-950/40 dark:border-indigo-500/40 dark:text-white bg-white border border-slate-200 border-l-4 border-l-indigo-600 text-slate-900 shadow-sm'
             : hasUnread
@@ -488,9 +489,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <aside className="w-full md:w-80 h-full flex flex-col dark:bg-[#121215] bg-[#fbfbfa] border-r dark:border-white/[0.08] border-slate-200 shrink-0 select-none transition-colors">
+    <aside className="chatso-sidebar w-full md:w-80 h-full flex flex-col dark:bg-[#121215] bg-[#fbfbfa] border-r dark:border-white/[0.08] border-slate-200 shrink-0 select-none transition-colors">
       {/* Clean Telegram-style Header */}
-      <div className="px-4 py-3 flex items-center justify-between border-b dark:border-white/[0.08] border-slate-200 shrink-0">
+      <div className="chatso-header px-4 py-3 flex items-center justify-between border-b dark:border-white/[0.08] border-slate-200 shrink-0">
         <div>
           <h1 className="text-xl font-bold tracking-tight dark:text-white text-slate-900 capitalize">
             {activeTab === 'chats' ? 'Chats' : activeTab === 'circles' ? 'Circles' : activeTab === 'requests' ? 'Requests' : activeTab === 'calls' ? 'Calls' : 'Settings'}
@@ -524,7 +525,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Omnibox Search Input (Only for Chats & Circles) */}
       {(activeTab === 'chats' || activeTab === 'circles') && (
-        <div className="p-3 border-b dark:border-white/[0.08] border-slate-200">
+        <div className="chatso-search-container p-3 border-b dark:border-white/[0.08] border-slate-200">
           <div className="relative flex items-center">
             <Search className="w-4 h-4 text-slate-400 absolute left-3" />
             <input
@@ -536,7 +537,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   ? 'Search chats or find by @user, email... (⌘K)'
                   : 'Search circles...'
               }
-              className="w-full pl-9 pr-12 py-2 dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 rounded-xl text-xs dark:text-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm"
+              className="chatso-search-input w-full pl-9 pr-12 py-2 dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 rounded-xl text-xs dark:text-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm"
             />
             {searchQuery ? (
               <button
@@ -595,7 +596,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={handleOpenPersonalVault}
-            className="w-full p-2.5 mb-1 rounded-xl dark:bg-gradient-to-r dark:from-amber-500/10 dark:to-orange-500/10 dark:hover:from-amber-500/20 dark:hover:to-orange-500/20 dark:border-amber-500/20 bg-amber-50/70 hover:bg-amber-100/70 border border-amber-200 flex items-center gap-3 text-left transition-all group shadow-sm"
+            className="chatso-vault-card w-full p-2.5 mb-1 rounded-xl dark:bg-gradient-to-r dark:from-amber-500/10 dark:to-orange-500/10 dark:hover:from-amber-500/20 dark:hover:to-orange-500/20 dark:border-amber-500/20 bg-amber-50/70 hover:bg-amber-100/70 border border-amber-200 flex items-center gap-3 text-left transition-all group shadow-sm"
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center text-white shrink-0 shadow-md">
               <Bookmark className="w-5 h-5 fill-current" />
@@ -686,7 +687,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onSelectCircle?.(circle._id);
                     if (searchQuery) setSearchQuery('');
                   }}
-                  className={`w-full p-2.5 rounded-xl flex items-center gap-3 text-left transition-all ${
+                  className={`chatso-contact-item w-full p-2.5 rounded-xl flex items-center gap-3 text-left transition-all ${
                     isSelected
                       ? 'dark:bg-purple-600/20 dark:border-purple-500/40 dark:text-white bg-purple-50 border border-purple-200 text-purple-900 shadow-sm'
                       : 'dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-300 text-slate-700 border border-transparent'
@@ -1072,35 +1073,97 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
-          {/* Group 2: Appearance (Telegram Night Mode) */}
-          <div className="space-y-1">
-            <p className="px-1 text-[10px] font-bold tracking-wider uppercase dark:text-slate-500 text-slate-400">
-              Appearance
-            </p>
-            <div className="dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200/90 rounded-2xl p-3 flex items-center justify-between shadow-xs">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
-                  {theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4 text-amber-300" />}
-                </div>
-                <div>
-                  <div className="text-xs font-semibold dark:text-white text-slate-900">Night Mode</div>
-                  <div className="text-[10px] dark:text-slate-400 text-slate-500">
-                    {theme === 'dark' ? 'Obsidian Dark' : 'Architect Light'}
-                  </div>
-                </div>
-              </div>
-
-              {/* iOS Switch */}
+          {/* Group 2: Appearance & Theme Studio (All 10 Visual Themes) */}
+          <div className="space-y-2">
+            <div className="px-1 flex items-center justify-between">
+              <p className="text-[10px] font-bold tracking-wider uppercase dark:text-slate-500 text-slate-400">
+                Appearance & Themes ({themesList.length})
+              </p>
               <button
                 type="button"
                 onClick={toggleTheme}
-                aria-label="Toggle Night Mode"
-                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out ${
-                  theme === 'dark' ? 'bg-indigo-600 justify-end' : 'bg-slate-300 justify-start'
-                }`}
+                title="Cycle to next theme"
+                className="text-[10px] font-semibold text-indigo-500 hover:text-indigo-400 flex items-center gap-1 transition-colors"
               >
-                <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                <Sparkles className="w-3 h-3" />
+                <span>Cycle Theme</span>
               </button>
+            </div>
+
+            {/* Active Theme Spotlight Card */}
+            <div className="dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200/90 rounded-2xl p-3 shadow-xs flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md ring-1 ring-black/10"
+                  style={{ background: themeMeta.previewBg }}
+                >
+                  <Palette className="w-5 h-5 drop-shadow-sm" style={{ color: themeMeta.accentColor }} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-indigo-600/15 text-indigo-500 dark:text-indigo-400">
+                      {themeMeta.number}
+                    </span>
+                    <h4 className="text-xs font-bold dark:text-white text-slate-900 truncate">
+                      {themeMeta.name}
+                    </h4>
+                  </div>
+                  <p className="text-[10px] dark:text-slate-400 text-slate-500 truncate mt-0.5">
+                    {themeMeta.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 10 Themes Grid */}
+            <div className="grid grid-cols-2 gap-2 pt-0.5">
+              {themesList.map((t) => {
+                const isActive = theme === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTheme(t.id)}
+                    className={`relative p-2 rounded-2xl border text-left flex flex-col justify-between transition-all group overflow-hidden ${
+                      isActive
+                        ? 'ring-2 ring-indigo-500 border-indigo-500 dark:bg-[#18181b] bg-white shadow-md'
+                        : 'dark:bg-[#18181b]/60 bg-white/80 border-slate-200/90 dark:border-white/10 hover:border-indigo-400/60 dark:hover:border-white/20'
+                    }`}
+                  >
+                    {/* Theme Swatch Preview */}
+                    <div
+                      className="w-full h-10 rounded-xl mb-1.5 relative overflow-hidden flex items-center justify-center p-1.5 shadow-inner"
+                      style={{ background: t.previewBg }}
+                    >
+                      {/* Mini Mock Card */}
+                      <div
+                        className="w-full h-full rounded-lg flex items-center justify-between px-2 shadow-xs"
+                        style={{ background: t.previewCard }}
+                      >
+                        <span className="w-2 h-2 rounded-full" style={{ background: t.previewAccent }} />
+                        <span className="w-8 h-1.5 rounded-full bg-slate-400/40" />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between w-full">
+                      <div className="min-w-0 pr-1">
+                        <span className="text-[9px] font-mono font-semibold text-slate-400 block leading-tight">
+                          {t.number}
+                        </span>
+                        <p className={`text-[11px] font-bold truncate ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'dark:text-white text-slate-900'}`}>
+                          {t.name.replace(/^\d+\.\s*/, '')}
+                        </p>
+                      </div>
+
+                      {isActive && (
+                        <div className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -1246,7 +1309,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Floating Glassy Bottom Navigation Dock for Mobile/Compact screens */}
       <div className="lg:hidden shrink-0 p-3 pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] bg-gradient-to-t dark:from-[#09090b] dark:via-[#09090b]/80 from-[#fbfbfa] via-[#fbfbfa]/90 to-transparent z-20 select-none">
-        <nav className="flex items-center justify-around px-1.5 py-1.5 rounded-2xl dark:bg-[#121215]/85 dark:border-white/10 dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] bg-white/95 border-slate-200/90 shadow-xl backdrop-blur-2xl border ring-1 dark:ring-white/5 ring-black/5">
+        <nav className="chatso-bottom-nav flex items-center justify-around px-1.5 py-1.5 rounded-2xl dark:bg-[#121215]/85 dark:border-white/10 dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] bg-white/95 border-slate-200/90 shadow-xl backdrop-blur-2xl border ring-1 dark:ring-white/5 ring-black/5">
           {/* Chats Tab */}
           <button
             type="button"

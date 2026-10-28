@@ -39,6 +39,8 @@ import { VoiceNotePlayer } from './VoiceNotePlayer.js';
 import { PollCard } from './PollCard.js';
 import { ContextDrawer } from './ContextDrawer.js';
 import { CreatePollModal } from './CreatePollModal.js';
+import { Emoji } from './Emoji.js';
+import { useEmojiSet } from '../hooks/useEmojiSet.js';
 
 interface MainChatProps {
   peer: UserProfile;
@@ -419,7 +421,8 @@ export const MainChat: React.FC<MainChatProps> = ({
     return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const quietReactions = ['👍', '❤️', '🙏', '💡', '✅'];
+  const { currentSet } = useEmojiSet();
+  const activeReactions = currentSet.emojis;
 
   // Check social battery state
   const isPeerLowBattery = peer.status === 'LOW_BATTERY';
@@ -430,9 +433,9 @@ export const MainChat: React.FC<MainChatProps> = ({
   const pinnedMessage = messages.find((m) => m.isPinned || (pinnedMessageId && m.id === pinnedMessageId));
 
   return (
-    <div className="flex-1 h-full flex flex-col dark:bg-[#09090b] bg-[#fbfbfa] relative overflow-hidden transition-colors">
+    <div className="chatso-main-chat flex-1 h-full flex flex-col dark:bg-[#09090b] bg-[#fbfbfa] relative overflow-hidden transition-colors">
       {/* Top Bar (Stitch Precision Header) */}
-      <div className="h-16 px-3.5 md:px-6 border-b dark:border-white/[0.08] border-slate-200 flex items-center justify-between dark:bg-[#121215]/80 bg-white/90 backdrop-blur-md shrink-0 z-10 transition-colors">
+      <div className="chatso-header h-16 px-3.5 md:px-6 border-b dark:border-white/[0.08] border-slate-200 flex items-center justify-between dark:bg-[#121215]/80 bg-white/90 backdrop-blur-md shrink-0 z-10 transition-colors">
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
           {onBack && (
             <button
@@ -826,7 +829,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                 >
                   {/* Message Bubble (Stitch Architecture) */}
                   <div
-                    className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 sm:px-4 sm:py-3 shadow-md text-sm relative transition-all ${
+                    className={`chatso-bubble ${isMe ? 'chatso-bubble-sent' : 'chatso-bubble-received'} max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 sm:px-4 sm:py-3 shadow-md text-sm relative transition-all ${
                       isMe
                         ? 'bg-indigo-600 text-white rounded-br-xs shadow-md shadow-indigo-600/20'
                         : 'dark:bg-[#18181b] bg-white border dark:border-white/[0.08] border-slate-200 dark:text-[#fafafa] text-slate-900 rounded-bl-xs'
@@ -924,30 +927,34 @@ export const MainChat: React.FC<MainChatProps> = ({
                       <MarkdownText content={msg.content} />
                     )}
 
-                    {/* Hover Reaction & Quick Actions Bar */}
+                    {/* WhatsApp + Telegram Floating Glassy Reaction Capsule */}
                     <div
-                      className={`absolute -top-3.5 ${
+                      className={`absolute -top-5 ${
                         isMe ? 'right-2' : 'left-2'
-                      } hidden group-hover:flex items-center gap-1 dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 rounded-xl px-1.5 py-0.5 shadow-lg z-20`}
+                      } hidden group-hover:flex items-center gap-1 bg-slate-900/90 dark:bg-[#0f172a]/95 backdrop-blur-xl border border-white/20 rounded-full px-2 py-1 shadow-[0_8px_30px_rgba(0,0,0,0.5)] ring-1 ring-white/10 z-30 transition-all animate-in fade-in zoom-in-95 duration-150`}
                     >
-                      {/* Quiet Reactions */}
-                      {quietReactions.map((emoji) => (
+                      {/* Active Emojis */}
+                      {activeReactions.map((emoji) => (
                         <button
                           key={emoji}
                           type="button"
                           onClick={() => handleReaction(msg.id, emoji)}
-                          className="hover:scale-125 transition-transform text-xs p-1"
+                          title={`React with ${emoji}`}
+                          className="p-1 rounded-full hover:bg-white/15 hover:scale-135 active:scale-95 transition-all duration-150 flex items-center justify-center -translate-y-0 hover:-translate-y-1"
                         >
-                          {emoji}
+                          <Emoji emoji={emoji} className="w-5 h-5 drop-shadow-sm" />
                         </button>
                       ))}
+
+                      {/* Divider */}
+                      <div className="h-4 w-px bg-white/15 mx-0.5" />
 
                       {/* Reply Button */}
                       <button
                         type="button"
                         onClick={() => setReplyingTo(msg)}
                         title="Reply to message"
-                        className="p-1 dark:hover:text-indigo-400 hover:text-indigo-600 dark:text-slate-400 text-slate-500 transition-colors"
+                        className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                       >
                         <Reply className="w-3.5 h-3.5" />
                       </button>
@@ -957,7 +964,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                         type="button"
                         onClick={() => handleSaveMessage(msg.id)}
                         title="Save to Personal Vault"
-                        className="p-1 hover:text-amber-500 dark:text-slate-400 text-slate-500 transition-colors"
+                        className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-amber-400 transition-colors"
                       >
                         <Bookmark className="w-3.5 h-3.5" />
                       </button>
@@ -967,7 +974,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                         type="button"
                         onClick={() => handleTogglePin(msg.id)}
                         title={msg.isPinned ? 'Unpin message' : 'Pin message'}
-                        className="p-1 hover:text-amber-500 dark:text-slate-400 text-slate-500 transition-colors"
+                        className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-amber-400 transition-colors"
                       >
                         <Pin className="w-3.5 h-3.5" />
                       </button>
@@ -978,7 +985,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                           type="button"
                           onClick={() => handleStartEdit(msg)}
                           title="Edit message"
-                          className="p-1 dark:hover:text-indigo-400 hover:text-indigo-600 dark:text-slate-400 text-slate-500 transition-colors"
+                          className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-blue-400 transition-colors"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
@@ -990,7 +997,7 @@ export const MainChat: React.FC<MainChatProps> = ({
                           type="button"
                           onClick={() => handleDeleteMessage(msg.id)}
                           title="Delete message"
-                          className="p-1 hover:text-rose-500 dark:text-slate-400 text-slate-500 transition-colors"
+                          className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-rose-400 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1006,14 +1013,14 @@ export const MainChat: React.FC<MainChatProps> = ({
                           key={r.emoji}
                           type="button"
                           onClick={() => handleReaction(msg.id, r.emoji)}
-                          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] border transition-all ${
+                          className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] border transition-all duration-150 ${
                             r.hasReacted
-                              ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-500 font-bold shadow-sm'
-                              : 'dark:bg-[#18181b] bg-white dark:border-white/10 border-slate-200 dark:text-slate-300 text-slate-700 shadow-xs hover:border-slate-300'
+                              ? 'bg-blue-600/25 border-blue-500/50 text-blue-300 font-bold shadow-sm shadow-blue-500/20'
+                              : 'bg-slate-900/80 border-white/10 text-slate-300 hover:border-white/25 hover:bg-slate-900'
                           }`}
                         >
-                          <span>{r.emoji}</span>
-                          <span className="font-mono text-[10px]">{r.count}</span>
+                          <Emoji emoji={r.emoji} className="w-3.5 h-3.5" />
+                          <span className="font-mono text-[10px] font-semibold">{r.count}</span>
                         </button>
                       ))}
                     </div>
@@ -1190,7 +1197,7 @@ export const MainChat: React.FC<MainChatProps> = ({
       ) : (
         /* Floating Suspended Composer Dock (Stitch Design Specification) */
         <div className="p-3 md:p-4 bg-gradient-to-t dark:from-[#09090b] dark:via-[#09090b]/90 from-[#fbfbfa] via-[#fbfbfa]/95 to-transparent pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
-          <div className="p-2 md:p-2.5 rounded-2xl dark:bg-[#121215]/90 bg-white/95 border dark:border-white/10 border-slate-200/90 shadow-xl backdrop-blur-xl">
+          <div className="chatso-input-dock p-2 md:p-2.5 rounded-2xl dark:bg-[#121215]/90 bg-white/95 border dark:border-white/10 border-slate-200/90 shadow-xl backdrop-blur-xl">
             <form onSubmit={handleSend} className="flex items-center gap-2">
               <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
               
