@@ -603,7 +603,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={async () => {
-                const res = await NotificationService.requestPermission();
+                const res = await NotificationService.requestPermission(currentUser?.id);
                 if (res !== 'default') setShowNotifPrompt(false);
               }}
               className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-[11px] transition-colors shadow-sm"

@@ -85,7 +85,7 @@ export const initiateCall = mutation({
     });
 
     // Dispatch background Web Push notification so receiver device rings even if app/browser is closed
-    ctx.scheduler.runAfter(0, (internal.push as any).dispatchPush, {
+    ctx.scheduler.runAfter(0, (internal.pushActions as any).dispatchPush, {
       targetUserId: args.receiverId,
       title: `Incoming ${args.isVideo ? "Video" : "Voice"} Call`,
       body: `${args.callerName} is calling you...`,

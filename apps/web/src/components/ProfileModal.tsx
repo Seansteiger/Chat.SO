@@ -19,9 +19,11 @@ import {
   Keyboard,
   PhoneOff,
   Smile,
+  Bell,
 } from 'lucide-react';
 import { useEmojiSet } from '../hooks/useEmojiSet.js';
 import { Emoji } from './Emoji.js';
+import { NotificationService } from '../services/notifications.js';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -357,6 +359,50 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                   className="w-4 h-4 rounded accent-blue-500 cursor-pointer"
                 />
               </label>
+
+              {/* Background Push Notifications Status & Re-sync */}
+              <div className="flex items-center justify-between text-xs pt-2 border-t dark:border-white/10 border-slate-200">
+                <div className="flex items-center gap-2 dark:text-slate-300 text-slate-700">
+                  <Bell className="w-3.5 h-3.5 text-indigo-400" />
+                  <div>
+                    <div className="font-medium">Background Alerts & Push</div>
+                    <div className="text-[10px] dark:text-slate-400 text-slate-500">
+                      {typeof window !== 'undefined' && Notification.permission === 'granted'
+                        ? 'Active — incoming texts & calls ring when app is closed'
+                        : 'Tap Enable to receive alerts when app is closed'}
+                    </div>
+                  </div>
+                </div>
+                {typeof window !== 'undefined' && Notification.permission !== 'granted' ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (user?.id) {
+                        await NotificationService.requestPermission(user.id);
+                        setSuccessMessage('Push alerts enabled successfully!');
+                        setTimeout(() => setSuccessMessage(null), 3000);
+                      }
+                    }}
+                    className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-[11px] transition-colors shadow-sm shrink-0"
+                  >
+                    Enable
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (user?.id) {
+                        await NotificationService.registerPushSubscription(user.id);
+                        setSuccessMessage('Push alerts re-synchronized successfully!');
+                        setTimeout(() => setSuccessMessage(null), 3000);
+                      }
+                    }}
+                    className="px-2.5 py-1 bg-white/10 hover:bg-white/15 dark:text-slate-200 text-slate-700 rounded-lg font-medium text-[11px] transition-colors shrink-0"
+                  >
+                    Re-sync
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Emoji & Reaction Set Selection */}

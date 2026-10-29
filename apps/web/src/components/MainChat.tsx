@@ -950,7 +950,7 @@ export const MainChat: React.FC<MainChatProps> = ({
 
                     {/* WhatsApp + Telegram Floating Glassy Reaction Capsule */}
                     <div
-                      className={`absolute -top-6 ${
+                      className={`absolute -top-9 sm:-top-10 ${
                         isMe ? 'right-0 sm:right-2' : 'left-0 sm:left-2'
                       } hidden group-hover:flex items-center gap-1 bg-slate-900/95 dark:bg-[#0f172a]/95 backdrop-blur-2xl border border-white/20 rounded-full px-2.5 py-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.6)] ring-1 ring-white/10 z-30 transition-all animate-in fade-in zoom-in-95 duration-150 whitespace-nowrap`}
                     >

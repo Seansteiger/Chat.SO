@@ -159,11 +159,14 @@ export class NotificationService {
     return Notification.permission;
   }
 
-  public static async requestPermission(): Promise<NotificationPermission> {
+  public static async requestPermission(userId?: string): Promise<NotificationPermission> {
     if (!this.isSupported()) return 'denied';
     try {
       sound.playMessageChime();
       const perm = await Notification.requestPermission();
+      if (perm === 'granted' && userId) {
+        await this.registerPushSubscription(userId);
+      }
       return perm;
     } catch {
       return 'denied';
@@ -395,22 +398,53 @@ export class NotificationService {
     }
     if (Notification.permission !== 'granted') return;
 
+    const vapidPublicKey = "BPVUCC1-OhzZdFB0je_WHEhPmH49QMzWvrwTyQMxZt3GGCdhdPcgrGm82jMwg91OEjlI3YQpPYzC0t44Cb9dZ3k";
+    const padding = '='.repeat((4 - (vapidPublicKey.length % 4)) % 4);
+    const base64 = (vapidPublicKey + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+
     try {
-      const reg = await navigator.serviceWorker.ready;
+      let reg: ServiceWorkerRegistration | undefined;
+      reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) {
+        reg = await navigator.serviceWorker.register('/sw.js');
+      }
+      if (navigator.serviceWorker.ready) {
+        reg = await navigator.serviceWorker.ready;
+      }
       if (!reg || !reg.pushManager) return;
 
-      const vapidPublicKey = "BPVUCC1-OhzZdFB0je_WHEhPmH49QMzWvrwTyQMxZt3GGCdhdPcgrGm82jMwg91OEjlI3YQpPYzC0t44Cb9dZ3k";
+      let sub = await reg.pushManager.getSubscription();
 
-      // Convert base64url to Uint8Array for applicationServerKey
-      const padding = '='.repeat((4 - (vapidPublicKey.length % 4)) % 4);
-      const base64 = (vapidPublicKey + padding).replace(/\-/g, '+').replace(/_/g, '/');
-      const rawData = window.atob(base64);
-      const outputArray = new Uint8Array(rawData.length);
-      for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
+      // If existing subscription key doesn't match or was invalidated, unregister and clean up
+      if (sub) {
+        try {
+          const currentKeyBuffer = sub.options?.applicationServerKey;
+          if (currentKeyBuffer) {
+            const currentKeyArray = new Uint8Array(currentKeyBuffer);
+            let matches = currentKeyArray.length === outputArray.length;
+            if (matches) {
+              for (let i = 0; i < currentKeyArray.length; i++) {
+                if (currentKeyArray[i] !== outputArray[i]) {
+                  matches = false;
+                  break;
+                }
+              }
+            }
+            if (!matches) {
+              await sub.unsubscribe();
+              sub = null;
+            }
+          }
+        } catch {
+          // Ignore inspection errors
+        }
       }
 
-      let sub = await reg.pushManager.getSubscription();
       if (!sub) {
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
@@ -434,7 +468,33 @@ export class NotificationService {
         }
       }
     } catch (err) {
-      console.warn('[NotificationService] Push subscription registration error:', err);
+      console.warn('[NotificationService] Push registration error, retrying clean subscribe:', err);
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg?.pushManager) {
+          const existing = await reg.pushManager.getSubscription();
+          if (existing) await existing.unsubscribe();
+          const freshSub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: outputArray,
+          });
+          const subJson = freshSub.toJSON();
+          if (subJson.endpoint && subJson.keys?.p256dh && subJson.keys?.auth) {
+            await convex.mutation(convexApi.push.saveSubscription, {
+              userId: userId as any,
+              endpoint: subJson.endpoint,
+              keys: {
+                p256dh: subJson.keys.p256dh,
+                auth: subJson.keys.auth,
+              },
+              userAgent: navigator.userAgent,
+            });
+            console.log('[NotificationService] Fresh push subscription registered:', userId);
+          }
+        }
+      } catch (retryErr) {
+        console.warn('[NotificationService] Retry failed:', retryErr);
+      }
     }
   }
 }

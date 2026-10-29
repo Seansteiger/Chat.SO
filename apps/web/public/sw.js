@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chatso-v4';
+const CACHE_NAME = 'chatso-v5';
 const STATIC_ASSETS = [
   '/manifest.webmanifest',
   '/favicon.png',

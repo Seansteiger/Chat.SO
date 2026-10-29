@@ -238,7 +238,7 @@ export const sendMessage = mutation({
       const senderName = sender?.displayName || sender?.username || "New Message";
       const bodyText = args.content || (args.attachmentName ? `Attachment: ${args.attachmentName}` : "Sent an attachment");
 
-      ctx.scheduler.runAfter(0, (internal.push as any).dispatchPush, {
+      ctx.scheduler.runAfter(0, (internal.pushActions as any).dispatchPush, {
         targetUserId: recipientId,
         title: senderName,
         body: bodyText,

@@ -899,7 +899,7 @@ export const AppContent: React.FC = () => {
         }}
         permission={NotificationService.getPermission()}
         onRequestPermission={async () => {
-          await NotificationService.requestPermission();
+          await NotificationService.requestPermission(currentUser?.id);
         }}
       />
 
