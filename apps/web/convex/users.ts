@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
 
 // Simple portable hash helper for browser/convex runtime
 async function hashPassword(password: string): Promise<string> {
@@ -453,5 +453,14 @@ export const heartbeat = mutation({
       patch.status = "ONLINE";
     }
     await ctx.db.patch(args.userId, patch);
+  },
+});
+
+export const getUserInternal = internalQuery({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.userId);
   },
 });

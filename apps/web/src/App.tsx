@@ -412,6 +412,41 @@ export const AppContent: React.FC = () => {
   }, [users, handleSelectUser]);
 
   // Load message history and watch messages reactively when selectedUser changes
+  // Register Web Push subscription for background texts and calls when user is logged in
+  useEffect(() => {
+    if (currentUser?.id) {
+      NotificationService.registerPushSubscription(currentUser.id);
+    }
+  }, [currentUser?.id]);
+
+  // Window focus & visibility handler: Marks active conversation as read when receiver returns/opens text
+  useEffect(() => {
+    const handleActive = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      if (selectedUser?.id && currentUser?.id && currentUser?.sendReadReceipts !== false) {
+        if (activeConvInfo.conversationId) {
+          (convex as any).mutation(convexApi.messages.markAsRead, {
+            conversationId: activeConvInfo.conversationId,
+            currentUserId: currentUser.id,
+          }).catch(() => {});
+        } else {
+          (convex as any).mutation(convexApi.messages.markConversationAsRead, {
+            currentUserId: currentUser.id,
+            peerId: selectedUser.id,
+          }).catch(() => {});
+        }
+        setUnreadMap((prev) => ({ ...prev, [selectedUser.id]: 0 }));
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleActive);
+    window.addEventListener('focus', handleActive);
+    return () => {
+      window.removeEventListener('visibilitychange', handleActive);
+      window.removeEventListener('focus', handleActive);
+    };
+  }, [selectedUser?.id, currentUser?.id, currentUser?.sendReadReceipts, activeConvInfo.conversationId]);
+
   useEffect(() => {
     if (!selectedUser) {
       setMessages([]);
@@ -419,8 +454,10 @@ export const AppContent: React.FC = () => {
       return;
     }
 
-    // Mark as read in Convex immediately (respecting privacy)
-    if (currentUser?.id && selectedUser?.id && currentUser?.sendReadReceipts !== false) {
+    const isVisibleAndActive = typeof document !== 'undefined' && !document.hidden;
+
+    // Only mark as read if the recipient has actively opened the tab/window
+    if (isVisibleAndActive && currentUser?.id && selectedUser?.id && currentUser?.sendReadReceipts !== false) {
       (convex as any).mutation(convexApi.messages.markConversationAsRead, {
         currentUserId: currentUser.id,
         peerId: selectedUser.id,
@@ -478,7 +515,9 @@ export const AppContent: React.FC = () => {
                 }
               }
 
-              if (currentUser?.sendReadReceipts !== false && currentUser?.id) {
+              // Turn to READ ONLY if the user is actively viewing and focused on the chat window!
+              const isActivelyViewing = typeof document !== 'undefined' && !document.hidden && (typeof document.hasFocus === 'function' ? document.hasFocus() : true);
+              if (isActivelyViewing && currentUser?.sendReadReceipts !== false && currentUser?.id) {
                 (convex as any).mutation(convexApi.messages.markAsRead, {
                   conversationId: res.conversationId,
                   currentUserId: currentUser.id,
@@ -488,7 +527,8 @@ export const AppContent: React.FC = () => {
           });
         }
 
-        if (res.conversationId && currentUser?.id && currentUser?.sendReadReceipts !== false) {
+        const isUserFocused = typeof document !== 'undefined' && !document.hidden && (typeof document.hasFocus === 'function' ? document.hasFocus() : true);
+        if (isUserFocused && res.conversationId && currentUser?.id && currentUser?.sendReadReceipts !== false) {
           (convex as any).mutation(convexApi.messages.markAsRead, {
             conversationId: res.conversationId,
             currentUserId: currentUser.id,
@@ -716,6 +756,14 @@ export const AppContent: React.FC = () => {
                 : m
             )
           );
+
+          // Mark incoming messages as read when the user replies
+          if (currentUser?.sendReadReceipts !== false) {
+            (convex as any).mutation(convexApi.messages.markAsRead, {
+              conversationId: targetConvId,
+              currentUserId: currentUser.id,
+            }).catch(() => {});
+          }
         }
       } catch (err) {
         console.error('Failed to send via Convex:', err);

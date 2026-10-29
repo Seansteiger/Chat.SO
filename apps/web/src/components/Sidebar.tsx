@@ -1146,7 +1146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="w-full p-3 flex items-center justify-between text-left dark:hover:bg-white/5 hover:bg-slate-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-xs">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-xs">
                   <Bell className="w-4 h-4" />
                 </div>
                 <div>
@@ -1156,7 +1156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <div className="flex items-center gap-1.5">
                 {unreadNotificationsCount > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white">
                     {unreadNotificationsCount} new
                   </span>
                 )}

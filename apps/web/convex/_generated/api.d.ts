@@ -13,6 +13,7 @@ import type * as circles from "../circles.js";
 import type * as files from "../files.js";
 import type * as messages from "../messages.js";
 import type * as polls from "../polls.js";
+import type * as push from "../push.js";
 import type * as users from "../users.js";
 import type * as webrtc from "../webrtc.js";
 
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   files: typeof files;
   messages: typeof messages;
   polls: typeof polls;
+  push: typeof push;
   users: typeof users;
   webrtc: typeof webrtc;
 }>;

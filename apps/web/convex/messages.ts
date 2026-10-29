@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 export const getOrCreateConversation = mutation({
   args: {
@@ -228,6 +229,23 @@ export const sendMessage = mutation({
 
     if (existingTyping) {
       await ctx.db.delete(existingTyping._id);
+    }
+
+    // Dispatch background Web Push notification if recipient's app/browser is closed
+    if (!isSelfVault && conv) {
+      const recipientId = conv.participant1 === args.senderId ? conv.participant2 : conv.participant1;
+      const sender = await ctx.db.get(args.senderId);
+      const senderName = sender?.displayName || sender?.username || "New Message";
+      const bodyText = args.content || (args.attachmentName ? `Attachment: ${args.attachmentName}` : "Sent an attachment");
+
+      ctx.scheduler.runAfter(0, (internal.push as any).dispatchPush, {
+        targetUserId: recipientId,
+        title: senderName,
+        body: bodyText,
+        type: "MESSAGE",
+        silent: args.isSilent,
+        senderId: args.senderId,
+      });
     }
 
     return await ctx.db.get(messageId);

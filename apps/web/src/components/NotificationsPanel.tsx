@@ -67,14 +67,14 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
         {/* Header */}
         <div className="p-4 border-b dark:border-white/10 border-slate-200 flex items-center justify-between dark:bg-slate-900/60 bg-slate-50">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-blue-600/20 text-blue-500 border border-blue-500/30">
+            <div className="p-2 rounded-xl bg-indigo-600/20 text-indigo-500 border border-indigo-500/30">
               <Bell className="w-4 h-4" />
             </div>
             <div>
               <h2 className="text-sm font-semibold dark:text-white text-slate-900 flex items-center gap-2">
                 Notifications Panel
                 {unreadCount > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500 text-white">
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-600 text-white">
                     {unreadCount} new
                   </span>
                 )}
@@ -159,16 +159,16 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
                 onClick={() => handleClickItem(notif)}
                 className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
                   !notif.read
-                    ? 'dark:bg-blue-600/10 bg-blue-50/70 dark:border-blue-500/30 border-blue-200 hover:border-blue-400'
+                    ? 'dark:bg-indigo-600/10 bg-indigo-50/70 dark:border-indigo-500/30 border-indigo-200 hover:border-indigo-400'
                     : 'dark:bg-slate-900/40 bg-slate-50/60 dark:border-white/5 border-slate-200/80 hover:bg-slate-100 dark:hover:bg-white/5'
                 }`}
               >
                 <div className="relative shrink-0 mt-0.5">
-                  <div className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-400/30 flex items-center justify-center text-blue-500 font-bold text-xs">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-400/30 flex items-center justify-center text-indigo-500 font-bold text-xs">
                     <MessageSquare className="w-4 h-4" />
                   </div>
                   {!notif.read && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 dark:border-slate-950 border-white" />
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 dark:border-slate-950 border-white" />
                   )}
                 </div>
 

@@ -1,3 +1,5 @@
+import { convex, api as convexApi } from '../convex.js';
+
 // Web Audio synthetic chimes for zero-latency notification sounds
 class SoundService {
   private audioCtx: AudioContext | null = null;
@@ -253,7 +255,7 @@ export class NotificationService {
             await (reg as any).showNotification(title, {
               body,
               icon: '/icons/icon-192.png',
-              badge: '/icons/icon-192.png',
+              badge: '/icons/badge-96.png',
               tag: 'chatso-active-call',
               renotify: true,
               requireInteraction: true,
@@ -277,7 +279,7 @@ export class NotificationService {
           const n = new Notification(title, {
             body,
             icon: '/icons/icon-192.png',
-            badge: '/icons/icon-192.png',
+            badge: '/icons/badge-96.png',
             tag: 'chatso-active-call',
             requireInteraction: true,
           } as any);
@@ -352,7 +354,7 @@ export class NotificationService {
             await (reg as any).showNotification(title, {
               body: options?.body || 'New message on Chat.SO',
               icon: '/icons/icon-192.png',
-              badge: '/icons/icon-192.png',
+              badge: '/icons/badge-96.png',
               tag: options?.tag || `chat-${options?.senderId || 'general'}`,
               renotify: true,
               vibrate: options?.silent ? undefined : [200, 100, 200],
@@ -370,7 +372,7 @@ export class NotificationService {
           const n = new Notification(title, {
             body: options?.body || 'New message on Chat.SO',
             icon: '/icons/icon-192.png',
-            badge: '/icons/icon-192.png',
+            badge: '/icons/badge-96.png',
             tag: options?.tag || 'chatso-message',
           });
 
@@ -383,6 +385,56 @@ export class NotificationService {
       } catch (err) {
         console.warn('[NotificationService] notify error:', err);
       }
+    }
+  }
+
+  // Registers background Web Push subscription with the service worker & stores in Convex
+  public static async registerPushSubscription(userId: string) {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      return;
+    }
+    if (Notification.permission !== 'granted') return;
+
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (!reg || !reg.pushManager) return;
+
+      const vapidPublicKey = "BPVUCC1-OhzZdFB0je_WHEhPmH49QMzWvrwTyQMxZt3GGCdhdPcgrGm82jMwg91OEjlI3YQpPYzC0t44Cb9dZ3k";
+
+      // Convert base64url to Uint8Array for applicationServerKey
+      const padding = '='.repeat((4 - (vapidPublicKey.length % 4)) % 4);
+      const base64 = (vapidPublicKey + padding).replace(/\-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: outputArray,
+        });
+      }
+
+      if (sub) {
+        const subJson = sub.toJSON();
+        if (subJson.endpoint && subJson.keys?.p256dh && subJson.keys?.auth) {
+          await convex.mutation(convexApi.push.saveSubscription, {
+            userId: userId as any,
+            endpoint: subJson.endpoint,
+            keys: {
+              p256dh: subJson.keys.p256dh,
+              auth: subJson.keys.auth,
+            },
+            userAgent: navigator.userAgent,
+          });
+          console.log('[NotificationService] Web Push subscription active for user:', userId);
+        }
+      }
+    } catch (err) {
+      console.warn('[NotificationService] Push subscription registration error:', err);
     }
   }
 }

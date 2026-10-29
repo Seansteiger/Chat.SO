@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 export const initiateCall = mutation({
   args: {
@@ -81,6 +82,17 @@ export const initiateCall = mutation({
       state: "RINGING",
       createdAt: Date.now(),
       updatedAt: Date.now(),
+    });
+
+    // Dispatch background Web Push notification so receiver device rings even if app/browser is closed
+    ctx.scheduler.runAfter(0, (internal.push as any).dispatchPush, {
+      targetUserId: args.receiverId,
+      title: `Incoming ${args.isVideo ? "Video" : "Voice"} Call`,
+      body: `${args.callerName} is calling you...`,
+      type: "CALL",
+      callId,
+      callerId: args.callerId,
+      tag: "chatso-incoming-call",
     });
 
     return await ctx.db.get(callId);
