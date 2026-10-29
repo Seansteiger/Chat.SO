@@ -21,6 +21,7 @@ import {
   PhoneIncoming,
   PhoneOutgoing,
   PhoneMissed,
+  PhoneOff,
   Video,
   MessageSquarePlus,
   Globe,
