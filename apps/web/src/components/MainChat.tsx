@@ -103,6 +103,20 @@ export const MainChat: React.FC<MainChatProps> = ({
   // Emoji picker drawers
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [reactingMessageId, setReactingMessageId] = useState<string | null>(null);
+  const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
+  const attachMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close attach menu on outside click
+  useEffect(() => {
+    if (!isAttachMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (attachMenuRef.current && !attachMenuRef.current.contains(e.target as Node)) {
+        setIsAttachMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isAttachMenuOpen]);
 
   // Editing message
   const [editingMessage, setEditingMessage] = useState<MessageDto | null>(null);
@@ -1228,105 +1242,158 @@ export const MainChat: React.FC<MainChatProps> = ({
         /* Floating Suspended Composer Dock (Stitch Design Specification) */
         <div className="p-3 md:p-4 bg-gradient-to-t dark:from-[#09090b] dark:via-[#09090b]/90 from-[#fbfbfa] via-[#fbfbfa]/95 to-transparent pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
           <div className="chatso-input-dock p-2 md:p-2.5 rounded-2xl dark:bg-[#121215]/90 bg-white/95 border dark:border-white/10 border-slate-200/90 shadow-xl backdrop-blur-xl">
-            <form onSubmit={handleSend} className="flex items-center gap-2">
+            <form onSubmit={handleSend} className="flex items-center gap-2 max-w-4xl mx-auto">
               <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
-              
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                title="Attach file (Max 50MB direct GCS upload)"
-                disabled={!!activeUpload}
-                className="p-2 rounded-xl dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-slate-900 transition-colors disabled:opacity-40"
-              >
-                <Paperclip className="w-4 h-4" />
-              </button>
 
-              {/* Voice Note Trigger */}
-              <button
-                type="button"
-                onClick={startRecording}
-                title="Record Voice Note"
-                className="p-2 rounded-xl dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-indigo-600 transition-colors"
-              >
-                <Mic className="w-4 h-4" />
-              </button>
+              {/* Telegram/WhatsApp Style Input Dock: [ 😊 | Message... | 🔕 | 📎 ] */}
+              <div className="flex-1 flex items-center bg-slate-100/90 dark:bg-[#18181b] border border-slate-200 dark:border-white/10 rounded-2xl px-2.5 py-1.5 focus-within:ring-1 focus-within:ring-indigo-500 transition-all shadow-xs min-w-0">
+                {/* Emoji Picker Button */}
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                    title="Emoji & Reactions Picker"
+                    className={`p-1.5 rounded-xl transition-colors ${
+                      isEmojiPickerOpen
+                        ? 'text-amber-500 bg-amber-500/15'
+                        : 'text-slate-400 hover:text-amber-500 dark:hover:text-amber-400'
+                    }`}
+                  >
+                    <Smile className="w-5 h-5" />
+                  </button>
 
-              {/* Decision Poll Trigger */}
-              <button
-                type="button"
-                onClick={() => setIsPollModalOpen(true)}
-                title="Post Group Decision Poll"
-                className="p-2 rounded-xl dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-indigo-600 transition-colors"
-              >
-                <BarChart3 className="w-4 h-4" />
-              </button>
+                  <EmojiPickerDrawer
+                    isOpen={isEmojiPickerOpen}
+                    onClose={() => setIsEmojiPickerOpen(false)}
+                    onSelectEmoji={(emoji) => {
+                      setInputText((prev) => prev + emoji);
+                      setIsEmojiPickerOpen(false);
+                    }}
+                    title="Insert Emoji"
+                  />
+                </div>
 
-              {/* Silent Send Toggle */}
-              <button
-                type="button"
-                onClick={() => setIsSilent(!isSilent)}
-                title={
-                  isSilent
-                    ? 'Silent Send active (no sound/chime on recipient device)'
-                    : 'Toggle Silent Send (send without sound)'
-                }
-                className={`p-2 rounded-xl transition-colors ${
-                  isSilent
-                    ? 'dark:bg-indigo-600/25 dark:border-indigo-500/40 dark:text-indigo-400 bg-indigo-50 border border-indigo-200 text-indigo-700'
-                    : 'dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500'
-                }`}
-              >
-                {isSilent ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-              </button>
+                {/* Silent Send Active Pill inside input */}
+                {isSilent && (
+                  <button
+                    type="button"
+                    onClick={() => setIsSilent(false)}
+                    title="Silent mode active (click to turn off)"
+                    className="mx-1 px-1.5 py-0.5 rounded-md bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 text-[10px] font-semibold flex items-center gap-1 shrink-0"
+                  >
+                    <BellOff className="w-3 h-3" />
+                    <span>Silent</span>
+                    <X className="w-2.5 h-2.5 ml-0.5 opacity-60" />
+                  </button>
+                )}
 
-              {/* WhatsApp / Telegram Emoji Picker Button */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
-                  title="Emoji & Reactions Picker"
-                  className={`p-2 rounded-xl transition-colors ${
-                    isEmojiPickerOpen
-                      ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
-                      : 'dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-amber-500'
-                  }`}
-                >
-                  <Smile className="w-4 h-4" />
-                </button>
-
-                <EmojiPickerDrawer
-                  isOpen={isEmojiPickerOpen}
-                  onClose={() => setIsEmojiPickerOpen(false)}
-                  onSelectEmoji={(emoji) => {
-                    setInputText((prev) => prev + emoji);
-                    setIsEmojiPickerOpen(false);
-                  }}
-                  title="Insert Emoji"
+                {/* Text Input */}
+                <input
+                  type="text"
+                  value={inputText}
+                  onChange={handleInputChange}
+                  placeholder={
+                    isSelfVault
+                      ? 'Note to self, paste code...'
+                      : isSilent
+                      ? `Silent message to @${peer.username}...`
+                      : `Message @${peer.username}...`
+                  }
+                  className="flex-1 bg-transparent px-2 py-1 text-sm dark:text-white text-slate-900 placeholder:text-slate-400 focus:outline-none min-w-0"
                 />
+
+                {/* Attachment / Action Plus Button */}
+                <div ref={attachMenuRef} className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsAttachMenuOpen(!isAttachMenuOpen)}
+                    title="Actions & Attachments"
+                    className={`p-1.5 rounded-xl transition-colors ${
+                      isAttachMenuOpen
+                        ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/15'
+                        : 'text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+                    }`}
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </button>
+
+                  {/* Attachment Popup Sheet */}
+                  {isAttachMenuOpen && (
+                    <div className="absolute bottom-full right-0 mb-3 w-52 rounded-2xl bg-slate-900/95 dark:bg-[#0f172a]/95 backdrop-blur-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-2 z-50 animate-in fade-in zoom-in-95 duration-150 text-white space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAttachMenuOpen(false);
+                          fileInputRef.current?.click();
+                        }}
+                        className="w-full p-2 rounded-xl flex items-center gap-2.5 text-xs hover:bg-white/10 transition-colors text-left font-medium text-slate-200 hover:text-white"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                          <Paperclip className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div>Share File</div>
+                          <div className="text-[10px] text-slate-400">Photos, docs (up to 50MB)</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAttachMenuOpen(false);
+                          setIsPollModalOpen(true);
+                        }}
+                        className="w-full p-2 rounded-xl flex items-center gap-2.5 text-xs hover:bg-white/10 transition-colors text-left font-medium text-slate-200 hover:text-white"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                          <BarChart3 className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div>Decision Poll</div>
+                          <div className="text-[10px] text-slate-400">Create interactive poll</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSilent(!isSilent);
+                          setIsAttachMenuOpen(false);
+                        }}
+                        className="w-full p-2 rounded-xl flex items-center gap-2.5 text-xs hover:bg-white/10 transition-colors text-left font-medium text-slate-200 hover:text-white"
+                      >
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isSilent ? 'bg-indigo-500 text-white' : 'bg-amber-500/20 text-amber-400'}`}>
+                          {isSilent ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                        </div>
+                        <div>
+                          <div>{isSilent ? 'Disable Silent Send' : 'Silent Send'}</div>
+                          <div className="text-[10px] text-slate-400">{isSilent ? 'Sound alert active' : 'No sound on recipient'}</div>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <input
-                type="text"
-                value={inputText}
-                onChange={handleInputChange}
-                placeholder={
-                  isSelfVault
-                    ? 'Write a personal thought, paste code, or note to self...'
-                    : isSilent
-                    ? `Silent message to @${peer.username}...`
-                    : `Message @${peer.username} (press / for commands)...`
-                }
-                className="flex-1 py-2 px-3 rounded-xl dark:bg-[#18181b] bg-slate-50 border dark:border-white/10 border-slate-200 text-sm dark:text-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-              />
-
-              <button
-                type="submit"
-                disabled={!inputText.trim()}
-                className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40 transition-all shadow-sm shadow-indigo-600/30 font-medium flex items-center gap-1.5"
-                title="Send message (Enter)"
-              >
-                <Send className="w-4 h-4" />
-              </button>
+              {/* Right Action Button: Morphs between Voice Note and Send */}
+              {inputText.trim() ? (
+                <button
+                  type="submit"
+                  className="w-10 h-10 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/30 active:scale-90 transition-all cursor-pointer"
+                  title="Send Message"
+                >
+                  <Send className="w-4 h-4 ml-0.5" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startRecording}
+                  className="w-10 h-10 rounded-full bg-slate-100 dark:bg-[#18181b] hover:bg-indigo-50 dark:hover:bg-indigo-600/20 text-slate-600 dark:text-slate-300 hover:text-indigo-600 border border-slate-200 dark:border-white/10 flex items-center justify-center shrink-0 active:scale-90 transition-all cursor-pointer"
+                  title="Record Voice Note"
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
+              )}
             </form>
           </div>
         </div>

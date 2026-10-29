@@ -248,12 +248,12 @@ export class NotificationService {
     if (this.isSupported() && Notification.permission === 'granted') {
       try {
         if ('serviceWorker' in navigator) {
-          const reg = await navigator.serviceWorker.getRegistration();
+          const reg = await (navigator.serviceWorker.ready || navigator.serviceWorker.getRegistration());
           if (reg && 'showNotification' in reg) {
             await (reg as any).showNotification(title, {
               body,
-              icon: '/icons/icon-192.svg',
-              badge: '/icons/icon-192.svg',
+              icon: '/icons/icon-192.png',
+              badge: '/icons/icon-192.png',
               tag: 'chatso-active-call',
               renotify: true,
               requireInteraction: true,
@@ -272,21 +272,24 @@ export class NotificationService {
         if (this.activeCallNotification) {
           this.activeCallNotification.close();
         }
-        const n = new Notification(title, {
-          body,
-          icon: '/icons/icon-192.svg',
-          badge: '/icons/icon-192.svg',
-          tag: 'chatso-active-call',
-          requireInteraction: true,
-        } as any);
+        // Desktop fallback where Notification constructor is permitted
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+          const n = new Notification(title, {
+            body,
+            icon: '/icons/icon-192.png',
+            badge: '/icons/icon-192.png',
+            tag: 'chatso-active-call',
+            requireInteraction: true,
+          } as any);
 
-        n.onclick = () => {
-          window.focus();
-          if (params.onAnswer) params.onAnswer();
-          n.close();
-        };
+          n.onclick = () => {
+            window.focus();
+            if (params.onAnswer) params.onAnswer();
+            n.close();
+          };
 
-        this.activeCallNotification = n;
+          this.activeCallNotification = n;
+        }
       } catch (err) {
         console.warn('Call notification error:', err);
       }
@@ -339,20 +342,20 @@ export class NotificationService {
     this.notificationsList = [newNotif, ...this.notificationsList.slice(0, 49)];
     this.notifyListeners();
 
-    // 3. Dispatch to OS Notifications Panel / Action Center
+    // 3. Dispatch to OS Notifications Panel / Action Center / Mobile notification tray
     if (this.isSupported() && Notification.permission === 'granted') {
       try {
-        // Try Service Worker showNotification first (persists to OS Notification Center / Action Center)
+        // Try Service Worker showNotification first (Required for Android & persists to OS Notification Center)
         if ('serviceWorker' in navigator) {
-          const reg = await navigator.serviceWorker.getRegistration();
+          const reg = await (navigator.serviceWorker.ready || navigator.serviceWorker.getRegistration());
           if (reg && 'showNotification' in reg) {
             await (reg as any).showNotification(title, {
               body: options?.body || 'New message on Chat.SO',
-              icon: '/icons/icon-192.svg',
-              badge: '/icons/icon-192.svg',
+              icon: '/icons/icon-192.png',
+              badge: '/icons/icon-192.png',
               tag: options?.tag || `chat-${options?.senderId || 'general'}`,
               renotify: true,
-              requireInteraction: true, // Key: Keeps notification in Windows / OS Notifications Panel
+              vibrate: options?.silent ? undefined : [200, 100, 200],
               data: {
                 url: window.location.href,
                 senderId: options?.senderId,
@@ -362,22 +365,23 @@ export class NotificationService {
           }
         }
 
-        // Standard desktop notification fallback
-        const n = new Notification(title, {
-          body: options?.body || 'New message on Chat.SO',
-          icon: '/icons/icon-192.svg',
-          badge: '/icons/icon-192.svg',
-          tag: options?.tag || 'chatso-message',
-          requireInteraction: true,
-        } as any);
+        // Standard desktop notification fallback (where Notification constructor is allowed)
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+          const n = new Notification(title, {
+            body: options?.body || 'New message on Chat.SO',
+            icon: '/icons/icon-192.png',
+            badge: '/icons/icon-192.png',
+            tag: options?.tag || 'chatso-message',
+          });
 
-        n.onclick = () => {
-          window.focus();
-          if (options?.onClick) options.onClick();
-          n.close();
-        };
-      } catch {
-        // Suppressed or closed
+          n.onclick = () => {
+            window.focus();
+            if (options?.onClick) options.onClick();
+            n.close();
+          };
+        }
+      } catch (err) {
+        console.warn('[NotificationService] notify error:', err);
       }
     }
   }

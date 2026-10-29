@@ -44,6 +44,8 @@ export const AppContent: React.FC = () => {
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [activeTab, setActiveTab] = useState<'chats' | 'circles' | 'requests' | 'calls' | 'settings'>('chats');
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const notifiedMsgIdsRef = useRef<Set<string>>(new Set());
+  const isInitialSummariesLoadRef = useRef(true);
 
   // Watch pending handshake requests count for notification badge
   useEffect(() => {
@@ -192,9 +194,39 @@ export const AppContent: React.FC = () => {
               totalUnread += count;
               if (s.lastMessage) {
                 newLastMsgMap[s.otherUserId] = s.lastMessage;
+
+                const msgId = s.lastMessage.id || s.lastMessage._id;
+                if (isInitialSummariesLoadRef.current) {
+                  if (msgId) notifiedMsgIdsRef.current.add(msgId);
+                } else if (msgId && !notifiedMsgIdsRef.current.has(msgId)) {
+                  notifiedMsgIdsRef.current.add(msgId);
+                  // If from someone else and user is not currently in active chat
+                  if (s.lastMessage.senderId !== currentUser?.id) {
+                    const isLookingAtChat = typeof document !== 'undefined' && !document.hidden && selectedUser?.id === s.otherUserId;
+                    if (!isLookingAtChat) {
+                      const peerName = s.otherUser?.displayName || s.otherUser?.username || 'New Message';
+                      const isQuiet = s.lastMessage.isSilent || currentUser?.status === 'LOW_BATTERY' || currentUser?.status === 'DEEP_FOCUS';
+                      NotificationService.notify(peerName, {
+                        body: s.lastMessage.content || (s.lastMessage.attachmentName ? `Attachment: ${s.lastMessage.attachmentName}` : 'Sent an attachment'),
+                        tag: `chat-${s.otherUserId}`,
+                        senderId: s.otherUserId,
+                        silent: isQuiet,
+                        onClick: () => {
+                          if (s.otherUser) {
+                            handleSelectUser(s.otherUser);
+                          }
+                        },
+                      });
+                    }
+                  }
+                }
               }
             }
           });
+
+          if (isInitialSummariesLoadRef.current) {
+            isInitialSummariesLoadRef.current = false;
+          }
 
           setUnreadMap(newUnreadMap);
           setLastMessageMap(newLastMsgMap);
@@ -706,8 +738,24 @@ export const AppContent: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center dark:bg-[#09090b] bg-[#fbfbfa]">
-        <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+      <div className="h-screen w-screen flex flex-col items-center justify-center dark:bg-[#09090b] bg-[#fbfbfa] select-none">
+        <div className="relative flex flex-col items-center">
+          <div className="w-24 h-24 rounded-3xl p-1 bg-gradient-to-tr from-blue-500 via-purple-500 to-pink-500 shadow-2xl shadow-indigo-500/30 ring-1 ring-white/20 animate-pulse">
+            <img
+              src="/icons/launch-icon.png"
+              alt="Chat.SO"
+              className="w-full h-full rounded-[20px] object-cover"
+            />
+          </div>
+          <h1 className="mt-5 text-xl font-bold tracking-tight dark:from-white dark:via-slate-200 dark:to-slate-400 from-slate-900 via-slate-800 to-slate-600 bg-gradient-to-r bg-clip-text text-transparent">
+            Chat.SO
+          </h1>
+          <div className="mt-4 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.3s]" />
+            <span className="w-2 h-2 rounded-full bg-purple-500 animate-bounce [animation-delay:-0.15s]" />
+            <span className="w-2 h-2 rounded-full bg-pink-500 animate-bounce" />
+          </div>
+        </div>
       </div>
     );
   }

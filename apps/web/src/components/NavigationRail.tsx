@@ -34,20 +34,18 @@ export const NavigationRail: React.FC<NavigationRailProps> = ({
     <aside className="chatso-nav-rail hidden lg:flex w-16 h-full flex-col justify-between items-center py-4 z-40 shrink-0 select-none transition-colors border-r dark:bg-[#09090b] dark:border-white/[0.08] bg-[#f4f4f6] border-slate-200">
       {/* Top Brand Logo & Quick Action */}
       <div className="flex flex-col items-center gap-4">
-        {/* Glowing Hexagon Logo */}
+        {/* Launch Icon Brand Button */}
         <div
           onClick={() => onSelectTab('chats')}
           className="relative group cursor-pointer"
           title="Chat.SO Home"
         >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-105 shadow-md dark:bg-gradient-to-tr dark:from-indigo-900/40 dark:to-indigo-600/30 dark:border dark:border-indigo-500/50 dark:shadow-indigo-500/20 bg-indigo-600 text-white shadow-indigo-500/30">
-            <svg
-              className="w-5 h-5 dark:text-indigo-300 text-white drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M12 2L2 7V17L12 22L22 17V7L12 2ZM12 4.18L19.5 8.35V15.65L12 19.82L4.5 15.65V8.35L12 4.18ZM10.5 8V16H13.5V8H10.5Z" />
-            </svg>
+          <div className="w-10 h-10 rounded-xl p-0.5 bg-gradient-to-tr from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center transition-all duration-300 group-hover:scale-105 shadow-md shadow-indigo-500/20 ring-1 ring-white/10">
+            <img
+              src="/icons/icon-192.png"
+              alt="Chat.SO Logo"
+              className="w-full h-full rounded-[10px] object-cover"
+            />
           </div>
           <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 dark:ring-[#09090b] ring-[#f4f4f6]" />
         </div>

@@ -21,7 +21,6 @@ import {
   PhoneIncoming,
   PhoneOutgoing,
   PhoneMissed,
-  PhoneOff,
   Video,
   MessageSquarePlus,
   Globe,
@@ -63,6 +62,42 @@ interface SidebarProps {
   activeTab?: 'chats' | 'circles' | 'requests' | 'calls' | 'settings';
   onTabChange?: (tab: 'chats' | 'circles' | 'requests' | 'calls' | 'settings') => void;
 }
+
+const formatCallTimestamp = (timestamp?: number) => {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  const now = new Date();
+  
+  const isToday = date.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+
+  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  if (isToday) {
+    return `Today, ${timeStr}`;
+  }
+  if (isYesterday) {
+    return `Yesterday, ${timeStr}`;
+  }
+  
+  const isThisYear = date.getFullYear() === now.getFullYear();
+  const dateStr = date.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+    ...(isThisYear ? {} : { year: 'numeric' }),
+  });
+  return `${dateStr}, ${timeStr}`;
+};
+
+const formatCallDuration = (seconds?: number) => {
+  if (!seconds || seconds <= 0) return null;
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  if (mins === 0) return `${secs}s`;
+  return `${mins}m ${secs}s`;
+};
 
 export const Sidebar: React.FC<SidebarProps> = ({
   users,
@@ -525,30 +560,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Omnibox Search Input (Only for Chats & Circles) */}
       {(activeTab === 'chats' || activeTab === 'circles') && (
-        <div className="chatso-search-container p-3 border-b dark:border-white/[0.08] border-slate-200">
-          <div className="relative flex items-center">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3" />
+        <div className="chatso-search-container p-2.5 sm:p-3 border-b dark:border-white/[0.08] border-slate-200 flex justify-center">
+          <div className="relative flex items-center w-full max-w-[270px] sm:max-w-none">
+            <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 absolute left-2.5 sm:left-3 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={
                 activeTab === 'chats'
-                  ? 'Search chats or find by @user, email... (⌘K)'
+                  ? 'Search chats or @user... (⌘K)'
                   : 'Search circles...'
               }
-              className="chatso-search-input w-full pl-9 pr-12 py-2 dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 rounded-xl text-xs dark:text-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm"
+              className="chatso-search-input w-full pl-8 sm:pl-9 pr-8 sm:pr-12 py-1.5 sm:py-2 dark:bg-[#18181b] bg-white border dark:border-white/10 border-slate-200 rounded-xl text-xs dark:text-white text-slate-900 placeholder:text-slate-400 placeholder:text-center sm:placeholder:text-left text-center sm:text-left focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm"
             />
             {searchQuery ? (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 text-slate-400 hover:text-slate-600 p-0.5"
+                className="absolute right-2 sm:right-2.5 text-slate-400 hover:text-slate-600 p-0.5"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             ) : (
-              <kbd className="absolute right-2.5 font-mono text-[10px] dark:bg-white/5 bg-slate-100 border dark:border-white/10 border-slate-200 dark:text-slate-400 text-slate-500 px-1.5 py-0.5 rounded pointer-events-none">
+              <kbd className="hidden sm:inline-block absolute right-2.5 font-mono text-[10px] dark:bg-white/5 bg-slate-100 border dark:border-white/10 border-slate-200 dark:text-slate-400 text-slate-500 px-1.5 py-0.5 rounded pointer-events-none">
                 ⌘K
               </kbd>
             )}
@@ -793,48 +828,104 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <p className="text-xs font-medium">No call history</p>
             </div>
           ) : (
-            callLogs.map((call) => (
-              <div
-                key={call.id}
-                className="w-full p-2.5 rounded-xl flex items-center justify-between gap-3 text-left dark:hover:bg-white/5 hover:bg-slate-100 cursor-pointer border border-transparent"
-              >
-                <div className="min-w-0 flex-1">
-                  <span className="text-xs font-semibold dark:text-white text-slate-900 truncate block">
-                    {call.peer?.displayName || 'User'}
-                  </span>
-                  <div className="flex items-center gap-1.5 text-[11px] dark:text-slate-400 text-slate-500 mt-0.5">
-                    {call.direction === 'incoming' ? (
-                      call.status === 'MISSED' ? (
-                        <span className="flex items-center gap-1 text-rose-500 font-medium">
-                          <PhoneMissed className="w-3.5 h-3.5" /> Missed
-                        </span>
-                      ) : call.status === 'REJECTED' ? (
-                        <span className="flex items-center gap-1 text-slate-500">
-                          <PhoneOff className="w-3.5 h-3.5 text-rose-500" /> Declined
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-emerald-500">
-                          <PhoneIncoming className="w-3.5 h-3.5" /> Incoming
-                        </span>
-                      )
-                    ) : (
-                      <span className="flex items-center gap-1 text-indigo-500">
-                        <PhoneOutgoing className="w-3.5 h-3.5" /> Outgoing
-                      </span>
-                    )}
-                    <span>•</span>
-                    <span>{call.isVideo ? 'Video' : 'Voice'}</span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onStartCall?.(call.peer, call.isVideo)}
-                  className="p-2 rounded-xl dark:bg-white/5 dark:hover:bg-indigo-600 dark:text-slate-300 dark:hover:text-white bg-slate-100 hover:bg-indigo-600 text-slate-700 hover:text-white transition-colors"
+            callLogs.map((call) => {
+              const peerName = call.peer?.displayName || call.peer?.handle || 'User';
+              const timeDisplay = formatCallTimestamp(call.createdAt || call._creationTime);
+              const durationDisplay = formatCallDuration(call.duration);
+
+              return (
+                <div
+                  key={call.id || call._id}
+                  className="w-full p-2.5 rounded-2xl flex items-center justify-between gap-3 text-left dark:hover:bg-white/[0.04] hover:bg-slate-100/80 transition-all border border-transparent dark:hover:border-white/5 hover:border-slate-200/60 group"
                 >
-                  {call.isVideo ? <Video className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
-                </button>
-              </div>
-            ))
+                  {/* Peer Avatar with Direction Badge */}
+                  <div className="relative shrink-0">
+                    {call.peer?.avatarUrl ? (
+                      <img
+                        src={call.peer.avatarUrl}
+                        alt={peerName}
+                        className="w-10 h-10 rounded-full object-cover ring-1 dark:ring-white/10 ring-slate-200"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs ring-1 ring-white/10">
+                        {peerName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span
+                      className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] shadow-sm ${
+                        call.direction === 'incoming'
+                          ? call.status === 'MISSED'
+                            ? 'bg-rose-500 text-white'
+                            : call.status === 'REJECTED'
+                            ? 'bg-slate-500 text-white'
+                            : 'bg-emerald-500 text-white'
+                          : 'bg-indigo-500 text-white'
+                      }`}
+                    >
+                      {call.direction === 'incoming' ? (
+                        call.status === 'MISSED' ? (
+                          <PhoneMissed className="w-2.5 h-2.5" />
+                        ) : call.status === 'REJECTED' ? (
+                          <PhoneOff className="w-2.5 h-2.5" />
+                        ) : (
+                          <PhoneIncoming className="w-2.5 h-2.5" />
+                        )
+                      ) : (
+                        <PhoneOutgoing className="w-2.5 h-2.5" />
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Call Details & Timestamps */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-semibold dark:text-white text-slate-900 truncate">
+                        {peerName}
+                      </span>
+                      {timeDisplay && (
+                        <span className="text-[10px] font-medium dark:text-slate-400 text-slate-500 shrink-0">
+                          {timeDisplay}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] dark:text-slate-400 text-slate-500 mt-0.5">
+                      {call.direction === 'incoming' ? (
+                        call.status === 'MISSED' ? (
+                          <span className="text-rose-500 font-medium">Missed</span>
+                        ) : call.status === 'REJECTED' ? (
+                          <span className="text-slate-400">Declined</span>
+                        ) : (
+                          <span className="text-emerald-500 font-medium">Answered</span>
+                        )
+                      ) : (
+                        <span className="text-indigo-400 font-medium">Outgoing</span>
+                      )}
+                      <span>•</span>
+                      <span>{call.isVideo ? 'Video' : 'Voice'}</span>
+                      {durationDisplay && (
+                        <>
+                          <span>•</span>
+                          <span className="font-mono text-[10px]">{durationDisplay}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Call Back Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (call.peer) onStartCall?.(call.peer, call.isVideo);
+                    }}
+                    title={`Call ${peerName}`}
+                    className="p-2 rounded-xl dark:bg-white/5 dark:hover:bg-indigo-600 dark:text-slate-300 dark:hover:text-white bg-slate-100 hover:bg-indigo-600 text-slate-700 hover:text-white transition-all shrink-0 active:scale-95 shadow-xs"
+                  >
+                    {call.isVideo ? <Video className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
+                  </button>
+                </div>
+              );
+            })
           )}
         </div>
       )}
@@ -1303,6 +1394,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <ChevronRight className="w-4 h-4 text-rose-400" />
             </button>
+          </div>
+
+          {/* App Brand & Version Footer */}
+          <div className="pt-3 pb-2 flex flex-col items-center justify-center text-center select-none">
+            <div className="w-10 h-10 rounded-xl p-0.5 bg-gradient-to-tr from-blue-500 via-purple-500 to-pink-500 shadow-md ring-1 ring-white/10 mb-1.5">
+              <img src="/icons/icon-192.png" alt="Chat.SO" className="w-full h-full rounded-[9px] object-cover" />
+            </div>
+            <div className="text-xs font-semibold dark:text-slate-300 text-slate-700">Chat.SO Web</div>
+            <div className="text-[10px] font-mono dark:text-slate-500 text-slate-400">v1.2.0 • End-to-End Encrypted</div>
           </div>
         </div>
       )}

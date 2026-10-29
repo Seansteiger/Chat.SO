@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth.js';
 import { useTheme } from '../hooks/useTheme.js';
 import {
-  MessageSquare,
   Video,
   ShieldCheck,
   UserCheck,
@@ -299,8 +298,12 @@ export const AuthScreen: React.FC = () => {
         <div className="w-full max-w-md my-auto py-2">
           {/* Brand Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 shadow-xl shadow-indigo-500/20 mb-4 border border-white/20">
-              <MessageSquare className="w-8 h-8 text-white" />
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl p-0.5 bg-gradient-to-tr from-blue-500 via-purple-500 to-pink-500 shadow-2xl shadow-indigo-500/30 mb-4 ring-1 ring-white/20 transition-transform hover:scale-105 duration-300">
+              <img
+                src="/icons/launch-icon.png"
+                alt="Chat.SO Launch Icon"
+                className="w-full h-full rounded-[14px] object-cover"
+              />
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight dark:from-white dark:via-slate-100 dark:to-slate-400 from-slate-900 via-slate-800 to-slate-600 bg-gradient-to-r bg-clip-text text-transparent">
               Chat.SO

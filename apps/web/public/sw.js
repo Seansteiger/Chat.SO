@@ -1,6 +1,14 @@
-const CACHE_NAME = 'chatso-v2';
+const CACHE_NAME = 'chatso-v3';
 const STATIC_ASSETS = [
   '/manifest.webmanifest',
+  '/favicon.png',
+  '/favicon.ico',
+  '/apple-touch-icon.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/icon-maskable-192.png',
+  '/icons/icon-maskable-512.png',
+  '/icons/launch-icon.png',
   '/icons/icon-192.svg',
   '/icons/icon-512.svg'
 ];
